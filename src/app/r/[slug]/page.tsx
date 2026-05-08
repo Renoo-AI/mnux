@@ -3,9 +3,8 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Plus, Coffee, ChevronRight, Minus } from 'lucide-react';
+import { Plus, Minus, ChevronRight } from 'lucide-react';
 import { restaurantService } from '@/services/restaurantService';
-import { menuService } from '@/services/menuService';
 import { useCartStore } from '@/stores/cartStore';
 import { Watermark, WatermarkSpacer } from '@/components/Watermark';
 import type { Restaurant } from '@/types';
@@ -51,8 +50,8 @@ const MENU: MenuItem[] = [
 ];
 
 const UI = {
-  fr: { tag: 'The Experience', footer: 'Merci de votre visite', toggle: 'عربي', order: 'Commande' },
-  ar: { tag: 'التجربة الفريدة', footer: 'شكراً لزيارتكم', toggle: 'Français', order: 'الطلب' }
+  fr: { tag: 'EST. 2024', footer: 'Merci de votre visite', toggle: 'عربي', order: 'Commande' },
+  ar: { tag: 'تأسست 2024', footer: 'شكراً لزيارتكم', toggle: 'Français', order: 'الطلب' }
 };
 
 export default function MenuPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -87,45 +86,56 @@ export default function MenuPage({ params }: { params: Promise<{ slug: string }>
 
   if (loading) {
     return (
-      <div className="bg-[#faf9f6] min-h-screen">
-        <nav className="sticky top-0 bg-[#faf9f6] px-6 py-5 flex justify-center">
-          <div className="w-9 h-9 bg-[#2d2a26] rounded-xl animate-pulse" />
-        </nav>
+      <div className="bg-[#FFFEF9] min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-6">
+          <div className="w-12 h-12 border-2 border-[#1a1a1a] border-t-transparent rounded-full animate-spin" />
+          <div className="h-3 w-24 bg-[#1a1a1a]/10 rounded shimmer" />
+        </div>
       </div>
     );
   }
 
   return (
     <WatermarkSpacer showWatermark={restaurant?.plan === 'free'}>
-      <div className="bg-[#faf9f6] min-h-screen pb-20" dir={lang === 'ar' ? 'rtl' : 'ltr'} lang={lang}>
-        {/* NAV */}
-        <nav className="sticky top-0 z-50 bg-[#faf9f6]/90 backdrop-blur-md border-b border-black/5 px-6 py-4 flex justify-center items-center">
-          <div className="flex flex-col items-center">
-            <div className="w-9 h-9 bg-[#2d2a26] rounded-xl flex items-center justify-center mb-1">
-              <Coffee className="w-5 h-5 text-[#b48c68]" />
+      <div className="bg-[#FFFEF9] min-h-screen pb-24" dir={lang === 'ar' ? 'rtl' : 'ltr'} lang={lang}>
+        
+        {/* HEADER */}
+        <header className="sticky top-0 z-50 bg-[#FFFEF9]/95 backdrop-blur-sm">
+          <div className="max-w-lg mx-auto px-6 py-6 flex flex-col items-center">
+            {/* Logo Mark */}
+            <div className="w-11 h-11 border-[1.5px] border-[#1a1a1a] rounded-full flex items-center justify-center mb-3">
+              <span className="font-serif text-lg font-semibold text-[#1a1a1a]">Z</span>
             </div>
-            <h1 className="font-serif text-lg font-bold text-[#2d2a26]">{restaurant?.name}</h1>
-            <p className="text-[6px] uppercase tracking-[0.4em] text-[#b48c68] font-semibold">{UI[lang].tag}</p>
+            <h1 className="font-serif text-xl font-medium text-[#1a1a1a] tracking-wide">{restaurant?.name}</h1>
+            <p className="text-[9px] uppercase tracking-[0.35em] text-[#1a1a1a]/40 mt-1 font-medium">{UI[lang].tag}</p>
           </div>
+          
+          {/* Language Toggle */}
           <button
             onClick={() => setLang(lang === 'fr' ? 'ar' : 'fr')}
-            className="absolute right-6 bg-white text-[#b48c68] px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border border-black/5"
+            className="absolute top-6 right-5 text-[11px] font-medium text-[#1a1a1a]/50 hover:text-[#1a1a1a] transition-colors"
           >
             {UI[lang].toggle}
           </button>
-        </nav>
+          
+          {/* Subtle Divider */}
+          <div className="h-[1px] bg-gradient-to-r from-transparent via-[#1a1a1a]/10 to-transparent" />
+        </header>
 
         {/* MENU */}
-        <main className="max-w-xl mx-auto px-5 py-6 space-y-6">
-          {categories.map(cat => {
+        <main className="max-w-lg mx-auto px-5 py-8 space-y-10">
+          {categories.map((cat, catIdx) => {
             const items = MENU.filter(i => (lang === 'fr' ? i.category : i.categoryAr) === cat);
             return (
-              <section key={cat} className="bg-white rounded-3xl p-6 shadow-[0_4px_20px_rgba(180,140,104,0.05)] border border-black/[0.03]">
-                <header className="flex items-center gap-4 mb-5">
-                  <h2 className="font-serif italic text-[#b48c68] font-bold">{cat}</h2>
-                  <div className="flex-1 h-px bg-gradient-to-r from-[#b48c68]/30 to-transparent" />
-                </header>
-                <div className="divide-y divide-black/[0.03]">
+              <section key={cat} className="relative">
+                {/* Category Title */}
+                <div className="flex items-center gap-4 mb-5 px-1">
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-[#1a1a1a]/30 font-medium">{String(catIdx + 1).padStart(2, '0')}</span>
+                  <h2 className="font-serif text-lg text-[#1a1a1a]">{cat}</h2>
+                </div>
+                
+                {/* Items */}
+                <div className="space-y-0">
                   {items.map((item, idx) => {
                     const name = lang === 'fr' ? item.nameFr : item.nameAr;
                     const cart = getItemByItemId(item.id);
@@ -133,59 +143,107 @@ export default function MenuPage({ params }: { params: Promise<{ slug: string }>
                     return (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between py-3.5 gap-3"
-                        style={{ animation: `fadeIn 0.5s ease ${idx * 50}ms forwards`, opacity: 0 }}
+                        className="group flex items-center justify-between py-4 px-1 hover:bg-[#1a1a1a]/[0.02] rounded-lg transition-colors duration-200"
                       >
-                        <span className="font-semibold text-[#2d2a26]/90 text-[15px] flex-1">{name}</span>
-                        <span className="text-[#b48c68] font-extrabold text-[15px]">{item.price} {currency}</span>
-                        {qty > 0 ? (
-                          <div className="flex items-center gap-1.5 bg-[#faf9f6] rounded-full p-1">
-                            <button onClick={() => removeItem(item.id)} className="w-7 h-7 rounded-full bg-white text-[#2d2a26] flex items-center justify-center font-bold text-sm shadow-sm active:scale-95 transition">−</button>
-                            <span className="w-5 text-center font-bold text-sm text-[#2d2a26]">{qty}</span>
-                            <button onClick={() => addItem({ itemId: item.id, name, price: parseFloat(item.price), quantity: 1 })} className="w-7 h-7 rounded-full bg-[#b48c68] text-white flex items-center justify-center font-bold text-sm shadow-sm active:scale-95 transition">+</button>
-                          </div>
-                        ) : (
-                          <button onClick={() => addItem({ itemId: item.id, name, price: parseFloat(item.price), quantity: 1 })} className="w-8 h-8 rounded-full bg-[#2d2a26] text-white flex items-center justify-center shadow-sm active:scale-95 transition">
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        )}
+                        {/* Name */}
+                        <span className="text-[15px] text-[#1a1a1a]/80 font-medium flex-1 pr-4">{name}</span>
+                        
+                        {/* Right side: Price + Action */}
+                        <div className="flex items-center gap-4">
+                          <span className="text-[15px] text-[#1a1a1a] font-medium tabular-nums">{item.price} {currency}</span>
+                          
+                          {qty > 0 ? (
+                            <div className="flex items-center gap-2">
+                              <button 
+                                onClick={() => removeItem(item.id)} 
+                                className="w-8 h-8 rounded-full border border-[#1a1a1a]/20 text-[#1a1a1a]/60 flex items-center justify-center text-lg hover:border-[#1a1a1a]/40 hover:text-[#1a1a1a] transition-all active:scale-90"
+                              >
+                                −
+                              </button>
+                              <span className="w-5 text-center font-semibold text-sm text-[#1a1a1a]">{qty}</span>
+                              <button 
+                                onClick={() => addItem({ itemId: item.id, name, price: parseFloat(item.price), quantity: 1 })} 
+                                className="w-8 h-8 rounded-full bg-[#1a1a1a] text-white flex items-center justify-center text-lg font-light hover:bg-[#1a1a1a]/90 transition-all active:scale-90"
+                              >
+                                +
+                              </button>
+                            </div>
+                          ) : (
+                            <button 
+                              onClick={() => addItem({ itemId: item.id, name, price: parseFloat(item.price), quantity: 1 })} 
+                              className="w-8 h-8 rounded-full border border-[#1a1a1a]/20 text-[#1a1a1a]/40 flex items-center justify-center hover:border-[#1a1a1a] hover:text-[#1a1a1a] hover:bg-[#1a1a1a]/[0.03] transition-all active:scale-90"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
                 </div>
+                
+                {/* Subtle separator between categories */}
+                {catIdx < categories.length - 1 && (
+                  <div className="mt-10 h-[1px] bg-gradient-to-r from-transparent via-[#1a1a1a]/8 to-transparent" />
+                )}
               </section>
             );
           })}
         </main>
 
         {/* FOOTER */}
-        <footer className="text-center py-6 opacity-40">
-          <p className="font-serif italic text-sm text-[#2d2a26]">{UI[lang].footer}</p>
-          <p className="text-[8px] uppercase tracking-[0.5em] text-[#71717a] mt-1">Oued Ellil • Tunis</p>
+        <footer className="text-center py-8 pb-12">
+          <p className="font-serif text-sm text-[#1a1a1a]/30">{UI[lang].footer}</p>
+          <p className="text-[9px] uppercase tracking-[0.3em] text-[#1a1a1a]/20 mt-2">Oued Ellil · Tunis</p>
         </footer>
 
-        {/* CART */}
+        {/* CART BUTTON */}
         {count > 0 && (
-          <Link href={`/r/${restaurant?.slug || 'demo'}/t/order`} className="fixed bottom-4 left-4 right-4 z-50 max-w-xl mx-auto">
-            <div className="bg-[#2d2a26] text-white h-14 rounded-2xl shadow-lg flex items-center justify-between px-5 active:scale-[0.98] transition">
+          <Link 
+            href={`/r/${restaurant?.slug || 'demo'}/t/order`} 
+            className="fixed bottom-6 left-5 right-5 z-50 max-w-lg mx-auto"
+          >
+            <div className="bg-[#1a1a1a] text-white h-[52px] rounded-full shadow-lg shadow-[#1a1a1a]/20 flex items-center justify-between px-5 active:scale-[0.98] transition-transform">
               <div className="flex items-center gap-3">
-                <span className="w-7 h-7 rounded-full bg-[#b48c68] flex items-center justify-center font-bold text-sm">{count}</span>
-                <span className="font-bold uppercase tracking-wider text-sm">{UI[lang].order}</span>
+                <span className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center font-semibold text-sm">{count}</span>
+                <span className="font-medium text-sm uppercase tracking-wider">{UI[lang].order}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-bold">{total.toFixed(2)} {currency}</span>
-                <ChevronRight className="w-5 h-5" />
+                <span className="font-semibold">{total.toFixed(2)} {currency}</span>
+                <ChevronRight className="w-4 h-4 opacity-60" />
               </div>
             </div>
           </Link>
         )}
 
+        {/* Styles */}
         <style jsx global>{`
-          @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:wght@200..800&family=Noto+Sans+Arabic:wght@300..700&display=swap');
-          body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-          html[lang="ar"] body { font-family: 'Noto Sans Arabic', sans-serif; }
-          .font-serif { font-family: 'Playfair Display', serif; }
-          @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+          @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&family=Noto+Sans+Arabic:wght@400;500;600&display=swap');
+          
+          body { 
+            font-family: 'Inter', -apple-system, sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+            -webkit-font-smoothing: antialiased;
+          }
+          
+          html[lang="ar"] body { 
+            font-family: 'Noto Sans Arabic', sans-serif; 
+          }
+          
+          .font-serif { 
+            font-family: 'Cormorant Garamond', Georgia, serif; 
+          }
+          
+          @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+          }
+          
+          .shimmer {
+            background: linear-gradient(90deg, #1a1a1a/10 25%, #1a1a1a/5 50%, #1a1a1a/10 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+          }
         `}</style>
       </div>
       <Watermark show={restaurant?.plan === 'free'} />
