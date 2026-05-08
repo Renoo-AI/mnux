@@ -273,9 +273,6 @@ export default function AdminLoginPage() {
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#3A322D]/30 text-center">
             Enhanced Security • Authorized Personnel Only
           </p>
-          <p className="text-[9px] text-[#3A322D]/20 text-center mt-2 font-mono">
-            SuperAdmin UID: {SUPERADMIN_UID?.slice(0, 8)}...
-          </p>
         </div>
       </motion.div>
     </div>

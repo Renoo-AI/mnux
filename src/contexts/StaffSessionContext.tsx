@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { StaffSession, StaffRole } from '@/types';
-import { SUPERADMIN_UID } from '@/lib/firebase';
+import { SUPERADMIN_UID, auth } from '@/lib/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
 
 interface StaffSessionContextType {
   session: StaffSession | null;
@@ -24,6 +25,33 @@ export function StaffSessionProvider({ children }: { children: React.ReactNode }
   const [session, setSession] = useState<StaffSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSuperadmin, setIsSuperadmin] = useState(false);
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+
+  // Sync with Firebase Auth state - this ensures superadmin shortcut works after admin login
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setFirebaseUser(user);
+      
+      // If user is superadmin via Firebase Auth, set the session
+      if (user && user.uid === SUPERADMIN_UID) {
+        const superadminSession: StaffSession & { isSuperadmin?: boolean } = {
+          restaurantId: 'all',
+          restaurantSlug: 'admin',
+          restaurantName: 'MenuxPro Admin',
+          staffId: user.uid,
+          staffName: user.displayName || user.email?.split('@')[0] || 'Super Admin',
+          role: 'admin',
+          isSuperadmin: true,
+        };
+        
+        setSession(superadminSession);
+        setIsSuperadmin(true);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(superadminSession));
+      }
+    });
+    
+    return () => unsubscribe();
+  }, []);
 
   // Load session from localStorage on mount
   useEffect(() => {
