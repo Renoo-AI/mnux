@@ -13,7 +13,8 @@ import type { Restaurant, RestaurantDocument } from '@/types';
 
 const COLLECTION = 'restaurants';
 
-// Demo restaurant data for offline/fallback mode
+// Demo restaurant data for offline/fallback mode ONLY
+// This should only be used when Firebase is unavailable
 const DEMO_RESTAURANTS: Record<string, Restaurant> = {
   'demo': {
     id: 'demo-restaurant-id',
@@ -63,52 +64,46 @@ function documentToRestaurant(doc: DocumentSnapshot): Restaurant | null {
   };
 }
 
-// Get restaurant by ID
+// Get restaurant by ID - Firebase FIRST, demo fallback
 export async function getRestaurantById(id: string): Promise<Restaurant | null> {
-  // Check demo data first
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      const docRef = doc(db, COLLECTION, id);
+      const snapshot = await getDoc(docRef);
+      const restaurant = documentToRestaurant(snapshot);
+      if (restaurant) return restaurant;
+    } catch (error) {
+      console.warn('Firebase getRestaurantById error, falling back to demo:', error);
+    }
+  }
+  
+  // Fallback to demo data only if Firebase fails or unavailable
   const demoRestaurant = Object.values(DEMO_RESTAURANTS).find(r => r.id === id);
-  if (demoRestaurant) return demoRestaurant;
-  
-  if (!isFirebaseAvailable()) {
-    return null;
-  }
-  
-  try {
-    const docRef = doc(db, COLLECTION, id);
-    const snapshot = await getDoc(docRef);
-    return documentToRestaurant(snapshot);
-  } catch (error) {
-    console.warn('Firebase getRestaurantById error:', error);
-    return null;
-  }
+  return demoRestaurant || null;
 }
 
-// Get restaurant by slug
+// Get restaurant by slug - Firebase FIRST, demo fallback
 export async function getRestaurantBySlug(slug: string): Promise<Restaurant | null> {
-  // Check demo data first
-  if (DEMO_RESTAURANTS[slug]) {
-    return DEMO_RESTAURANTS[slug];
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      const q = query(
+        collection(db, COLLECTION),
+        where('slug', '==', slug)
+      );
+      const snapshot = await getDocs(q);
+      
+      if (!snapshot.empty) {
+        return documentToRestaurant(snapshot.docs[0]);
+      }
+    } catch (error) {
+      console.warn('Firebase getRestaurantBySlug error, falling back to demo:', error);
+    }
   }
   
-  if (!isFirebaseAvailable()) {
-    return null;
-  }
-  
-  try {
-    const q = query(
-      collection(db, COLLECTION),
-      where('slug', '==', slug)
-    );
-    const snapshot = await getDocs(q);
-    
-    if (snapshot.empty) return null;
-    
-    return documentToRestaurant(snapshot.docs[0]);
-  } catch (error) {
-    console.warn('Firebase getRestaurantBySlug error:', error);
-    // Return demo data as fallback
-    return DEMO_RESTAURANTS[slug] || null;
-  }
+  // Fallback to demo data only if Firebase fails or no data found
+  return DEMO_RESTAURANTS[slug] || null;
 }
 
 // Subscribe to restaurant changes
@@ -116,37 +111,49 @@ export function subscribeToRestaurant(
   restaurantId: string,
   callback: (restaurant: Restaurant | null) => void
 ): () => void {
-  // Check demo data first
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      const docRef = doc(db, COLLECTION, restaurantId);
+      
+      return onSnapshot(docRef, (snapshot) => {
+        const restaurant = documentToRestaurant(snapshot);
+        if (restaurant) {
+          callback(restaurant);
+        } else {
+          // If no Firebase data, try demo
+          const demoRestaurant = Object.values(DEMO_RESTAURANTS).find(r => r.id === restaurantId);
+          callback(demoRestaurant || null);
+        }
+      }, (error) => {
+        console.warn('Firebase subscribeToRestaurant error, falling back to demo:', error);
+        const demoRestaurant = Object.values(DEMO_RESTAURANTS).find(r => r.id === restaurantId);
+        callback(demoRestaurant || null);
+      });
+    } catch (error) {
+      console.warn('Firebase subscribeToRestaurant error, falling back to demo:', error);
+    }
+  }
+  
+  // Fallback to demo data
   const demoRestaurant = Object.values(DEMO_RESTAURANTS).find(r => r.id === restaurantId);
   if (demoRestaurant) {
     callback(demoRestaurant);
-    return () => {};
-  }
-  
-  if (!isFirebaseAvailable()) {
+  } else {
     callback(null);
-    return () => {};
   }
-  
-  try {
-    const docRef = doc(db, COLLECTION, restaurantId);
-    
-    return onSnapshot(docRef, (snapshot) => {
-      callback(documentToRestaurant(snapshot));
-    }, (error) => {
-      console.warn('Firebase subscribeToRestaurant error:', error);
-      callback(null);
-    });
-  } catch (error) {
-    console.warn('Firebase subscribeToRestaurant error:', error);
-    callback(null);
-    return () => {};
-  }
+  return () => {};
+}
+
+// Check if running in demo mode
+export function isDemoRestaurant(restaurantId: string): boolean {
+  return Object.values(DEMO_RESTAURANTS).some(r => r.id === restaurantId);
 }
 
 export const restaurantService = {
   getById: getRestaurantById,
   getBySlug: getRestaurantBySlug,
   subscribe: subscribeToRestaurant,
+  isDemoRestaurant,
   DEMO_RESTAURANTS,
 };

@@ -15,7 +15,7 @@ import type { MenuItem, MenuCategory, MenuItemDocument, MenuCategoryDocument } f
 const MENU_ITEMS_COLLECTION = 'menuItems';
 const CATEGORIES_COLLECTION = 'categories';
 
-// Demo data for offline/fallback mode
+// Demo data for offline/fallback mode ONLY
 const DEMO_CATEGORIES: MenuCategory[] = [
   { id: 'cat-1', restaurantId: 'demo-restaurant-id', name: 'Signature Coffee', slug: 'signature-coffee', sortOrder: 1, isActive: true, createdAt: new Date(), updatedAt: new Date() },
   { id: 'cat-2', restaurantId: 'demo-restaurant-id', name: 'Artisan Pastries', slug: 'artisan-pastries', sortOrder: 2, isActive: true, createdAt: new Date(), updatedAt: new Date() },
@@ -215,63 +215,57 @@ function documentToCategory(doc: DocumentSnapshot): MenuCategory | null {
   };
 }
 
-// Get all categories for a restaurant
+// Get all categories for a restaurant - Firebase FIRST, demo fallback
 export async function getCategories(restaurantId: string): Promise<MenuCategory[]> {
-  // Check demo data first
-  const demoCategories = DEMO_CATEGORIES.filter(c => c.restaurantId === restaurantId);
-  if (demoCategories.length > 0) {
-    return demoCategories;
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      const q = query(
+        collection(db, CATEGORIES_COLLECTION),
+        where('restaurantId', '==', restaurantId),
+        where('isActive', '==', true),
+        orderBy('sortOrder', 'asc')
+      );
+      
+      const snapshot = await getDocs(q);
+      const categories = snapshot.docs
+        .map(documentToCategory)
+        .filter((cat): cat is MenuCategory => cat !== null);
+      
+      if (categories.length > 0) return categories;
+    } catch (error) {
+      console.warn('Firebase getCategories error, falling back to demo:', error);
+    }
   }
   
-  if (!isFirebaseAvailable()) {
-    return [];
-  }
-  
-  try {
-    const q = query(
-      collection(db, CATEGORIES_COLLECTION),
-      where('restaurantId', '==', restaurantId),
-      where('isActive', '==', true),
-      orderBy('sortOrder', 'asc')
-    );
-    
-    const snapshot = await getDocs(q);
-    return snapshot.docs
-      .map(documentToCategory)
-      .filter((cat): cat is MenuCategory => cat !== null);
-  } catch (error) {
-    console.warn('Firebase getCategories error:', error);
-    return DEMO_CATEGORIES.filter(c => c.restaurantId === restaurantId);
-  }
+  // Fallback to demo data
+  return DEMO_CATEGORIES.filter(c => c.restaurantId === restaurantId);
 }
 
-// Get all menu items for a restaurant
+// Get all menu items for a restaurant - Firebase FIRST, demo fallback
 export async function getMenuItems(restaurantId: string): Promise<MenuItem[]> {
-  // Check demo data first
-  const demoItems = DEMO_MENU_ITEMS.filter(i => i.restaurantId === restaurantId);
-  if (demoItems.length > 0) {
-    return demoItems;
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      const q = query(
+        collection(db, MENU_ITEMS_COLLECTION),
+        where('restaurantId', '==', restaurantId),
+        orderBy('sortOrder', 'asc')
+      );
+      
+      const snapshot = await getDocs(q);
+      const items = snapshot.docs
+        .map(documentToMenuItem)
+        .filter((item): item is MenuItem => item !== null);
+      
+      if (items.length > 0) return items;
+    } catch (error) {
+      console.warn('Firebase getMenuItems error, falling back to demo:', error);
+    }
   }
   
-  if (!isFirebaseAvailable()) {
-    return [];
-  }
-  
-  try {
-    const q = query(
-      collection(db, MENU_ITEMS_COLLECTION),
-      where('restaurantId', '==', restaurantId),
-      orderBy('sortOrder', 'asc')
-    );
-    
-    const snapshot = await getDocs(q);
-    return snapshot.docs
-      .map(documentToMenuItem)
-      .filter((item): item is MenuItem => item !== null);
-  } catch (error) {
-    console.warn('Firebase getMenuItems error:', error);
-    return DEMO_MENU_ITEMS.filter(i => i.restaurantId === restaurantId);
-  }
+  // Fallback to demo data
+  return DEMO_MENU_ITEMS.filter(i => i.restaurantId === restaurantId);
 }
 
 // Get menu items by category
@@ -279,163 +273,151 @@ export async function getMenuItemsByCategory(
   restaurantId: string, 
   categoryId: string
 ): Promise<MenuItem[]> {
-  // Check demo data first
-  const demoItems = DEMO_MENU_ITEMS.filter(i => i.restaurantId === restaurantId && i.categoryId === categoryId);
-  if (demoItems.length > 0) {
-    return demoItems;
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      const q = query(
+        collection(db, MENU_ITEMS_COLLECTION),
+        where('restaurantId', '==', restaurantId),
+        where('categoryId', '==', categoryId),
+        orderBy('sortOrder', 'asc')
+      );
+      
+      const snapshot = await getDocs(q);
+      const items = snapshot.docs
+        .map(documentToMenuItem)
+        .filter((item): item is MenuItem => item !== null);
+      
+      if (items.length > 0) return items;
+    } catch (error) {
+      console.warn('Firebase getMenuItemsByCategory error:', error);
+    }
   }
   
-  if (!isFirebaseAvailable()) {
-    return [];
-  }
-  
-  try {
-    const q = query(
-      collection(db, MENU_ITEMS_COLLECTION),
-      where('restaurantId', '==', restaurantId),
-      where('categoryId', '==', categoryId),
-      orderBy('sortOrder', 'asc')
-    );
-    
-    const snapshot = await getDocs(q);
-    return snapshot.docs
-      .map(documentToMenuItem)
-      .filter((item): item is MenuItem => item !== null);
-  } catch (error) {
-    console.warn('Firebase getMenuItemsByCategory error:', error);
-    return [];
-  }
+  // Fallback to demo data
+  return DEMO_MENU_ITEMS.filter(i => i.restaurantId === restaurantId && i.categoryId === categoryId);
 }
 
 // Get featured items
 export async function getFeaturedItems(restaurantId: string): Promise<MenuItem[]> {
-  // Check demo data first
-  const demoItems = DEMO_MENU_ITEMS.filter(i => i.restaurantId === restaurantId && i.isFeatured && i.available);
-  if (demoItems.length > 0) {
-    return demoItems;
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      const q = query(
+        collection(db, MENU_ITEMS_COLLECTION),
+        where('restaurantId', '==', restaurantId),
+        where('isFeatured', '==', true),
+        where('available', '==', true)
+      );
+      
+      const snapshot = await getDocs(q);
+      const items = snapshot.docs
+        .map(documentToMenuItem)
+        .filter((item): item is MenuItem => item !== null);
+      
+      if (items.length > 0) return items;
+    } catch (error) {
+      console.warn('Firebase getFeaturedItems error:', error);
+    }
   }
   
-  if (!isFirebaseAvailable()) {
-    return [];
-  }
-  
-  try {
-    const q = query(
-      collection(db, MENU_ITEMS_COLLECTION),
-      where('restaurantId', '==', restaurantId),
-      where('isFeatured', '==', true),
-      where('available', '==', true)
-    );
-    
-    const snapshot = await getDocs(q);
-    return snapshot.docs
-      .map(documentToMenuItem)
-      .filter((item): item is MenuItem => item !== null);
-  } catch (error) {
-    console.warn('Firebase getFeaturedItems error:', error);
-    return [];
-  }
+  // Fallback to demo data
+  return DEMO_MENU_ITEMS.filter(i => i.restaurantId === restaurantId && i.isFeatured && i.available);
 }
 
 // Get a single menu item
 export async function getMenuItem(itemId: string): Promise<MenuItem | null> {
-  // Check demo data first
-  const demoItem = DEMO_MENU_ITEMS.find(i => i.id === itemId);
-  if (demoItem) return demoItem;
-  
-  if (!isFirebaseAvailable()) {
-    return null;
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      const docRef = doc(db, MENU_ITEMS_COLLECTION, itemId);
+      const snapshot = await getDoc(docRef);
+      const item = documentToMenuItem(snapshot);
+      if (item) return item;
+    } catch (error) {
+      console.warn('Firebase getMenuItem error:', error);
+    }
   }
   
-  try {
-    const docRef = doc(db, MENU_ITEMS_COLLECTION, itemId);
-    const snapshot = await getDoc(docRef);
-    return documentToMenuItem(snapshot);
-  } catch (error) {
-    console.warn('Firebase getMenuItem error:', error);
-    return null;
-  }
+  // Fallback to demo data
+  return DEMO_MENU_ITEMS.find(i => i.id === itemId) || null;
 }
 
-// Subscribe to menu items changes
+// Subscribe to menu items changes - Firebase FIRST
 export function subscribeToMenuItems(
   restaurantId: string,
   callback: (items: MenuItem[]) => void
 ): () => void {
-  // Check demo data first
-  const demoItems = DEMO_MENU_ITEMS.filter(i => i.restaurantId === restaurantId);
-  if (demoItems.length > 0) {
-    callback(demoItems);
-    return () => {};
-  }
-  
-  if (!isFirebaseAvailable()) {
-    callback([]);
-    return () => {};
-  }
-  
-  try {
-    const q = query(
-      collection(db, MENU_ITEMS_COLLECTION),
-      where('restaurantId', '==', restaurantId),
-      orderBy('sortOrder', 'asc')
-    );
-    
-    return onSnapshot(q, (snapshot) => {
-      const items = snapshot.docs
-        .map(documentToMenuItem)
-        .filter((item): item is MenuItem => item !== null);
-      callback(items);
-    }, (error) => {
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      const q = query(
+        collection(db, MENU_ITEMS_COLLECTION),
+        where('restaurantId', '==', restaurantId),
+        orderBy('sortOrder', 'asc')
+      );
+      
+      return onSnapshot(q, (snapshot) => {
+        const items = snapshot.docs
+          .map(documentToMenuItem)
+          .filter((item): item is MenuItem => item !== null);
+        
+        if (items.length > 0) {
+          callback(items);
+        } else {
+          callback(DEMO_MENU_ITEMS.filter(i => i.restaurantId === restaurantId));
+        }
+      }, (error) => {
+        console.warn('Firebase subscribeToMenuItems error:', error);
+        callback(DEMO_MENU_ITEMS.filter(i => i.restaurantId === restaurantId));
+      });
+    } catch (error) {
       console.warn('Firebase subscribeToMenuItems error:', error);
-      callback([]);
-    });
-  } catch (error) {
-    console.warn('Firebase subscribeToMenuItems error:', error);
-    callback([]);
-    return () => {};
+    }
   }
+  
+  // Fallback to demo data
+  callback(DEMO_MENU_ITEMS.filter(i => i.restaurantId === restaurantId));
+  return () => {};
 }
 
-// Subscribe to categories changes
+// Subscribe to categories changes - Firebase FIRST
 export function subscribeToCategories(
   restaurantId: string,
   callback: (categories: MenuCategory[]) => void
 ): () => void {
-  // Check demo data first
-  const demoCategories = DEMO_CATEGORIES.filter(c => c.restaurantId === restaurantId);
-  if (demoCategories.length > 0) {
-    callback(demoCategories);
-    return () => {};
-  }
-  
-  if (!isFirebaseAvailable()) {
-    callback([]);
-    return () => {};
-  }
-  
-  try {
-    const q = query(
-      collection(db, CATEGORIES_COLLECTION),
-      where('restaurantId', '==', restaurantId),
-      where('isActive', '==', true),
-      orderBy('sortOrder', 'asc')
-    );
-    
-    return onSnapshot(q, (snapshot) => {
-      const categories = snapshot.docs
-        .map(documentToCategory)
-        .filter((cat): cat is MenuCategory => cat !== null);
-      callback(categories);
-    }, (error) => {
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      const q = query(
+        collection(db, CATEGORIES_COLLECTION),
+        where('restaurantId', '==', restaurantId),
+        where('isActive', '==', true),
+        orderBy('sortOrder', 'asc')
+      );
+      
+      return onSnapshot(q, (snapshot) => {
+        const categories = snapshot.docs
+          .map(documentToCategory)
+          .filter((cat): cat is MenuCategory => cat !== null);
+        
+        if (categories.length > 0) {
+          callback(categories);
+        } else {
+          callback(DEMO_CATEGORIES.filter(c => c.restaurantId === restaurantId));
+        }
+      }, (error) => {
+        console.warn('Firebase subscribeToCategories error:', error);
+        callback(DEMO_CATEGORIES.filter(c => c.restaurantId === restaurantId));
+      });
+    } catch (error) {
       console.warn('Firebase subscribeToCategories error:', error);
-      callback([]);
-    });
-  } catch (error) {
-    console.warn('Firebase subscribeToCategories error:', error);
-    callback([]);
-    return () => {};
+    }
   }
+  
+  // Fallback to demo data
+  callback(DEMO_CATEGORIES.filter(c => c.restaurantId === restaurantId));
+  return () => {};
 }
 
 export const menuService = {

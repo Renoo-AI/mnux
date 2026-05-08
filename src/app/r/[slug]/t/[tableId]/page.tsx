@@ -58,20 +58,20 @@ export default function TableOrderingPage({ params }: { params: Promise<{ slug: 
         setTable(tableData);
         
         // Check if table is available for ordering
-        if (tableData.status === 'ACTIVE' || tableData.status === 'NEW_ORDER') {
-          setError('This table already has an active order. Please speak with staff.');
-          return;
-        }
-        
-        if (tableData.status === 'AWAITING_PAYMENT') {
-          setError('This table is awaiting payment. Please speak with staff.');
-          return;
-        }
-        
+        // OFFLINE tables cannot accept orders
+        // AWAITING_PAYMENT tables need payment first
         if (tableData.status === 'OFFLINE') {
           setError('This table is currently unavailable. Please speak with staff.');
           return;
         }
+        
+        if (tableData.status === 'AWAITING_PAYMENT') {
+          setError('This table is awaiting payment. Please speak with staff to settle the bill.');
+          return;
+        }
+        
+        // Note: We ALLOW ordering at EMPTY and NEW_ORDER tables
+        // ACTIVE tables may also allow adding items to existing orders
         
         // Set cart context
         setContext(restaurantData.id, restaurantData.slug, tableData.id);
@@ -100,8 +100,8 @@ export default function TableOrderingPage({ params }: { params: Promise<{ slug: 
   }, [resolvedParams.slug, resolvedParams.tableId, setContext]);
 
   const filteredItems = selectedCategory 
-    ? menuItems.filter(item => item.categoryId === selectedCategory && item.isAvailable)
-    : menuItems.filter(item => item.isAvailable);
+    ? menuItems.filter(item => item.categoryId === selectedCategory && item.available)
+    : menuItems.filter(item => item.available);
 
   const handleAddToCart = (item: MenuItem) => {
     addItem({
@@ -140,8 +140,8 @@ export default function TableOrderingPage({ params }: { params: Promise<{ slug: 
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-8">
         <AlertTriangle className="w-16 h-16 text-error" />
         <h1 className="font-display text-headline-md text-primary text-center">
-          {error.includes('active order') ? 'Table Busy' : 
-           error.includes('unavailable') ? 'Table Offline' : 'Error'}
+          {error.includes('unavailable') ? 'Table Unavailable' : 
+           error.includes('payment') ? 'Payment Required' : 'Error'}
         </h1>
         <p className="text-on-surface-variant text-center max-w-md">{error}</p>
         <Button asChild variant="outline">

@@ -11,17 +11,21 @@ import {
   getDoc,
   addDoc,
   updateDoc,
-  Timestamp
+  Timestamp,
+  serverTimestamp,
+  runTransaction
 } from 'firebase/firestore';
 import type { 
   Order, 
   OrderDocument, 
-  CartItem 
+  CartItem,
+  OrderStatus
 } from '@/types';
 
-const COLLECTION = 'orders';
+const ORDERS_COLLECTION = 'orders';
+const TABLES_COLLECTION = 'tables';
 
-// Demo orders data for offline/fallback mode
+// Demo orders data for offline/fallback mode ONLY
 const DEMO_ORDERS: Order[] = [
   {
     id: 'order-2',
@@ -35,7 +39,7 @@ const DEMO_ORDERS: Order[] = [
     subtotal: 10.0,
     totalAmount: 10.0,
     status: 'ACCEPTED',
-    createdAt: new Date(Date.now() - 1000 * 60 * 15), // 15 mins ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 15),
     updatedAt: new Date(Date.now() - 1000 * 60 * 10),
     acceptedAt: new Date(Date.now() - 1000 * 60 * 10),
   },
@@ -51,7 +55,7 @@ const DEMO_ORDERS: Order[] = [
     subtotal: 28.0,
     totalAmount: 28.0,
     status: 'CREATED',
-    createdAt: new Date(Date.now() - 1000 * 60 * 3), // 3 mins ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 3),
     updatedAt: new Date(Date.now() - 1000 * 60 * 3),
   },
   {
@@ -67,7 +71,7 @@ const DEMO_ORDERS: Order[] = [
     subtotal: 29.0,
     totalAmount: 29.0,
     status: 'PAID',
-    createdAt: new Date(Date.now() - 1000 * 60 * 45), // 45 mins ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 45),
     updatedAt: new Date(Date.now() - 1000 * 60 * 5),
     acceptedAt: new Date(Date.now() - 1000 * 60 * 40),
     paidAt: new Date(Date.now() - 1000 * 60 * 5),
@@ -100,87 +104,77 @@ function documentToOrder(doc: DocumentSnapshot): Order | null {
   };
 }
 
-// Get all orders for a restaurant
+// Get all orders for a restaurant - Firebase FIRST, demo fallback
 export async function getOrders(restaurantId: string): Promise<Order[]> {
-  // Check demo data first
-  const demoOrders = DEMO_ORDERS.filter(o => o.restaurantId === restaurantId);
-  if (demoOrders.length > 0) {
-    return demoOrders;
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      const q = query(
+        collection(db, ORDERS_COLLECTION),
+        where('restaurantId', '==', restaurantId),
+        orderBy('createdAt', 'desc')
+      );
+      
+      const snapshot = await getDocs(q);
+      const orders = snapshot.docs
+        .map(documentToOrder)
+        .filter((order): order is Order => order !== null);
+      
+      if (orders.length > 0) return orders;
+    } catch (error) {
+      console.warn('Firebase getOrders error, falling back to demo:', error);
+    }
   }
   
-  if (!isFirebaseAvailable()) {
-    return [];
-  }
-  
-  try {
-    const q = query(
-      collection(db, COLLECTION),
-      where('restaurantId', '==', restaurantId),
-      orderBy('createdAt', 'desc')
-    );
-    
-    const snapshot = await getDocs(q);
-    return snapshot.docs
-      .map(documentToOrder)
-      .filter((order): order is Order => order !== null);
-  } catch (error) {
-    console.warn('Firebase getOrders error:', error);
-    return DEMO_ORDERS.filter(o => o.restaurantId === restaurantId);
-  }
+  // Fallback to demo data
+  return DEMO_ORDERS.filter(o => o.restaurantId === restaurantId);
 }
 
-// Get active orders (CREATED or ACCEPTED)
+// Get active orders (CREATED or ACCEPTED) - Firebase FIRST
 export async function getActiveOrders(restaurantId: string): Promise<Order[]> {
-  // Check demo data first
-  const demoOrders = DEMO_ORDERS.filter(
-    o => o.restaurantId === restaurantId && (o.status === 'CREATED' || o.status === 'ACCEPTED')
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      const q = query(
+        collection(db, ORDERS_COLLECTION),
+        where('restaurantId', '==', restaurantId),
+        where('status', 'in', ['CREATED', 'ACCEPTED', 'PAID']),
+        orderBy('createdAt', 'desc')
+      );
+      
+      const snapshot = await getDocs(q);
+      const orders = snapshot.docs
+        .map(documentToOrder)
+        .filter((order): order is Order => order !== null);
+      
+      if (orders.length > 0) return orders;
+    } catch (error) {
+      console.warn('Firebase getActiveOrders error, falling back to demo:', error);
+    }
+  }
+  
+  // Fallback to demo data
+  return DEMO_ORDERS.filter(
+    o => o.restaurantId === restaurantId && (o.status === 'CREATED' || o.status === 'ACCEPTED' || o.status === 'PAID')
   );
-  if (demoOrders.length > 0) {
-    return demoOrders;
-  }
-  
-  if (!isFirebaseAvailable()) {
-    return [];
-  }
-  
-  try {
-    const q = query(
-      collection(db, COLLECTION),
-      where('restaurantId', '==', restaurantId),
-      where('status', 'in', ['CREATED', 'ACCEPTED']),
-      orderBy('createdAt', 'desc')
-    );
-    
-    const snapshot = await getDocs(q);
-    return snapshot.docs
-      .map(documentToOrder)
-      .filter((order): order is Order => order !== null);
-  } catch (error) {
-    console.warn('Firebase getActiveOrders error:', error);
-    return DEMO_ORDERS.filter(
-      o => o.restaurantId === restaurantId && (o.status === 'CREATED' || o.status === 'ACCEPTED')
-    );
-  }
 }
 
 // Get a single order
 export async function getOrderById(orderId: string): Promise<Order | null> {
-  // Check demo data first
-  const demoOrder = DEMO_ORDERS.find(o => o.id === orderId);
-  if (demoOrder) return demoOrder;
-  
-  if (!isFirebaseAvailable()) {
-    return null;
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      const docRef = doc(db, ORDERS_COLLECTION, orderId);
+      const snapshot = await getDoc(docRef);
+      const order = documentToOrder(snapshot);
+      if (order) return order;
+    } catch (error) {
+      console.warn('Firebase getOrderById error, falling back to demo:', error);
+    }
   }
   
-  try {
-    const docRef = doc(db, COLLECTION, orderId);
-    const snapshot = await getDoc(docRef);
-    return documentToOrder(snapshot);
-  } catch (error) {
-    console.warn('Firebase getOrderById error:', error);
-    return DEMO_ORDERS.find(o => o.id === orderId) || null;
-  }
+  // Fallback to demo data
+  return DEMO_ORDERS.find(o => o.id === orderId) || null;
 }
 
 // Subscribe to all orders changes (for dashboard)
@@ -188,39 +182,38 @@ export function subscribeToOrders(
   restaurantId: string,
   callback: (orders: Order[]) => void
 ): () => void {
-  // Check demo data first
-  const demoOrders = DEMO_ORDERS.filter(o => o.restaurantId === restaurantId);
-  if (demoOrders.length > 0) {
-    callback(demoOrders);
-    return () => {};
-  }
-  
-  if (!isFirebaseAvailable()) {
-    callback([]);
-    return () => {};
-  }
-  
-  try {
-    const q = query(
-      collection(db, COLLECTION),
-      where('restaurantId', '==', restaurantId),
-      orderBy('createdAt', 'desc')
-    );
-    
-    return onSnapshot(q, (snapshot) => {
-      const orders = snapshot.docs
-        .map(documentToOrder)
-        .filter((order): order is Order => order !== null);
-      callback(orders);
-    }, (error) => {
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      const q = query(
+        collection(db, ORDERS_COLLECTION),
+        where('restaurantId', '==', restaurantId),
+        orderBy('createdAt', 'desc')
+      );
+      
+      return onSnapshot(q, (snapshot) => {
+        const orders = snapshot.docs
+          .map(documentToOrder)
+          .filter((order): order is Order => order !== null);
+        
+        if (orders.length > 0) {
+          callback(orders);
+        } else {
+          // No Firebase data, use demo
+          callback(DEMO_ORDERS.filter(o => o.restaurantId === restaurantId));
+        }
+      }, (error) => {
+        console.warn('Firebase subscribeToOrders error, falling back to demo:', error);
+        callback(DEMO_ORDERS.filter(o => o.restaurantId === restaurantId));
+      });
+    } catch (error) {
       console.warn('Firebase subscribeToOrders error:', error);
-      callback([]);
-    });
-  } catch (error) {
-    console.warn('Firebase subscribeToOrders error:', error);
-    callback([]);
-    return () => {};
+    }
   }
+  
+  // Fallback to demo data
+  callback(DEMO_ORDERS.filter(o => o.restaurantId === restaurantId));
+  return () => {};
 }
 
 // Subscribe to active orders (for real-time dashboard)
@@ -228,89 +221,134 @@ export function subscribeToActiveOrders(
   restaurantId: string,
   callback: (orders: Order[]) => void
 ): () => void {
-  // Check demo data first
-  const demoOrders = DEMO_ORDERS.filter(
-    o => o.restaurantId === restaurantId && (o.status === 'CREATED' || o.status === 'ACCEPTED')
-  );
-  if (demoOrders.length > 0) {
-    callback(demoOrders);
-    return () => {};
-  }
-  
-  if (!isFirebaseAvailable()) {
-    callback([]);
-    return () => {};
-  }
-  
-  try {
-    const q = query(
-      collection(db, COLLECTION),
-      where('restaurantId', '==', restaurantId),
-      where('status', 'in', ['CREATED', 'ACCEPTED']),
-      orderBy('createdAt', 'desc')
-    );
-    
-    return onSnapshot(q, (snapshot) => {
-      const orders = snapshot.docs
-        .map(documentToOrder)
-        .filter((order): order is Order => order !== null);
-      callback(orders);
-    }, (error) => {
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      const q = query(
+        collection(db, ORDERS_COLLECTION),
+        where('restaurantId', '==', restaurantId),
+        where('status', 'in', ['CREATED', 'ACCEPTED', 'PAID']),
+        orderBy('createdAt', 'desc')
+      );
+      
+      return onSnapshot(q, (snapshot) => {
+        const orders = snapshot.docs
+          .map(documentToOrder)
+          .filter((order): order is Order => order !== null);
+        
+        if (orders.length > 0) {
+          callback(orders);
+        } else {
+          callback(DEMO_ORDERS.filter(
+            o => o.restaurantId === restaurantId && ['CREATED', 'ACCEPTED', 'PAID'].includes(o.status)
+          ));
+        }
+      }, (error) => {
+        console.warn('Firebase subscribeToActiveOrders error, falling back to demo:', error);
+        callback(DEMO_ORDERS.filter(
+          o => o.restaurantId === restaurantId && ['CREATED', 'ACCEPTED', 'PAID'].includes(o.status)
+        ));
+      });
+    } catch (error) {
       console.warn('Firebase subscribeToActiveOrders error:', error);
-      callback([]);
-    });
-  } catch (error) {
-    console.warn('Firebase subscribeToActiveOrders error:', error);
-    callback([]);
-    return () => {};
+    }
   }
+  
+  // Fallback to demo data
+  callback(DEMO_ORDERS.filter(
+    o => o.restaurantId === restaurantId && ['CREATED', 'ACCEPTED', 'PAID'].includes(o.status)
+  ));
+  return () => {};
 }
 
-// Create order (demo mode returns success with fake ID)
+// Create order - REAL Firebase write with table status update
 export async function createOrder(
   restaurantId: string,
   tableId: string,
+  tableName: string,
   items: CartItem[]
 ): Promise<{ success: boolean; orderId?: string; error?: string }> {
-  if (!isFirebaseAvailable()) {
-    // Demo mode - simulate successful order creation
-    const demoOrderId = `demo-order-${Date.now()}`;
-    console.log('Demo mode: Created order', demoOrderId, { restaurantId, tableId, items });
-    return { success: true, orderId: demoOrderId };
+  // Validate inputs
+  if (!restaurantId || !tableId || !items || items.length === 0) {
+    return { success: false, error: 'Invalid order data' };
+  }
+
+  // Validate prices are positive
+  for (const item of items) {
+    if (item.price < 0 || item.quantity <= 0) {
+      return { success: false, error: 'Invalid item price or quantity' };
+    }
+  }
+
+  const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      // Use transaction to ensure atomicity
+      const orderRef = doc(collection(db, ORDERS_COLLECTION));
+      const tableRef = doc(db, TABLES_COLLECTION, tableId);
+      
+      await runTransaction(db, async (transaction) => {
+        // Check table status
+        const tableDoc = await transaction.get(tableRef);
+        
+        if (tableDoc.exists()) {
+          const tableData = tableDoc.data();
+          // Allow ordering at EMPTY or NEW_ORDER tables
+          // If table is ACTIVE, allow adding to existing order
+          if (tableData.status === 'OFFLINE') {
+            throw new Error('Table is offline');
+          }
+        }
+        
+        // Create the order
+        const orderData = {
+          restaurantId,
+          tableId,
+          tableName,
+          items: items.map(item => ({
+            itemId: item.itemId,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price * item.quantity,
+            unitPrice: item.price,
+            notes: item.notes,
+          })),
+          subtotal: totalAmount,
+          totalAmount,
+          status: 'CREATED' as OrderStatus,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+        
+        transaction.set(orderRef, orderData);
+        
+        // Update table status to NEW_ORDER and link the order
+        if (tableDoc.exists()) {
+          transaction.update(tableRef, {
+            status: 'NEW_ORDER',
+            activeOrderId: orderRef.id,
+            updatedAt: serverTimestamp(),
+          });
+        }
+      });
+      
+      return { success: true, orderId: orderRef.id };
+    } catch (error) {
+      console.error('Error creating order in Firebase:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create order';
+      return { success: false, error: errorMessage };
+    }
   }
   
-  try {
-    // For now, use direct Firestore add (in production, use Cloud Functions)
-    const orderData = {
-      restaurantId,
-      tableId,
-      tableName: tableId,
-      items: items.map(item => ({
-        itemId: item.itemId,
-        name: item.name,
-        quantity: item.quantity,
-        price: item.price,
-        unitPrice: item.price,
-        notes: item.notes,
-      })),
-      subtotal: items.reduce((sum, item) => sum + item.price * item.quantity, 0),
-      totalAmount: items.reduce((sum, item) => sum + item.price * item.quantity, 0),
-      status: 'CREATED',
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-    };
-    
-    const docRef = await addDoc(collection(db, COLLECTION), orderData);
-    return { success: true, orderId: docRef.id };
-  } catch (error) {
-    console.error('Error creating order:', error);
-    // Fallback to demo mode
-    const demoOrderId = `demo-order-${Date.now()}`;
-    return { success: true, orderId: demoOrderId };
-  }
+  // Demo mode fallback - simulate successful order creation
+  const demoOrderId = `demo-order-${Date.now()}`;
+  console.log('Demo mode: Created order', demoOrderId, { restaurantId, tableId, items, totalAmount });
+  return { success: true, orderId: demoOrderId };
 }
 
-// Accept order (demo mode always succeeds)
+// Accept order
 export async function acceptOrder(orderId: string): Promise<{ success: boolean; error?: string }> {
   if (!isFirebaseAvailable()) {
     console.log('Demo mode: Accepted order', orderId);
@@ -318,62 +356,183 @@ export async function acceptOrder(orderId: string): Promise<{ success: boolean; 
   }
   
   try {
-    const docRef = doc(db, COLLECTION, orderId);
-    await updateDoc(docRef, {
+    const orderRef = doc(db, ORDERS_COLLECTION, orderId);
+    const orderSnap = await getDoc(orderRef);
+    
+    if (!orderSnap.exists()) {
+      return { success: false, error: 'Order not found' };
+    }
+    
+    const order = documentToOrder(orderSnap);
+    if (!order) {
+      return { success: false, error: 'Invalid order data' };
+    }
+    
+    // Validate status transition
+    if (order.status !== 'CREATED') {
+      return { success: false, error: `Cannot accept order with status ${order.status}` };
+    }
+    
+    // Update order
+    await updateDoc(orderRef, {
       status: 'ACCEPTED',
-      acceptedAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+      acceptedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     });
+    
+    // Update table status
+    const tableRef = doc(db, TABLES_COLLECTION, order.tableId);
+    await updateDoc(tableRef, {
+      status: 'ACTIVE',
+      updatedAt: serverTimestamp(),
+    });
+    
     return { success: true };
   } catch (error) {
     console.error('Error accepting order:', error);
-    return { success: true }; // Fallback to success in demo mode
+    return { success: false, error: 'Failed to accept order' };
   }
 }
 
-// Complete order (demo mode always succeeds)
-export async function completeOrder(orderId: string): Promise<{ success: boolean; error?: string }> {
+// Mark order as paid
+export async function markOrderPaid(orderId: string): Promise<{ success: boolean; error?: string }> {
   if (!isFirebaseAvailable()) {
-    console.log('Demo mode: Completed order', orderId);
+    console.log('Demo mode: Marked order paid', orderId);
     return { success: true };
   }
   
   try {
-    const docRef = doc(db, COLLECTION, orderId);
-    await updateDoc(docRef, {
-      status: 'CLOSED',
-      closedAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+    const orderRef = doc(db, ORDERS_COLLECTION, orderId);
+    const orderSnap = await getDoc(orderRef);
+    
+    if (!orderSnap.exists()) {
+      return { success: false, error: 'Order not found' };
+    }
+    
+    const order = documentToOrder(orderSnap);
+    if (!order) {
+      return { success: false, error: 'Invalid order data' };
+    }
+    
+    if (order.status !== 'ACCEPTED') {
+      return { success: false, error: `Cannot mark order as paid with status ${order.status}` };
+    }
+    
+    await updateDoc(orderRef, {
+      status: 'PAID',
+      paidAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     });
+    
+    // Update table status
+    const tableRef = doc(db, TABLES_COLLECTION, order.tableId);
+    await updateDoc(tableRef, {
+      status: 'AWAITING_PAYMENT',
+      updatedAt: serverTimestamp(),
+    });
+    
     return { success: true };
   } catch (error) {
-    console.error('Error completing order:', error);
-    return { success: true }; // Fallback to success in demo mode
+    console.error('Error marking order paid:', error);
+    return { success: false, error: 'Failed to mark order as paid' };
   }
 }
 
-// Cancel order (demo mode always succeeds)
+// Close order
+export async function closeOrder(orderId: string): Promise<{ success: boolean; error?: string }> {
+  if (!isFirebaseAvailable()) {
+    console.log('Demo mode: Closed order', orderId);
+    return { success: true };
+  }
+  
+  try {
+    const orderRef = doc(db, ORDERS_COLLECTION, orderId);
+    const orderSnap = await getDoc(orderRef);
+    
+    if (!orderSnap.exists()) {
+      return { success: false, error: 'Order not found' };
+    }
+    
+    const order = documentToOrder(orderSnap);
+    if (!order) {
+      return { success: false, error: 'Invalid order data' };
+    }
+    
+    if (order.status !== 'PAID') {
+      return { success: false, error: `Cannot close order with status ${order.status}` };
+    }
+    
+    await updateDoc(orderRef, {
+      status: 'CLOSED',
+      closedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    
+    // Update table status
+    const tableRef = doc(db, TABLES_COLLECTION, order.tableId);
+    await updateDoc(tableRef, {
+      status: 'EMPTY',
+      activeOrderId: null,
+      updatedAt: serverTimestamp(),
+    });
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error closing order:', error);
+    return { success: false, error: 'Failed to close order' };
+  }
+}
+
+// Cancel order
 export async function cancelOrder(
   orderId: string, 
   reason: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (!reason || reason.trim() === '') {
+    return { success: false, error: 'Reason is required for cancellation' };
+  }
+  
   if (!isFirebaseAvailable()) {
     console.log('Demo mode: Cancelled order', orderId, reason);
     return { success: true };
   }
   
   try {
-    const docRef = doc(db, COLLECTION, orderId);
-    await updateDoc(docRef, {
+    const orderRef = doc(db, ORDERS_COLLECTION, orderId);
+    const orderSnap = await getDoc(orderRef);
+    
+    if (!orderSnap.exists()) {
+      return { success: false, error: 'Order not found' };
+    }
+    
+    const order = documentToOrder(orderSnap);
+    if (!order) {
+      return { success: false, error: 'Invalid order data' };
+    }
+    
+    if (!['CREATED', 'ACCEPTED'].includes(order.status)) {
+      return { success: false, error: `Cannot cancel order with status ${order.status}` };
+    }
+    
+    await updateDoc(orderRef, {
       status: 'CANCELLED',
       cancelReason: reason,
-      cancelledAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+      cancelledAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     });
+    
+    // Update table status
+    const tableRef = doc(db, TABLES_COLLECTION, order.tableId);
+    await updateDoc(tableRef, {
+      status: 'EMPTY',
+      activeOrderId: null,
+      updatedAt: serverTimestamp(),
+    });
+    
     return { success: true };
   } catch (error) {
     console.error('Error cancelling order:', error);
-    return { success: true }; // Fallback to success in demo mode
+    return { success: false, error: 'Failed to cancel order' };
   }
 }
 
@@ -385,7 +544,8 @@ export const orderService = {
   subscribeToActiveOrders,
   createOrder,
   acceptOrder,
-  completeOrder,
+  markOrderPaid,
+  closeOrder,
   cancelOrder,
   DEMO_ORDERS,
 };

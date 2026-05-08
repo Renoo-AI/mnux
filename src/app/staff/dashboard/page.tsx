@@ -4,10 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStaffSession } from '@/contexts/StaffSessionContext';
 import { TableGrid } from '@/components/cashier/TableGrid';
-import { OrderPanel } from '@/components/cashier/OrderPanel';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,77 +29,17 @@ import {
   Loader2,
   LogOut,
   User,
-  Settings,
-  Bell,
   RefreshCw,
   AlertTriangle,
   Coffee,
-  CheckCircle
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import type { Order, Table } from '@/types';
 import { cashierService } from '@/services/cashierService';
-import { logService } from '@/services/logService';
-
-// Demo data for development without Firebase
-const DEMO_TABLES: Table[] = [
-  { id: 't1', restaurantId: 'demo-restaurant-zcoffee', name: 'T-01', seats: 4, status: 'EMPTY', qrCodeUrl: '/r/zcoffee/t/T-01', activeOrderId: null, createdAt: new Date(), updatedAt: new Date() },
-  { id: 't2', restaurantId: 'demo-restaurant-zcoffee', name: 'T-02', seats: 2, status: 'NEW_ORDER', qrCodeUrl: '/r/zcoffee/t/T-02', activeOrderId: 'o1', createdAt: new Date(), updatedAt: new Date() },
-  { id: 't3', restaurantId: 'demo-restaurant-zcoffee', name: 'T-03', seats: 6, status: 'ACTIVE', qrCodeUrl: '/r/zcoffee/t/T-03', activeOrderId: 'o2', createdAt: new Date(), updatedAt: new Date() },
-  { id: 't4', restaurantId: 'demo-restaurant-zcoffee', name: 'T-04', seats: 4, status: 'AWAITING_PAYMENT', qrCodeUrl: '/r/zcoffee/t/T-04', activeOrderId: 'o3', createdAt: new Date(), updatedAt: new Date() },
-  { id: 't5', restaurantId: 'demo-restaurant-zcoffee', name: 'T-05', seats: 2, status: 'EMPTY', qrCodeUrl: '/r/zcoffee/t/T-05', activeOrderId: null, createdAt: new Date(), updatedAt: new Date() },
-  { id: 't6', restaurantId: 'demo-restaurant-zcoffee', name: 'T-06', seats: 8, status: 'EMPTY', qrCodeUrl: '/r/zcoffee/t/T-06', activeOrderId: null, createdAt: new Date(), updatedAt: new Date() },
-];
-
-const DEMO_ORDERS: Order[] = [
-  {
-    id: 'o1',
-    restaurantId: 'demo-restaurant-zcoffee',
-    tableId: 't2',
-    tableName: 'T-02',
-    items: [
-      { itemId: 'm1', name: 'Espresso', quantity: 2, price: 3.5, unitPrice: 3.5 },
-      { itemId: 'm2', name: 'Cappuccino', quantity: 1, price: 4.5, unitPrice: 4.5, notes: 'Extra foam' },
-    ],
-    subtotal: 11.5,
-    totalAmount: 11.5,
-    status: 'CREATED',
-    createdAt: new Date(Date.now() - 180000), // 3 min ago
-    updatedAt: new Date(),
-  },
-  {
-    id: 'o2',
-    restaurantId: 'demo-restaurant-zcoffee',
-    tableId: 't3',
-    tableName: 'T-03',
-    items: [
-      { itemId: 'm3', name: 'Latte', quantity: 3, price: 5.0, unitPrice: 5.0 },
-      { itemId: 'm4', name: 'Croissant', quantity: 2, price: 3.0, unitPrice: 3.0 },
-    ],
-    subtotal: 21.0,
-    totalAmount: 21.0,
-    status: 'ACCEPTED',
-    createdAt: new Date(Date.now() - 600000), // 10 min ago
-    updatedAt: new Date(),
-    acceptedAt: new Date(Date.now() - 540000),
-  },
-  {
-    id: 'o3',
-    restaurantId: 'demo-restaurant-zcoffee',
-    tableId: 't4',
-    tableName: 'T-04',
-    items: [
-      { itemId: 'm5', name: 'Iced Coffee', quantity: 2, price: 4.0, unitPrice: 4.0 },
-      { itemId: 'm6', name: 'Cheesecake', quantity: 1, price: 6.5, unitPrice: 6.5 },
-    ],
-    subtotal: 14.5,
-    totalAmount: 14.5,
-    status: 'PAID',
-    createdAt: new Date(Date.now() - 1200000), // 20 min ago
-    updatedAt: new Date(),
-    acceptedAt: new Date(Date.now() - 1140000),
-    paidAt: new Date(Date.now() - 300000),
-  },
-];
+import { orderService } from '@/services/orderService';
+import { tableService } from '@/services/tableService';
+import { restaurantService } from '@/services/restaurantService';
 
 export default function StaffDashboardPage() {
   const router = useRouter();
@@ -109,13 +47,13 @@ export default function StaffDashboardPage() {
   
   const [tables, setTables] = useState<Table[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showReasonDialog, setShowReasonDialog] = useState(false);
   const [reasonAction, setReasonAction] = useState<{ action: string; table: Table } | null>(null);
   const [reason, setReason] = useState('');
-  const [useDemo, setUseDemo] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'demo' | 'offline'>('connected');
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -124,41 +62,37 @@ export default function StaffDashboardPage() {
     }
   }, [sessionLoading, isStaffAuthenticated, router]);
 
-  // Load data
+  // Subscribe to real-time updates
   useEffect(() => {
     if (!session) return;
     
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        // Try to load from Firebase
-        const [tablesData, ordersData] = await Promise.all([
-          cashierService.getTables(session.restaurantId),
-          cashierService.getActiveOrders(session.restaurantId),
-        ]);
-        
-        if (tablesData.length > 0) {
-          setTables(tablesData);
-          setOrders(ordersData);
-          setUseDemo(false);
-        } else {
-          // Use demo data if no Firebase data
-          setTables(DEMO_TABLES);
-          setOrders(DEMO_ORDERS);
-          setUseDemo(true);
-        }
-      } catch (error) {
-        console.error('Failed to load data:', error);
-        // Use demo data on error
-        setTables(DEMO_TABLES);
-        setOrders(DEMO_ORDERS);
-        setUseDemo(true);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    setIsLoading(true);
     
-    loadData();
+    // Subscribe to tables
+    const unsubscribeTables = tableService.subscribeToTables(
+      session.restaurantId,
+      (tablesData) => {
+        setTables(tablesData);
+        // Check if using demo data
+        setIsDemoMode(restaurantService.isDemoRestaurant(session.restaurantId));
+        setConnectionStatus(tablesData.length > 0 && !restaurantService.isDemoRestaurant(session.restaurantId) ? 'connected' : 'demo');
+      }
+    );
+    
+    // Subscribe to active orders
+    const unsubscribeOrders = orderService.subscribeToActiveOrders(
+      session.restaurantId,
+      (ordersData) => {
+        setOrders(ordersData);
+      }
+    );
+    
+    setIsLoading(false);
+    
+    return () => {
+      unsubscribeTables();
+      unsubscribeOrders();
+    };
   }, [session]);
 
   // Handle table action
@@ -202,34 +136,8 @@ export default function StaffDashboardPage() {
       }
       
       if (result?.success) {
-        // Update local state
-        setTables(prev => prev.map(t => {
-          if (t.id === table.id) {
-            const newStatus = action === 'accept' ? 'ACTIVE' : 
-                             action === 'paid' ? 'AWAITING_PAYMENT' : 'EMPTY';
-            return {
-              ...t,
-              status: newStatus,
-              activeOrderId: action === 'close' ? null : t.activeOrderId,
-            };
-          }
-          return t;
-        }));
-        
-        setOrders(prev => prev.map(o => {
-          if (o.id === table.activeOrderId) {
-            const newStatus = action === 'accept' ? 'ACCEPTED' : 
-                             action === 'paid' ? 'PAID' : 'CLOSED';
-            return {
-              ...o,
-              status: newStatus,
-              ...(action === 'accept' && { acceptedAt: new Date() }),
-              ...(action === 'paid' && { paidAt: new Date() }),
-              ...(action === 'close' && { closedAt: new Date() }),
-            };
-          }
-          return o;
-        }));
+        // Real-time subscription will update the UI automatically
+        // No need to manually update local state
       }
     } catch (error) {
       console.error(`Failed to ${action} order:`, error);
@@ -268,19 +176,7 @@ export default function StaffDashboardPage() {
       }
       
       if (result?.success) {
-        // Update local state
-        setTables(prev => prev.map(t => {
-          if (t.id === table.id) {
-            return {
-              ...t,
-              status: 'EMPTY',
-              activeOrderId: null,
-            };
-          }
-          return t;
-        }));
-        
-        setOrders(prev => prev.filter(o => o.id !== table.activeOrderId));
+        // Real-time subscription will update the UI automatically
       }
     } catch (error) {
       console.error(`Failed to ${action} order:`, error);
@@ -324,11 +220,25 @@ export default function StaffDashboardPage() {
             
             {/* Right side */}
             <div className="flex items-center gap-3">
-              {useDemo && (
-                <Badge className="bg-amber-50 text-amber-700 border-amber-200">
-                  Demo Mode
-                </Badge>
-              )}
+              {/* Connection Status */}
+              <div className="flex items-center gap-2">
+                {connectionStatus === 'connected' ? (
+                  <Badge className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1">
+                    <Wifi className="w-3 h-3" />
+                    Live
+                  </Badge>
+                ) : connectionStatus === 'demo' ? (
+                  <Badge className="bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1">
+                    <WifiOff className="w-3 h-3" />
+                    Demo
+                  </Badge>
+                ) : (
+                  <Badge className="bg-red-50 text-red-700 border-red-200 flex items-center gap-1">
+                    <WifiOff className="w-3 h-3" />
+                    Offline
+                  </Badge>
+                )}
+              </div>
               
               <Button
                 variant="ghost"

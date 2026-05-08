@@ -77,8 +77,16 @@ export default function OrderReviewPage({ params }: { params: Promise<{ slug: st
     if (!restaurant || !table || items.length === 0) return;
     
     setSubmitting(true);
+    setError(null);
+    
     try {
-      const result = await orderService.createOrder(restaurant.id, table.id, items);
+      // Use the updated createOrder with table name
+      const result = await orderService.createOrder(
+        restaurant.id, 
+        table.id, 
+        table.name, // Pass table name
+        items
+      );
       
       if (result.success) {
         clearCart();
@@ -102,7 +110,7 @@ export default function OrderReviewPage({ params }: { params: Promise<{ slug: st
     );
   }
 
-  if (error || !restaurant || !table) {
+  if (error && !restaurant) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-8">
         <AlertTriangle className="w-16 h-16 text-error" />
@@ -121,14 +129,14 @@ export default function OrderReviewPage({ params }: { params: Promise<{ slug: st
       <header className="flex justify-between items-center px-6 py-4 sticky top-0 bg-surface shadow-card z-40">
         <div className="flex items-center gap-4">
           <Link 
-            href={`/r/${restaurant.slug}/t/${table.name}`}
+            href={`/r/${restaurant?.slug}/t/${table?.name}`}
             className="p-2 hover:bg-surface-container-low rounded-full transition-colors"
           >
             <ArrowLeft className="w-6 h-6 text-primary" />
           </Link>
           <div>
             <h1 className="font-display text-title-sm text-primary">Review Order</h1>
-            <p className="text-on-surface-variant font-label-caps text-label-caps">{table.name}</p>
+            <p className="text-on-surface-variant font-label-caps text-label-caps">{table?.name}</p>
           </div>
         </div>
       </header>
@@ -140,11 +148,19 @@ export default function OrderReviewPage({ params }: { params: Promise<{ slug: st
             <p className="font-display text-title-sm mb-2">Your cart is empty</p>
             <p className="text-sm mb-6">Add items from the menu to get started</p>
             <Button asChild>
-              <Link href={`/r/${restaurant.slug}/t/${table.name}`}>Browse Menu</Link>
+              <Link href={`/r/${restaurant?.slug}/t/${table?.name}`}>Browse Menu</Link>
             </Button>
           </div>
         ) : (
           <>
+            {/* Error Message */}
+            {error && (
+              <div className="bg-error-container text-on-error-container px-4 py-3 rounded-lg mb-4 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" />
+                <span>{error}</span>
+              </div>
+            )}
+            
             {/* Items List */}
             <div className="flex flex-col gap-4">
               {items.map((item) => (

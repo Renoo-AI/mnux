@@ -16,7 +16,7 @@ import type { Table, TableDocument, TableStatus } from '@/types';
 
 const COLLECTION = 'tables';
 
-// Demo tables data for offline/fallback mode
+// Demo tables data for offline/fallback mode ONLY
 const DEMO_TABLES: Table[] = [
   // Z Coffee tables
   { id: 'table-1', restaurantId: 'demo-restaurant-zcoffee', name: 'T-01', label: 'Window Side', seats: 4, status: 'EMPTY', qrCodeUrl: '/r/zcoffee/t/T-01', createdAt: new Date(), updatedAt: new Date() },
@@ -53,123 +53,113 @@ function documentToTable(doc: DocumentSnapshot): Table | null {
   };
 }
 
-// Get all tables for a restaurant
+// Get all tables for a restaurant - Firebase FIRST, demo fallback
 export async function getTables(restaurantId: string): Promise<Table[]> {
-  // Check demo data first
-  const demoTables = DEMO_TABLES.filter(t => t.restaurantId === restaurantId);
-  if (demoTables.length > 0) {
-    return demoTables;
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      const q = query(
+        collection(db, COLLECTION),
+        where('restaurantId', '==', restaurantId),
+        orderBy('name', 'asc')
+      );
+      
+      const snapshot = await getDocs(q);
+      const tables = snapshot.docs
+        .map(documentToTable)
+        .filter((table): table is Table => table !== null);
+      
+      if (tables.length > 0) return tables;
+    } catch (error) {
+      console.warn('Firebase getTables error, falling back to demo:', error);
+    }
   }
   
-  if (!isFirebaseAvailable()) {
-    return [];
-  }
-  
-  try {
-    const q = query(
-      collection(db, COLLECTION),
-      where('restaurantId', '==', restaurantId),
-      orderBy('name', 'asc')
-    );
-    
-    const snapshot = await getDocs(q);
-    return snapshot.docs
-      .map(documentToTable)
-      .filter((table): table is Table => table !== null);
-  } catch (error) {
-    console.warn('Firebase getTables error:', error);
-    return DEMO_TABLES.filter(t => t.restaurantId === restaurantId);
-  }
+  // Fallback to demo data
+  return DEMO_TABLES.filter(t => t.restaurantId === restaurantId);
 }
 
-// Get a single table by ID
+// Get a single table by ID - Firebase FIRST
 export async function getTableById(tableId: string): Promise<Table | null> {
-  // Check demo data first
-  const demoTable = DEMO_TABLES.find(t => t.id === tableId);
-  if (demoTable) return demoTable;
-  
-  if (!isFirebaseAvailable()) {
-    return null;
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      const docRef = doc(db, COLLECTION, tableId);
+      const snapshot = await getDoc(docRef);
+      const table = documentToTable(snapshot);
+      if (table) return table;
+    } catch (error) {
+      console.warn('Firebase getTableById error, falling back to demo:', error);
+    }
   }
   
-  try {
-    const docRef = doc(db, COLLECTION, tableId);
-    const snapshot = await getDoc(docRef);
-    return documentToTable(snapshot);
-  } catch (error) {
-    console.warn('Firebase getTableById error:', error);
-    return DEMO_TABLES.find(t => t.id === tableId) || null;
-  }
+  // Fallback to demo data
+  return DEMO_TABLES.find(t => t.id === tableId) || null;
 }
 
-// Get table by name (for QR code lookup)
+// Get table by name (for QR code lookup) - Firebase FIRST
 export async function getTableByName(
   restaurantId: string, 
   tableName: string
 ): Promise<Table | null> {
-  // Check demo data first
-  const demoTable = DEMO_TABLES.find(t => t.restaurantId === restaurantId && t.name === tableName);
-  if (demoTable) return demoTable;
-  
-  if (!isFirebaseAvailable()) {
-    return null;
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      const q = query(
+        collection(db, COLLECTION),
+        where('restaurantId', '==', restaurantId),
+        where('name', '==', tableName)
+      );
+      
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        return documentToTable(snapshot.docs[0]);
+      }
+    } catch (error) {
+      console.warn('Firebase getTableByName error, falling back to demo:', error);
+    }
   }
   
-  try {
-    const q = query(
-      collection(db, COLLECTION),
-      where('restaurantId', '==', restaurantId),
-      where('name', '==', tableName)
-    );
-    
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return null;
-    
-    return documentToTable(snapshot.docs[0]);
-  } catch (error) {
-    console.warn('Firebase getTableByName error:', error);
-    return DEMO_TABLES.find(t => t.restaurantId === restaurantId && t.name === tableName) || null;
-  }
+  // Fallback to demo data
+  return DEMO_TABLES.find(t => t.restaurantId === restaurantId && t.name === tableName) || null;
 }
 
-// Subscribe to all tables changes
+// Subscribe to all tables changes - Firebase FIRST
 export function subscribeToTables(
   restaurantId: string,
   callback: (tables: Table[]) => void
 ): () => void {
-  // Check demo data first
-  const demoTables = DEMO_TABLES.filter(t => t.restaurantId === restaurantId);
-  if (demoTables.length > 0) {
-    callback(demoTables);
-    return () => {};
-  }
-  
-  if (!isFirebaseAvailable()) {
-    callback([]);
-    return () => {};
-  }
-  
-  try {
-    const q = query(
-      collection(db, COLLECTION),
-      where('restaurantId', '==', restaurantId),
-      orderBy('name', 'asc')
-    );
-    
-    return onSnapshot(q, (snapshot) => {
-      const tables = snapshot.docs
-        .map(documentToTable)
-        .filter((table): table is Table => table !== null);
-      callback(tables);
-    }, (error) => {
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      const q = query(
+        collection(db, COLLECTION),
+        where('restaurantId', '==', restaurantId),
+        orderBy('name', 'asc')
+      );
+      
+      return onSnapshot(q, (snapshot) => {
+        const tables = snapshot.docs
+          .map(documentToTable)
+          .filter((table): table is Table => table !== null);
+        
+        if (tables.length > 0) {
+          callback(tables);
+        } else {
+          callback(DEMO_TABLES.filter(t => t.restaurantId === restaurantId));
+        }
+      }, (error) => {
+        console.warn('Firebase subscribeToTables error, falling back to demo:', error);
+        callback(DEMO_TABLES.filter(t => t.restaurantId === restaurantId));
+      });
+    } catch (error) {
       console.warn('Firebase subscribeToTables error:', error);
-      callback([]);
-    });
-  } catch (error) {
-    console.warn('Firebase subscribeToTables error:', error);
-    callback([]);
-    return () => {};
+    }
   }
+  
+  // Fallback to demo data
+  callback(DEMO_TABLES.filter(t => t.restaurantId === restaurantId));
+  return () => {};
 }
 
 // Subscribe to a single table changes
@@ -177,32 +167,30 @@ export function subscribeToTable(
   tableId: string,
   callback: (table: Table | null) => void
 ): () => void {
-  // Check demo data first
-  const demoTable = DEMO_TABLES.find(t => t.id === tableId);
-  if (demoTable) {
-    callback(demoTable);
-    return () => {};
-  }
-  
-  if (!isFirebaseAvailable()) {
-    callback(null);
-    return () => {};
-  }
-  
-  try {
-    const docRef = doc(db, COLLECTION, tableId);
-    
-    return onSnapshot(docRef, (snapshot) => {
-      callback(documentToTable(snapshot));
-    }, (error) => {
+  // Try Firebase first
+  if (isFirebaseAvailable()) {
+    try {
+      const docRef = doc(db, COLLECTION, tableId);
+      
+      return onSnapshot(docRef, (snapshot) => {
+        const table = documentToTable(snapshot);
+        if (table) {
+          callback(table);
+        } else {
+          callback(DEMO_TABLES.find(t => t.id === tableId) || null);
+        }
+      }, (error) => {
+        console.warn('Firebase subscribeToTable error, falling back to demo:', error);
+        callback(DEMO_TABLES.find(t => t.id === tableId) || null);
+      });
+    } catch (error) {
       console.warn('Firebase subscribeToTable error:', error);
-      callback(null);
-    });
-  } catch (error) {
-    console.warn('Firebase subscribeToTable error:', error);
-    callback(null);
-    return () => {};
+    }
   }
+  
+  // Fallback to demo data
+  callback(DEMO_TABLES.find(t => t.id === tableId) || null);
+  return () => {};
 }
 
 // Update table status (for dashboard use)
@@ -235,7 +223,6 @@ export function generateQRCodeUrl(
   restaurantSlug: string, 
   tableName: string
 ): string {
-  // In production, this would be the actual domain
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://menux.app';
   return `${baseUrl}/r/${restaurantSlug}/t/${tableName}`;
 }
