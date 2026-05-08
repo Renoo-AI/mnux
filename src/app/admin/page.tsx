@@ -1,43 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { db, auth, SUPERADMIN_UID } from '@/lib/firebase';
+import { auth, SUPERADMIN_UID } from '@/lib/firebase';
+import { onAuthStateChanged, User, signOut, getIdToken } from 'firebase/auth';
 import { 
-  collection, 
-  getDocs, 
-  doc, 
-  updateDoc, 
-  setDoc, 
-  deleteDoc, 
-  addDoc, 
-  query, 
-  orderBy, 
-  writeBatch,
-  Timestamp
-} from 'firebase/firestore';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { 
-  LayoutDashboard, 
-  Users, 
-  CreditCard, 
-  Activity, 
-  Store, 
-  Search, 
-  Eye, 
-  Edit2, 
-  Trash2, 
-  ShieldAlert, 
-  CheckCircle2, 
-  Plus, 
-  Copy, 
-  Link as LinkIcon, 
-  DollarSign, 
-  FileJson,
-  AlertCircle,
-  LogOut,
-  Menu,
-  X
+  LayoutDashboard, Users, CreditCard, Activity, Store, Search, 
+  Link as LinkIcon, Trash2, ShieldAlert, CheckCircle2, Plus, 
+  FileJson, AlertCircle, LogOut, Menu, X, DollarSign, Copy,
+  RefreshCw, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,8 +18,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '@/hooks/use-toast';
 
 // Types
 interface Restaurant {
@@ -83,25 +54,50 @@ interface Stats {
   proMenus: number;
   usersCount: number;
   mrr: number;
+  bannedCount?: number;
 }
 
-// Sanitize text to prevent XSS
-function sanitizeText(text: string): string {
-  return text
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-    .slice(0, 200);
+// API helper
+async function apiCall(
+  path: string, 
+  method: string = 'GET', 
+  body?: unknown, 
+  token?: string
+): Promise<Response> {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  const options: RequestInit = {
+    method,
+    headers,
+  };
+  
+  if (body && method !== 'GET') {
+    options.body = JSON.stringify(body);
+  }
+  
+  return fetch(`/api/admin${path}`, options);
 }
 
 export default function SuperAdminDashboard() {
   const router = useRouter();
+  const { toast } = useToast();
+  
+  // Auth state
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  
+  // UI state
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Data state
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -118,18 +114,25 @@ export default function SuperAdminDashboard() {
   const [bulkLoading, setBulkLoading] = useState(false);
   const [verifyingPayment, setVerifyingPayment] = useState<string | null>(null);
   const [successAnimId, setSuccessAnimId] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   
   // Form state
   const [newRestaurant, setNewRestaurant] = useState({ name: '', slug: '', ownerUid: '', plan: 'free' });
 
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Check authorization
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user && user.uid === SUPERADMIN_UID) {
         setIsAuthorized(true);
+        try {
+          const token = await getIdToken(user);
+          setAuthToken(token);
+        } catch (error) {
+          console.error('Failed to get auth token:', error);
+        }
       } else {
         setIsAuthorized(false);
       }
@@ -151,200 +154,216 @@ export default function SuperAdminDashboard() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Fetch data
+  // Fetch data from secure API
   const fetchData = useCallback(async () => {
-    if (!isAuthorized) return;
+    if (!isAuthorized || !authToken) return;
     
+    setIsRefreshing(true);
     try {
-      const [usersSnap, restsSnap, bansSnap] = await Promise.all([
-        getDocs(collection(db, 'users')).catch(() => ({ docs: [] })),
-        getDocs(collection(db, 'restaurants')).catch(() => ({ docs: [] })),
-        getDocs(collection(db, 'banned_users')).catch(() => ({ docs: [] })),
-      ]);
+      const response = await apiCall('/stats', 'GET', undefined, authToken);
       
-      const parsedUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as UserProfile));
-      setUsers(parsedUsers);
-      
-      const parsedRests = restsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Restaurant));
-      setRestaurants(parsedRests);
-      
-      const bans = new Set(bansSnap.docs.map(d => d.id));
-      setBannedUsers(bans);
-
-      // Try to fetch logs
-      try {
-        const logsSnap = await getDocs(query(collection(db, 'system_logs'), orderBy('timestamp', 'desc')));
-        setSystemLogs(logsSnap.docs.map(d => ({ id: d.id, ...d.data() } as SystemLog)).slice(0, 50));
-      } catch {
-        setSystemLogs([]);
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast({
+            title: 'Session expired',
+            description: 'Please login again',
+            variant: 'destructive',
+          });
+          router.push('/staff/login');
+          return;
+        }
+        throw new Error('Failed to fetch data');
       }
-
-      const proCount = parsedRests.filter(r => r.plan === 'pro').length;
-      const businessCount = parsedRests.filter(r => r.plan === 'business').length;
       
-      setStats({
-        activeMenus: parsedRests.filter(r => r.status === 'active').length,
-        proMenus: proCount + businessCount,
-        usersCount: parsedUsers.length,
-        mrr: (proCount * 29) + (businessCount * 59)
-      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setStats(data.stats);
+        setRestaurants(data.restaurants);
+        setUsers(data.users);
+        setBannedUsers(new Set(data.bannedUsers || []));
+        setSystemLogs(data.systemLogs || []);
+      }
     } catch (err) {
       console.error("Error loading dashboard", err);
+      toast({
+        title: 'Error',
+        description: 'Failed to load dashboard data',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRefreshing(false);
     }
-  }, [isAuthorized]);
+  }, [isAuthorized, authToken, toast, router]);
 
   useEffect(() => {
-    if (isAuthorized) {
+    if (isAuthorized && authToken) {
       fetchData();
     }
-  }, [isAuthorized, fetchData]);
+  }, [isAuthorized, authToken, fetchData]);
 
   // Restaurant actions
   const handleUpdateRestaurant = async (id: string, updates: Partial<Restaurant>) => {
+    if (!authToken) return;
+    setActionLoading(`restaurant-${id}`);
+    
     try {
-      await updateDoc(doc(db, 'restaurants', id), updates);
-      setRestaurants(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
+      const response = await apiCall('/restaurants', 'PUT', { id, updates }, authToken);
       
-      await addDoc(collection(db, 'system_logs'), {
-        type: 'RESTAURANT_UPDATED',
-        message: `Mise à jour du restaurant ${id}.`,
-        details: { updates, adminUid: currentUser?.uid },
-        timestamp: Date.now()
-      });
+      if (!response.ok) throw new Error('Failed to update');
+      
+      setRestaurants(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
+      toast({ title: 'Success', description: 'Restaurant updated successfully' });
     } catch (err) {
-      console.error('Failed to update restaurant', err);
+      toast({ title: 'Error', description: 'Failed to update restaurant', variant: 'destructive' });
+    } finally {
+      setActionLoading(null);
     }
   };
 
   const handleDeleteRestaurant = async (id: string) => {
-    if (!window.confirm("Voulez-vous vraiment supprimer ce restaurant définitivement ?")) return;
+    if (!authToken) return;
+    if (!window.confirm("Are you sure you want to delete this restaurant? This cannot be undone.")) return;
+    
+    setActionLoading(`delete-${id}`);
     try {
-      await deleteDoc(doc(db, 'restaurants', id));
+      const response = await apiCall(`/restaurants?id=${id}`, 'DELETE', undefined, authToken);
+      
+      if (!response.ok) throw new Error('Failed to delete');
+      
       setRestaurants(prev => prev.filter(r => r.id !== id));
+      toast({ title: 'Success', description: 'Restaurant deleted' });
     } catch (err) {
-      console.error('Failed to delete restaurant', err);
+      toast({ title: 'Error', description: 'Failed to delete restaurant', variant: 'destructive' });
+    } finally {
+      setActionLoading(null);
     }
   };
 
   const handleAddRestaurant = async () => {
+    if (!authToken) return;
+    
+    if (!newRestaurant.name || !newRestaurant.slug) {
+      toast({ title: 'Error', description: 'Name and slug are required', variant: 'destructive' });
+      return;
+    }
+    
+    setActionLoading('create-restaurant');
     try {
-      const payload = {
-        name: sanitizeText(newRestaurant.name),
-        slug: sanitizeText(newRestaurant.slug),
-        ownerUid: newRestaurant.ownerUid || 'unassigned',
-        plan: newRestaurant.plan,
-        status: 'active',
-        createdAt: Date.now()
-      };
-      await addDoc(collection(db, 'restaurants'), payload);
+      const response = await apiCall('/restaurants', 'POST', newRestaurant, authToken);
+      
+      if (!response.ok) throw new Error('Failed to create');
+      
+      const data = await response.json();
+      setRestaurants(prev => [...prev, data.restaurant]);
       setIsModalOpen(false);
       setNewRestaurant({ name: '', slug: '', ownerUid: '', plan: 'free' });
-      fetchData();
+      toast({ title: 'Success', description: 'Restaurant created successfully' });
     } catch (err) {
-      console.error('Failed to create restaurant', err);
+      toast({ title: 'Error', description: 'Failed to create restaurant', variant: 'destructive' });
+    } finally {
+      setActionLoading(null);
     }
   };
 
-  const generateMagicLink = async (restaurantId: string, shopSlug: string) => {
+  const generateMagicLink = async (restaurantId: string, restaurantSlug: string) => {
+    if (!authToken) return;
+    
+    setActionLoading(`magic-${restaurantId}`);
     try {
-      const token = crypto.randomUUID();
-      await setDoc(doc(db, 'magic_links', token), {
-        restaurantId,
-        shopSlug,
-        createdAt: Date.now(),
-        expiresAt: Date.now() + 1000 * 60 * 60 * 24 * 7,
-        isUsed: false,
-        createdBy: currentUser?.uid
-      });
+      const response = await apiCall('/magic-link', 'POST', { restaurantId, restaurantSlug }, authToken);
       
-      const link = `${window.location.origin}/auth/magic?t=${token}`;
-      await navigator.clipboard.writeText(link);
-      alert(`Magic Link copié:\n${link}`);
-    } catch (e) {
-      console.error(e);
-      alert("Erreur lors de la création du Magic Link");
+      if (!response.ok) throw new Error('Failed to generate magic link');
+      
+      const data = await response.json();
+      await navigator.clipboard.writeText(data.magicLink);
+      toast({ title: 'Magic Link Copied!', description: 'Link has been copied to clipboard' });
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to generate magic link', variant: 'destructive' });
+    } finally {
+      setActionLoading(null);
     }
   };
 
   // User actions
   const handleToggleBan = async (userId: string) => {
+    if (!authToken) return;
+    
     const isBanned = bannedUsers.has(userId);
+    const action = isBanned ? 'unban' : 'ban';
+    
+    if (!isBanned && !window.confirm(`Are you sure you want to ban this user?`)) return;
+    
+    setActionLoading(`user-${userId}`);
     try {
-      if (isBanned) {
-        await deleteDoc(doc(db, 'banned_users', userId));
-        setBannedUsers(prev => {
-          const next = new Set(prev);
-          next.delete(userId);
-          return next;
-        });
-      } else {
-        await setDoc(doc(db, 'banned_users', userId), {
-          reason: 'Banni par SuperAdmin',
-          bannedAt: Date.now(),
-          bannedBy: currentUser?.uid
-        });
-        setBannedUsers(prev => new Set(prev).add(userId));
+      const response = await apiCall('/users', 'POST', { userId, action }, authToken);
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update user');
       }
-    } catch (err) {
-      console.error('Failed to toggle ban', err);
+      
+      setBannedUsers(prev => {
+        const next = new Set(prev);
+        if (isBanned) {
+          next.delete(userId);
+        } else {
+          next.add(userId);
+        }
+        return next;
+      });
+      
+      toast({ title: 'Success', description: `User ${isBanned ? 'unbanned' : 'banned'} successfully` });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to update user', variant: 'destructive' });
+    } finally {
+      setActionLoading(null);
     }
   };
 
   // Payment verification
   const verifyPayment = async (restaurantId: string) => {
+    if (!authToken) return;
+    
     setVerifyingPayment(restaurantId);
-    setTimeout(async () => {
-      try {
-        await updateDoc(doc(db, 'restaurants', restaurantId), { 
-          plan: 'pro',
-          paymentVerifiedAt: Date.now()
-        });
-        setRestaurants(prev => prev.map(r => r.id === restaurantId ? { ...r, plan: 'pro' } : r));
-        setSuccessAnimId(restaurantId);
-        setTimeout(() => setSuccessAnimId(null), 3000);
-      } catch (err) {
-        alert("Erreur lors de la vérification");
-      } finally {
-        setVerifyingPayment(null);
-      }
-    }, 1500);
+    try {
+      const response = await apiCall('/verify-payment', 'POST', { restaurantId, plan: 'pro' }, authToken);
+      
+      if (!response.ok) throw new Error('Failed to verify payment');
+      
+      setRestaurants(prev => prev.map(r => r.id === restaurantId ? { ...r, plan: 'pro' } : r));
+      setSuccessAnimId(restaurantId);
+      setTimeout(() => setSuccessAnimId(null), 3000);
+      toast({ title: 'Success', description: 'Payment verified and plan upgraded' });
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to verify payment', variant: 'destructive' });
+    } finally {
+      setVerifyingPayment(null);
+    }
   };
 
   // Bulk import
   const handleBulkImport = async () => {
-    if (!bulkImportResId || !bulkJsonData.trim()) return;
+    if (!authToken || !bulkImportResId || !bulkJsonData.trim()) return;
+    
     setBulkLoading(true);
     try {
       const rawItems = JSON.parse(bulkJsonData);
       if (!Array.isArray(rawItems)) {
-        alert("Le JSON doit être un tableau d'articles.");
+        toast({ title: 'Error', description: 'JSON must be an array of items', variant: 'destructive' });
         return;
       }
 
-      const validatedItems = rawItems.slice(0, 500).map(item => ({
-        category: sanitizeText(item.category || ''),
-        name: sanitizeText(item.name || item.nameFr || ''),
-        nameFr: sanitizeText(item.nameFr || item.name || ''),
-        nameAr: sanitizeText(item.nameAr || ''),
-        price: Math.max(0, Math.min(10000, parseFloat(item.price) || 0)),
-        available: item.available !== false,
-        createdAt: Date.now()
-      }));
-
-      const batch = writeBatch(db);
-      const itemsRef = collection(db, `restaurants/${bulkImportResId}/items`);
-
-      for (const item of validatedItems) {
-        const docRef = doc(itemsRef);
-        batch.set(docRef, item);
-      }
+      const response = await apiCall('/bulk-import', 'POST', { restaurantId: bulkImportResId, items: rawItems }, authToken);
       
-      await batch.commit();
-      alert(`${validatedItems.length} articles importés avec succès !`);
+      if (!response.ok) throw new Error('Failed to import');
+      
+      const data = await response.json();
+      toast({ title: 'Success', description: data.message });
       setBulkImportResId(null);
       setBulkJsonData('');
     } catch (error) {
-      alert("Erreur lors de l'import. Vérifiez le format JSON.");
+      toast({ title: 'Error', description: 'Failed to import. Check JSON format.', variant: 'destructive' });
     } finally {
       setBulkLoading(false);
     }
@@ -353,7 +372,6 @@ export default function SuperAdminDashboard() {
   // Sign out
   const handleSignOut = async () => {
     try {
-      const { signOut } = await import('firebase/auth');
       await signOut(auth);
       router.push('/staff/login');
     } catch (error) {
@@ -367,7 +385,7 @@ export default function SuperAdminDashboard() {
       <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center">
         <div className="text-center">
           <ShieldAlert className="w-12 h-12 text-[#3A322D] mx-auto mb-4 animate-pulse" />
-          <p className="text-[#3A322D]/60 font-medium">Vérification des autorisations...</p>
+          <p className="text-[#3A322D]/60 font-medium">Verifying authorization...</p>
         </div>
       </div>
     );
@@ -382,13 +400,12 @@ export default function SuperAdminDashboard() {
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertCircle className="w-8 h-8 text-red-600" />
             </div>
-            <h2 className="text-xl font-serif font-bold text-[#3A322D] mb-2">Accès Refusé</h2>
+            <h2 className="text-xl font-serif font-bold text-[#3A322D] mb-2">Access Denied</h2>
             <p className="text-[#3A322D]/60 mb-6">
-              Vous n'avez pas les autorisations nécessaires pour accéder à MenuxSEC.
-              Seul le SuperAdmin peut accéder à ce panneau.
+              You do not have permission to access MenuxSEC. Only the SuperAdmin can access this panel.
             </p>
             <Button onClick={() => router.push('/staff/login')} className="bg-[#3A322D] hover:bg-[#5A4A3D]">
-              Retour à la connexion
+              Return to Login
             </Button>
           </CardContent>
         </Card>
@@ -428,9 +445,20 @@ export default function SuperAdminDashboard() {
             Menux<span className="text-white/40">SEC</span>
           </span>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className="text-white">
-          {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={fetchData} 
+            disabled={isRefreshing}
+            className="text-white/70 hover:text-white"
+          >
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className="text-white">
+            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </Button>
+        </div>
       </div>
 
       {/* Sidebar */}
@@ -486,6 +514,9 @@ export default function SuperAdminDashboard() {
             <div className="text-[10px] text-white/30 font-mono">
               UID: {currentUser?.uid?.slice(0, 8)}...
             </div>
+            <div className="text-[10px] text-white/30 font-mono">
+              Token: {authToken ? '✓ Valid' : '✗ Missing'}
+            </div>
           </div>
           <Button 
             variant="outline" 
@@ -493,7 +524,7 @@ export default function SuperAdminDashboard() {
             onClick={handleSignOut}
           >
             <LogOut className="w-4 h-4 mr-2" />
-            Déconnexion
+            Sign Out
           </Button>
         </div>
       </aside>
@@ -513,11 +544,23 @@ export default function SuperAdminDashboard() {
             {/* Overview Tab */}
             {activeTab === 'overview' && (
               <motion.div key="overview" variants={pageVariants} initial="initial" animate="animate" exit="exit" className="space-y-6">
-                <header className="mb-8">
-                  <h2 className="text-2xl lg:text-3xl font-serif font-bold text-[#3A322D]">Global Pulse</h2>
-                  <p className="text-xs uppercase tracking-widest text-[#3A322D]/40 font-bold mt-1">
-                    Executive Summary
-                  </p>
+                <header className="mb-8 flex justify-between items-start">
+                  <div>
+                    <h2 className="text-2xl lg:text-3xl font-serif font-bold text-[#3A322D]">Global Pulse</h2>
+                    <p className="text-xs uppercase tracking-widest text-[#3A322D]/40 font-bold mt-1">
+                      Executive Summary
+                    </p>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={fetchData} 
+                    disabled={isRefreshing}
+                    className="hidden lg:flex"
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
                 </header>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -628,6 +671,7 @@ export default function SuperAdminDashboard() {
                                 className="bg-transparent border border-[#EFE4D8] rounded-lg px-2 py-1 text-xs font-bold outline-none"
                                 value={r.plan}
                                 onChange={(e) => handleUpdateRestaurant(r.id, { plan: e.target.value as Restaurant['plan'] })}
+                                disabled={actionLoading?.startsWith('restaurant-')}
                               >
                                 <option value="free">Starter</option>
                                 <option value="pro">Pro</option>
@@ -637,6 +681,7 @@ export default function SuperAdminDashboard() {
                             <td className="p-4">
                               <button 
                                 onClick={() => handleUpdateRestaurant(r.id, { status: r.status === 'active' ? 'inactive' : 'active' })}
+                                disabled={actionLoading?.startsWith('restaurant-')}
                                 className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
                                   r.status === 'active' 
                                     ? 'bg-emerald-100 text-emerald-700' 
@@ -650,13 +695,18 @@ export default function SuperAdminDashboard() {
                               <div className="flex items-center justify-end gap-2">
                                 <button 
                                   onClick={() => generateMagicLink(r.id, r.slug)} 
-                                  className="p-2 rounded-lg hover:bg-[#EFE4D8] text-[#3A322D]/40 hover:text-[#C9A07E] transition-colors"
+                                  disabled={actionLoading === `magic-${r.id}`}
+                                  className="p-2 rounded-lg hover:bg-[#EFE4D8] text-[#3A322D]/40 hover:text-[#C9A07E] transition-colors disabled:opacity-50"
                                   title="Magic Link"
                                 >
-                                  <LinkIcon className="w-4 h-4" />
+                                  {actionLoading === `magic-${r.id}` ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <LinkIcon className="w-4 h-4" />
+                                  )}
                                 </button>
                                 <button 
-                                  onClick={() => openBulkImport(r.id)} 
+                                  onClick={() => setBulkImportResId(r.id)} 
                                   className="p-2 rounded-lg hover:bg-[#EFE4D8] text-[#3A322D]/40 hover:text-[#C9A07E] transition-colors"
                                   title="Bulk Import"
                                 >
@@ -664,10 +714,15 @@ export default function SuperAdminDashboard() {
                                 </button>
                                 <button 
                                   onClick={() => handleDeleteRestaurant(r.id)} 
-                                  className="p-2 rounded-lg hover:bg-red-100 text-[#3A322D]/40 hover:text-red-600 transition-colors"
+                                  disabled={actionLoading === `delete-${r.id}`}
+                                  className="p-2 rounded-lg hover:bg-red-100 text-[#3A322D]/40 hover:text-red-600 transition-colors disabled:opacity-50"
                                   title="Delete"
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  {actionLoading === `delete-${r.id}` ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-4 h-4" />
+                                  )}
                                 </button>
                               </div>
                             </td>
@@ -757,13 +812,19 @@ export default function SuperAdminDashboard() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleToggleBan(u.id)}
-                                  disabled={u.globalRole === 'superadmin'}
+                                  disabled={u.globalRole === 'superadmin' || actionLoading === `user-${u.id}`}
                                   className={isBanned 
                                     ? 'border-emerald-600 text-emerald-600 hover:bg-emerald-50' 
                                     : 'border-red-600 text-red-600 hover:bg-red-50'
                                   }
                                 >
-                                  {isBanned ? 'Unban' : 'Ban'}
+                                  {actionLoading === `user-${u.id}` ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : isBanned ? (
+                                    'Unban'
+                                  ) : (
+                                    'Ban'
+                                  )}
                                 </Button>
                               </td>
                             </tr>
@@ -820,12 +881,15 @@ export default function SuperAdminDashboard() {
                             } text-white`}
                           >
                             {verifyingPayment === r.id ? (
-                              'Verifying...'
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Verifying...
+                              </>
                             ) : successAnimId === r.id ? (
-                              <span className="flex items-center gap-1">
-                                <CheckCircle2 className="w-4 h-4" />
+                              <>
+                                <CheckCircle2 className="w-4 h-4 mr-2" />
                                 Verified
-                              </span>
+                              </>
                             ) : (
                               'Mark Verified'
                             )}
@@ -933,50 +997,50 @@ export default function SuperAdminDashboard() {
         </div>
       </main>
 
-      {/* Add Restaurant Modal */}
+      {/* Deploy Hub Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="bg-white">
           <DialogHeader>
-            <DialogTitle className="font-serif">Deploy New Hub</DialogTitle>
+            <DialogTitle className="text-[#3A322D]">Deploy New Hub</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Restaurant Name</Label>
-              <Input
+              <Label htmlFor="name">Restaurant Name</Label>
+              <Input 
+                id="name"
                 value={newRestaurant.name}
                 onChange={(e) => setNewRestaurant(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Café Élégance"
+                placeholder="e.g., Café Élégance"
               />
             </div>
             <div className="space-y-2">
-              <Label>Slug (URL)</Label>
-              <Input
+              <Label htmlFor="slug">URL Slug</Label>
+              <Input 
+                id="slug"
                 value={newRestaurant.slug}
-                onChange={(e) => setNewRestaurant(prev => ({ ...prev, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') }))}
-                placeholder="cafe-elegance"
+                onChange={(e) => setNewRestaurant(prev => ({ ...prev, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') }))}
+                placeholder="e.g., cafe-elegance"
               />
             </div>
             <div className="space-y-2">
-              <Label>Owner UID (optional)</Label>
-              <Input
+              <Label htmlFor="ownerUid">Owner UID (optional)</Label>
+              <Input 
+                id="ownerUid"
                 value={newRestaurant.ownerUid}
                 onChange={(e) => setNewRestaurant(prev => ({ ...prev, ownerUid: e.target.value }))}
-                placeholder="auto-assign"
+                placeholder="Firebase UID of the owner"
               />
             </div>
             <div className="space-y-2">
-              <Label>Plan</Label>
-              <Select 
-                value={newRestaurant.plan} 
-                onValueChange={(value) => setNewRestaurant(prev => ({ ...prev, plan: value }))}
-              >
+              <Label htmlFor="plan">Initial Plan</Label>
+              <Select value={newRestaurant.plan} onValueChange={(value) => setNewRestaurant(prev => ({ ...prev, plan: value }))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="free">Starter (Free)</SelectItem>
-                  <SelectItem value="pro">Pro (29 TND/mo)</SelectItem>
-                  <SelectItem value="business">Business (59 TND/mo)</SelectItem>
+                  <SelectItem value="free">Starter</SelectItem>
+                  <SelectItem value="pro">Pro</SelectItem>
+                  <SelectItem value="business">Business</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -984,11 +1048,21 @@ export default function SuperAdminDashboard() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
             <Button 
-              className="bg-[#3A322D] hover:bg-[#5A4A3D] text-white"
               onClick={handleAddRestaurant}
-              disabled={!newRestaurant.name || !newRestaurant.slug}
+              disabled={actionLoading === 'create-restaurant'}
+              className="bg-[#3A322D] hover:bg-[#5A4A3D]"
             >
-              Deploy
+              {actionLoading === 'create-restaurant' ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Deploy
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -996,67 +1070,70 @@ export default function SuperAdminDashboard() {
 
       {/* Bulk Import Modal */}
       <Dialog open={!!bulkImportResId} onOpenChange={() => setBulkImportResId(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-white max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="font-serif">Import JSON Batch</DialogTitle>
+            <DialogTitle className="text-[#3A322D]">Bulk Import Menu Items</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="bg-[#C9A07E]/10 border border-[#C9A07E]/20 p-4 rounded-xl">
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="font-bold text-[#C9A07E] text-sm">LLM Prompt Template</h4>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="text-[#C9A07E] text-xs"
-                  onClick={() => {
-                    navigator.clipboard.writeText('Convert menu to JSON array with: category, nameFr, nameAr, price fields');
-                    alert('Prompt copied!');
-                  }}
-                >
-                  <Copy className="w-3 h-3 mr-1" /> Copy
-                </Button>
-              </div>
-              <p className="text-xs text-[#C9A07E]/80 leading-relaxed">
-                Use ChatGPT/Gemini to convert text menus to JSON. Request: "Convert this menu to a JSON array with fields: category, nameFr, nameAr, price"
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label>JSON Array</Label>
-              <Textarea
-                value={bulkJsonData}
-                onChange={(e) => setBulkJsonData(e.target.value)}
-                className="h-48 font-mono text-sm"
-                placeholder='[{"category": "Coffee", "nameFr": "Espresso", "nameAr": "إسبريسو", "price": 3.5}]'
-              />
-            </div>
+            <p className="text-sm text-[#3A322D]/60">
+              Paste a JSON array of menu items. Each item should have: name, category, price.
+            </p>
+            <Textarea 
+              value={bulkJsonData}
+              onChange={(e) => setBulkJsonData(e.target.value)}
+              placeholder={`[
+  { "name": "Espresso", "category": "Coffee", "price": 2.50 },
+  { "name": "Cappuccino", "category": "Coffee", "price": 3.50 }
+]`}
+              className="min-h-[200px] font-mono text-sm"
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBulkImportResId(null)}>Cancel</Button>
             <Button 
-              className="bg-[#3A322D] hover:bg-[#5A4A3D] text-white"
               onClick={handleBulkImport}
               disabled={bulkLoading || !bulkJsonData.trim()}
+              className="bg-[#3A322D] hover:bg-[#5A4A3D]"
             >
-              {bulkLoading ? 'Importing...' : 'Import'}
+              {bulkLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <FileJson className="w-4 h-4 mr-2" />
+                  Import
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Mobile Bottom Nav */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-[#EFE4D8] z-40 flex items-center justify-around px-2">
-        {navItems.slice(0, 5).map(item => (
+      {/* Mobile Bottom Navigation */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#EFE4D8] z-40">
+        <div className="flex justify-around py-2">
+          {navItems.slice(0, 4).map(item => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`flex flex-col items-center gap-1 py-2 px-3 ${
+                activeTab === item.id ? 'text-[#C9A07E]' : 'text-[#3A322D]/40'
+              }`}
+            >
+              <item.icon className="w-5 h-5" />
+              <span className="text-[10px] font-medium">{item.label.split(' ')[0]}</span>
+            </button>
+          ))}
           <button
-            key={item.id}
-            onClick={() => setActiveTab(item.id)}
-            className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all ${
-              activeTab === item.id ? 'text-[#C9A07E]' : 'text-[#3A322D]/40'
-            }`}
+            onClick={() => setSidebarOpen(true)}
+            className="flex flex-col items-center gap-1 py-2 px-3 text-[#3A322D]/40"
           >
-            <item.icon className="w-5 h-5 mb-1" />
-            <span className="text-[8px] font-bold uppercase tracking-wider">{item.label.split(' ')[0]}</span>
+            <Menu className="w-5 h-5" />
+            <span className="text-[10px] font-medium">More</span>
           </button>
-        ))}
+        </div>
       </div>
     </div>
   );
