@@ -77,11 +77,15 @@ export async function POST(request: NextRequest) {
 
       const data = doc.data();
 
-      if (data?.isUsed) {
+      if (!data) {
+        return NextResponse.json({ error: 'Invalid magic link data' }, { status: 500 });
+      }
+
+      if (data.isUsed) {
         return NextResponse.json({ error: 'Magic link already used' }, { status: 410 });
       }
 
-      if (data?.expiresAt && data.expiresAt < Date.now()) {
+      if (data.expiresAt && data.expiresAt < Date.now()) {
         return NextResponse.json({ error: 'Magic link expired' }, { status: 410 });
       }
 

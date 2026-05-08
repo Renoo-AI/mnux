@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps, getApp, cert } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import * as admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
 
 // Initialize Firebase Admin
@@ -174,6 +175,13 @@ export async function POST(request: NextRequest) {
     
     const docRef = await db.collection('menuItems').add(itemData);
     
+    // Increment menu item counter on restaurant document
+    // This is used by Firestore rules to enforce free plan limits
+    await db.collection('restaurants').doc(restaurantId).update({
+      menuItemCount: admin.firestore.FieldValue.increment(1),
+      updatedAt: Timestamp.now(),
+    });
+    
     return NextResponse.json({
       success: true,
       id: docRef.id,
@@ -270,7 +278,18 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
     
+    const restaurantId = data?.restaurantId;
+    
     await db.collection('menuItems').doc(id).delete();
+    
+    // Decrement menu item counter on restaurant document
+    // This is used by Firestore rules to enforce free plan limits
+    if (restaurantId) {
+      await db.collection('restaurants').doc(restaurantId).update({
+        menuItemCount: admin.firestore.FieldValue.increment(-1),
+        updatedAt: Timestamp.now(),
+      });
+    }
     
     return NextResponse.json({ success: true });
   } catch (error) {

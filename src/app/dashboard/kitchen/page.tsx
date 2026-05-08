@@ -13,88 +13,17 @@ import {
   VolumeX,
   UtensilsCrossed,
   Eye,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DashboardLayout } from '@/components/layout';
 import { TopAppBar } from '@/components/layout';
 import { useSoundNotification } from '@/hooks/use-sound-notification';
 import { useToast } from '@/hooks/use-toast';
+import { useStaffSession } from '@/contexts/StaffSessionContext';
+import { cashierService } from '@/services/cashierService';
 import type { Order } from '@/types';
-
-// Demo kitchen orders
-const demoKitchenOrders: Order[] = [
-  {
-    id: 'k1',
-    restaurantId: 'demo',
-    tableId: 't1',
-    tableName: 'Table 01',
-    items: [
-      { itemId: '1', name: 'Signature Latte', quantity: 2, unitPrice: 6.50, notes: 'Extra hot, oat milk' },
-      { itemId: '2', name: 'Avocado Toast', quantity: 1, unitPrice: 14.00, notes: 'No tomato' },
-    ],
-    totalAmount: 27.00,
-    state: 'ACCEPTED',
-    createdAt: new Date(Date.now() - 3 * 60000),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'k2',
-    restaurantId: 'demo',
-    tableId: 't2',
-    tableName: 'Table 05',
-    items: [
-      { itemId: '3', name: 'Truffle Tagliatelle', quantity: 2, unitPrice: 28.00 },
-      { itemId: '4', name: 'Burrata Salad', quantity: 1, unitPrice: 14.00, notes: 'Extra basil' },
-      { itemId: '5', name: 'Wine Selection', quantity: 1, unitPrice: 48.00 },
-    ],
-    totalAmount: 118.00,
-    state: 'ACCEPTED',
-    createdAt: new Date(Date.now() - 8 * 60000),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'k3',
-    restaurantId: 'demo',
-    tableId: 't3',
-    tableName: 'Table 12',
-    items: [
-      { itemId: '6', name: 'Classic Flat White', quantity: 3, unitPrice: 5.50 },
-      { itemId: '7', name: 'Almond Croissant', quantity: 2, unitPrice: 6.25 },
-    ],
-    totalAmount: 29.00,
-    state: 'ACCEPTED',
-    createdAt: new Date(Date.now() - 1 * 60000),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'k4',
-    restaurantId: 'demo',
-    tableId: 't4',
-    tableName: 'Table 08',
-    items: [
-      { itemId: '8', name: 'Wagyu Burger', quantity: 1, unitPrice: 32.00, notes: 'Medium rare' },
-    ],
-    totalAmount: 32.00,
-    state: 'ACCEPTED',
-    createdAt: new Date(Date.now() - 15 * 60000),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'k5',
-    restaurantId: 'demo',
-    tableId: 't5',
-    tableName: 'Table 03',
-    items: [
-      { itemId: '9', name: 'Heirloom Avo Toast', quantity: 2, unitPrice: 14.00 },
-      { itemId: '10', name: 'Fresh Juice', quantity: 2, unitPrice: 6.00, notes: 'Orange' },
-    ],
-    totalAmount: 40.00,
-    state: 'ACCEPTED',
-    createdAt: new Date(Date.now() - 5 * 60000),
-    updatedAt: new Date(),
-  },
-];
 
 interface KitchenOrderCardProps {
   order: Order;
@@ -239,7 +168,9 @@ function KitchenOrderCard({ order, onComplete, onViewDetails, currentTime }: Kit
 }
 
 export default function KitchenDisplayPage() {
-  const [orders, setOrders] = useState<Order[]>(demoKitchenOrders);
+  const { session } = useStaffSession();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const { playSound, isMuted, toggleMute } = useSoundNotification({ enabled: true, volume: 0.5 });
@@ -250,6 +181,25 @@ export default function KitchenDisplayPage() {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+  
+  // Subscribe to active orders from Firebase
+  useEffect(() => {
+    if (!session?.restaurantId) {
+      return;
+    }
+
+    const unsubscribe = cashierService.subscribeToActiveOrders(
+      session.restaurantId,
+      (fetchedOrders) => {
+        // Filter to show only ACCEPTED orders (kitchen is preparing these)
+        const kitchenOrders = fetchedOrders.filter(order => order.status === 'ACCEPTED');
+        setOrders(kitchenOrders);
+        setIsLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [session?.restaurantId]);
   
   // Sort orders by time (oldest first)
   const sortedOrders = [...orders].sort((a, b) => 
@@ -279,14 +229,34 @@ export default function KitchenDisplayPage() {
     return elapsed >= 10;
   }).length;
   const totalItems = orders.reduce((sum, o) => sum + o.items.length, 0);
-  
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <TopAppBar
+          title="Kitchen Display"
+          subtitle="Loading..."
+          showSearch={false}
+          user={{ name: session?.staffName || 'Kitchen Staff', role: session?.role || 'staff' }}
+        />
+        <div className="p-6 flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-8 h-8 animate-spin text-secondary" />
+            <p className="text-on-surface-variant">Loading kitchen orders...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <TopAppBar
         title="Kitchen Display"
         subtitle="Live order queue"
         showSearch={false}
-        user={{ name: 'Kitchen Staff', role: 'staff' }}
+        user={{ name: session?.staffName || 'Kitchen Staff', role: session?.role || 'staff' }}
       />
       
       {/* Sound Toggle */}
@@ -336,8 +306,18 @@ export default function KitchenDisplayPage() {
           </div>
         </section>
         
-        {/* Orders Grid */}
-        {sortedOrders.length > 0 ? (
+        {/* Empty State */}
+        {!session?.restaurantId ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-24 h-24 bg-surface-container-high rounded-full flex items-center justify-center mb-6">
+              <ChefHat className="w-12 h-12 text-on-surface-variant" />
+            </div>
+            <h2 className="font-display text-2xl text-primary mb-2">No Restaurant Selected</h2>
+            <p className="text-on-surface-variant max-w-md">
+              Please log in to view kitchen orders.
+            </p>
+          </div>
+        ) : sortedOrders.length > 0 ? (
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {sortedOrders.map((order) => (
               <KitchenOrderCard
@@ -356,7 +336,7 @@ export default function KitchenDisplayPage() {
             </div>
             <h2 className="font-display text-2xl text-primary mb-2">All Caught Up!</h2>
             <p className="text-on-surface-variant max-w-md">
-              No pending orders. Take a breather - new orders will appear here automatically.
+              No kitchen orders. New orders will appear here automatically.
             </p>
           </div>
         )}

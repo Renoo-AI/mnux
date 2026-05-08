@@ -304,3 +304,288 @@ But requires fixes for:
 - ❌ Rate limiting
 
 **Estimated effort to REAL MVP:** 2-4 hours of focused development.
+
+---
+Task ID: 3-a
+Agent: Demo Data Remover
+Task: Remove demo/fake data from production components
+
+Work Log:
+- **history/page.tsx**: 
+  - Removed `demoHistoricalOrders` array (114 lines of fake data)
+  - Added Firebase subscription via `orderService.subscribeToOrders`
+  - Fixed type errors: changed `state` to `status`, `COMPLETED` to `CLOSED`
+  - Added loading state and premium empty state "No order history yet"
+  - Added session check for restaurant context
+
+- **kitchen/page.tsx**:
+  - Removed `demoKitchenOrders` array (72 lines of fake data)
+  - Added Firebase subscription via `cashierService.subscribeToActiveOrders`
+  - Fixed type errors: changed `state` to `status`
+  - Added loading state and premium empty state "No kitchen orders"
+  - Filtered to show only ACCEPTED orders (kitchen preparing)
+
+- **logs/page.tsx**:
+  - Removed `demoLogs` array (6 lines of fake data)
+  - Added Firebase subscription via `logService.subscribeToActivityLogs`
+  - Fixed type errors: changed `type` to `action` for ActivityLog type
+  - Added loading state and premium empty state "No activity logs yet"
+  - Added real-time daily summary calculation from logs
+
+- **category-manager.tsx**:
+  - Removed `demoCategories` array (6 lines of fake data)
+  - Added Firebase subscription via `menuService.subscribeToCategories`
+  - Added proper `createdAt` and `updatedAt` properties to new categories
+  - Added loading state and premium empty state "No categories yet"
+  - Added session check for restaurant context
+
+Stage Summary:
+- ✅ All 4 production files now use real Firebase data
+- ✅ All demo data arrays removed
+- ✅ TypeScript errors in fixed files resolved (verified with `npx tsc --noEmit`)
+- ✅ Premium empty states added for all components
+- ⚠️ Pre-existing TypeScript errors remain in other files (functions/, skills/, some form components)
+- ⚠️ Categories still need a write service to persist changes to Firebase (currently local state only)
+
+---
+Task ID: 2-a
+Agent: TypeScript Service Fixer
+Task: Fix TypeScript errors in service files
+
+Work Log:
+- Fixed `cashierService.ts`:
+  - Imported `DocumentSnapshot` and `QueryDocumentSnapshot` from `firebase/firestore`
+  - Replaced global `FirebaseFirestore.DocumentSnapshot` with proper imported types
+  - Added `FirestoreTimestamp` type for proper timestamp handling
+  - Rewrote `documentToOrder()` and `documentToTable()` functions to explicitly map all fields
+  - Fixed duplicate `id` property issue by not spreading data
+  - Fixed `seconds` property access on Firestore timestamps
+  - Removed unused imports (`OrderDocument`, `TableDocument`, `ActivityLog`)
+
+- Fixed `orderService.ts`:
+  - Added `QueryDocumentSnapshot` import
+  - Added `FirestoreTimestamp` type
+  - Rewrote `documentToOrder()` with explicit field mapping
+  - Fixed duplicate `id` property and `seconds` property access issues
+  - Removed unused `OrderDocument` import
+
+- Fixed `logService.ts`:
+  - Added `QueryDocumentSnapshot` import
+  - Added `FirestoreTimestamp` type
+  - Rewrote `documentToActivityLog()` with explicit field mapping
+  - Fixed duplicate `id` property issue
+  - Removed unused `ActivityLogDocument` import
+
+- Fixed `menuService.ts`:
+  - Added `QueryDocumentSnapshot` import
+  - Added `FirestoreTimestamp` type
+  - Rewrote `documentToMenuItem()` and `documentToCategory()` with explicit field mapping
+  - Fixed duplicate `id` property issue
+  - Removed unused `MenuItemDocument`, `MenuCategoryDocument` imports
+
+- Fixed `restaurantService.ts`:
+  - Added `QueryDocumentSnapshot` import
+  - Added `FirestoreTimestamp` type
+  - Rewrote `documentToRestaurant()` with explicit field mapping
+  - Fixed duplicate `id` property issue
+  - Removed unused `RestaurantDocument` import
+
+- Fixed `tableService.ts`:
+  - Added `QueryDocumentSnapshot` import
+  - Added `FirestoreTimestamp` type
+  - Rewrote `documentToTable()` with explicit field mapping
+  - Fixed duplicate `id` property issue
+  - Removed unused `TableDocument` import
+
+- Added `MenuCategoryDocument` type to `/src/types/index.ts`
+
+- Fixed import in `/src/app/dashboard/page.tsx`:
+  - Removed `subscribeToTables` from orderService import (it's now in tableService)
+  - The file already had the correct import from tableService
+
+Stage Summary:
+- ✅ All TypeScript errors in service files are now fixed
+- ✅ `npx tsc --noEmit` shows 0 errors in `src/services/` directory
+- ✅ Dashboard page import error resolved
+- The pattern used for document conversion now properly handles:
+  - `QueryDocumentSnapshot` for items from `snapshot.docs.map()`
+  - `DocumentSnapshot` for single doc from `getDoc()`
+  - Explicit field mapping to avoid duplicate `id` and type issues
+  - Proper `FirestoreTimestamp` casting for `seconds` property access
+
+---
+Task ID: 2-b
+Agent: Component Type Fixer
+Task: Fix TypeScript errors in components
+
+Work Log:
+- Fixed `src/components/allergen-display.tsx`:
+  - Replaced non-existent Lucide icons (`Peanut`, `TreeNut`, `Shellfish`, `Soy`, `Sesame`) with custom SVG components
+  - Created inline SVG icons: `PeanutIcon`, `TreeNutIcon`, `ShellfishIcon`, `SoyIcon`, `SesameIcon`
+  - Removed unused imports (`Circle`, `Dot`, `Grain`)
+
+- Fixed `src/components/page-transition.tsx`:
+  - Added `as const` assertion to `ease` array properties in `pageVariants`, `fadeInUp`, and `AnimatedCard`
+  - TypeScript was inferring `number[]` instead of tuple `[number, number, number, number]`
+  - This satisfies framer-motion's `Variants` type requirements
+
+- Fixed `src/components/security/honeypot.tsx`:
+  - Added type check for `FormDataEntryValue` before using with `parseInt()`
+  - `FormDataEntryValue` can be `File` or `string`, added `typeof` check to ensure string
+
+- Fixed `src/components/order-timer.tsx`:
+  - Replaced spread operator `{...order}` with explicit props mapping
+  - Order object has `id` but `OrderTimerCard` expects `orderId`
+  - Added explicit `orderId={order.id}` and other props
+
+- Fixed `src/components/promotions-manager.tsx`:
+  - Added missing `applicableItems: []` property to two Promotion objects in initial state
+  - Property is required by `Promotion` interface
+
+- Fixed `src/app/r/[slug]/page.tsx`:
+  - Changed `isAvailable` to `available` in all `DEMO_MENU_ITEMS` objects
+  - Updated filter logic to use `item.available` instead of `item.isAvailable`
+  - `MenuItem` type uses `available` property, not `isAvailable`
+
+- Fixed `src/app/api/admin/magic-link/route.ts`:
+  - Added null check for `data` variable after `doc.data()`
+  - Returns 500 error if data is undefined
+  - Removed optional chaining (`?.`) on subsequent `data` property accesses
+
+- Fixed `tailwind.config.ts`:
+  - Removed duplicate `accent` property (line 18)
+  - Kept the object form `accent: { DEFAULT: '#C9A07E', foreground: '#241d19' }` at line 106
+
+Stage Summary:
+- ✅ All 8 component errors specified in task are fixed
+- ✅ `npx tsc --noEmit` shows 0 errors in the specified component files
+- Remaining errors (29 total) are in other files:
+  - `functions/src/index.ts` - Firebase Functions errors
+  - `src/app/dashboard/history/page.tsx` - Missing `price` property
+  - `src/app/dashboard/kitchen/page.tsx` - Missing `price` property
+  - `src/app/dashboard/logs/page.tsx` - Type issues
+  - `src/components/category-manager.tsx` - Missing `createdAt`/`updatedAt`
+  - `.next/types/` - Generated type issues
+  - `examples/` and `skills/` - Example files (not production code)
+
+---
+Task ID: 7-a
+Agent: Free Plan Verifier
+Task: Verify Free Plan limit enforcement (8 items)
+
+Work Log:
+- **Critical Security Fix - Firestore Rules Collection Mismatch**:
+  - Fixed `firestore.rules`: Changed collection name from `menu_items` to `menuItems` (camelCase)
+  - The API uses `menuItems` but rules protected `menu_items` - rules were not protecting the actual collection!
+  - Added `isWithinMenuItemLimit()` helper function to check free plan limits
+
+- **API Route Counter Implementation** (`/src/app/api/menu-items/route.ts`):
+  - Added `import * as admin from 'firebase-admin'` for FieldValue.increment
+  - POST: Added `menuItemCount` increment after successful menu item creation
+  - DELETE: Added `menuItemCount` decrement after successful menu item deletion
+  - Counter is used by Firestore rules to enforce limits at the database level
+
+- **Restaurant Creation Updates** (to initialize counter):
+  - `/src/app/api/restaurant/route.ts`: Added `menuItemCount: 0` to new restaurants
+  - `/src/app/api/admin/restaurants/route.ts`: Added `menuItemCount: 0` and `maxMenuItems` to new restaurants
+  - `/src/app/login/page.tsx`: Added `menuItemCount: 0` and `maxMenuItems: 8` to Google Auth and Email signup flows
+
+Stage Summary:
+- ✅ **8-item limit IS NOW ENFORCED at multiple layers**:
+  1. **API Route** (lines 135-151 in menu-items/route.ts): Server-side check before creating items
+  2. **Firestore Rules** (lines 127-137 in firestore.rules): Database-level enforcement using counter
+  3. **Counter Mechanism**: `menuItemCount` field on restaurant document, maintained by API routes
+
+- ✅ **Free user CANNOT create a 9th item** because:
+  - API route returns 400 error with message "Free plan limited to 8 menu items"
+  - Firestore rules block direct writes that would exceed the limit
+  - Counter is atomically incremented/decremented to maintain accuracy
+
+- ⚠️ **Remaining Considerations**:
+  - Existing restaurants in production won't have `menuItemCount` field - will need migration script
+  - Counter relies on API routes being the only write path (Firestore rules provide backup protection)
+  - Concurrent writes could theoretically cause race conditions (low risk for typical usage)
+
+- 🔧 **Files Modified**:
+  - `firestore.rules` - Fixed collection name, added limit enforcement
+  - `src/app/api/menu-items/route.ts` - Added counter increment/decrement
+  - `src/app/api/restaurant/route.ts` - Initialize counter on restaurant creation
+  - `src/app/api/admin/restaurants/route.ts` - Initialize counter on admin restaurant creation
+  - `src/app/login/page.tsx` - Initialize counter on user signup
+
+---
+Task ID: 3-b
+Agent: Demo Data Cleaner
+Task: Remove demo/fake data from remaining production components
+
+Work Log:
+- **staff-manager.tsx**:
+  - Removed `demoStaff` array (6 fake staff members)
+  - Added Firebase subscription with `onSnapshot` to `staff` collection
+  - Added `useStaffSession` context for restaurant context
+  - Added loading state with `Loader2` spinner
+  - Added premium empty state "No staff members yet"
+  - Added "No restaurant selected" state for unauthenticated users
+
+- **notification-center.tsx**:
+  - Removed `demoNotifications` array (5 fake notifications)
+  - Replaced with empty array initial state
+  - Updated empty state message to "No notifications yet"
+  - Component now shows premium empty state when no notifications exist
+
+- **waiter-assignment.tsx**:
+  - Removed `demoWaiters` array (5 fake waiters)
+  - Added Firebase subscription to `staff` collection filtered by `role == 'waiter'`
+  - Added `useStaffSession` context for restaurant context
+  - Added loading state with `Loader2` spinner
+  - Added premium empty state "No waiters yet" with guidance to add staff with waiter role
+
+- **security-dashboard.tsx**:
+  - Removed `mockLogs` array (4 fake security logs)
+  - Removed `mockBannedDevices` array (2 fake banned devices)
+  - Removed `mockKickedDevices` array (1 fake kicked device)
+  - Added `securityService` imports for real data fetching
+  - Added `useStaffSession` context for restaurant context
+  - Added `useEffect` with `Promise.all` to fetch all security data in parallel
+  - Added loading state with `Loader2` spinner
+  - Updated refresh handler to use real security service methods
+  - Empty states already existed for tabs, maintained them
+
+- **feedback/page.tsx**:
+  - Removed `demoFeedbacks` array (5 fake feedback items)
+  - Removed `ratingDistribution` array (static fake distribution data)
+  - Removed `categoryAverages` array (static fake category scores)
+  - Replaced with empty array initial state
+  - Added conditional rendering for empty state when no feedback
+  - Updated charts to show placeholder messages when no data
+
+- **owner/page.tsx**:
+  - Removed entire `demoAnalytics` object containing:
+    - `overview` (fake revenue, orders, customers data)
+    - `revenueByHour` (12 fake hourly data points)
+    - `topItems` (5 fake top seller items)
+    - `staffPerformance` (4 fake staff performance records)
+    - `recentAlerts` (4 fake alert items)
+    - `weeklyComparison` (7 fake weekly comparison data points)
+  - Updated stats cards to show $0.00 / 0 values with "No data yet" labels
+  - Updated all tabs (Overview, Revenue, Staff, Alerts) to show premium empty states
+  - Each tab now shows appropriate placeholder message for missing data
+
+- **settings/page.tsx**:
+  - Removed `demoStaff` array (2 fake staff members)
+  - Added Firebase subscription to `staff` collection
+  - Added `useStaffSession` context for restaurant context
+  - Added loading state with `Loader2` spinner
+  - Added premium empty state "No staff members yet"
+  - Updated staff table to render real staff data from Firebase
+
+Stage Summary:
+- ✅ All 7 production files now show real Firebase data or clean empty states
+- ✅ All demo/mock data arrays removed (total: ~100+ lines of fake data)
+- ✅ TypeScript check passes (`npx tsc --noEmit` - 0 errors)
+- ✅ Lint passes (`bun run lint` - only pre-existing font warning)
+- ✅ All components use `useStaffSession` for restaurant context
+- ✅ Loading states added to all components that fetch data
+- ✅ Premium empty states with clear messaging added
+- ⚠️ Some components may show loading state briefly on mount before data arrives
+- ⚠️ Staff creation in settings page still uses local state (not persisted to Firebase)

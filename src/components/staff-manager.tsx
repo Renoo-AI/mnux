@@ -1,10 +1,13 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Plus, Edit, Trash2, X, Check, AlertCircle, Loader2, User, Phone, Mail, Clock, Shield, MoreVertical, UserCheck, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { useStaffSession } from '@/contexts/StaffSessionContext';
+import { db } from '@/lib/firebase';
+import { collection, query, where, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,15 +38,6 @@ export interface StaffMember {
   joinedAt: Date;
   lastActive: Date;
 }
-
-// Demo staff
-const demoStaff: StaffMember[] = [
-  { id: '1', restaurantId: 'demo', name: 'Marie Laurent', email: 'marie@menux.app', phone: '+33 6 12 34 56 78', role: 'manager', status: 'active', shift: 'morning', tablesAssigned: 0, ordersHandled: 156, rating: 4.9, joinedAt: new Date('2024-01-15'), lastActive: new Date() },
-  { id: '2', restaurantId: 'demo', name: 'Pierre Dubois', email: 'pierre@menux.app', phone: '+33 6 98 76 54 32', role: 'waiter', status: 'active', shift: 'morning', tablesAssigned: 5, ordersHandled: 89, rating: 4.7, joinedAt: new Date('2024-03-01'), lastActive: new Date() },
-  { id: '3', restaurantId: 'demo', name: 'Sophie Martin', email: 'sophie@menux.app', phone: '+33 6 11 22 33 44', role: 'waiter', status: 'on-break', shift: 'afternoon', tablesAssigned: 3, ordersHandled: 67, rating: 4.8, joinedAt: new Date('2024-02-20'), lastActive: new Date() },
-  { id: '4', restaurantId: 'demo', name: 'Jean Moreau', email: 'jean@menux.app', phone: '+33 6 55 66 77 88', role: 'kitchen', status: 'active', shift: 'evening', tablesAssigned: 0, ordersHandled: 234, rating: 4.6, joinedAt: new Date('2024-01-10'), lastActive: new Date() },
-  { id: '5', restaurantId: 'demo', name: 'Claire Petit', email: 'claire@menux.app', phone: '+33 6 99 88 77 66', role: 'host', status: 'active', shift: 'afternoon', tablesAssigned: 0, ordersHandled: 0, rating: 4.9, joinedAt: new Date('2024-04-01'), lastActive: new Date() },
-];
 
 const roleConfig: Record<StaffRole, { label: string; color: string; icon: React.ReactNode }> = {
   manager: { label: 'Manager', color: 'bg-primary text-on-primary', icon: <Shield className="w-4 h-4" /> },
@@ -338,13 +332,60 @@ function StaffCard({ staff, onEdit, onDelete, onToggleStatus }: StaffCardProps) 
 }
 
 export function StaffManager() {
-  const [staff, setStaff] = useState<StaffMember[]>(demoStaff);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [staffToDelete, setStaffToDelete] = useState<StaffMember | null>(null);
   const [roleFilter, setRoleFilter] = useState<StaffRole | 'all'>('all');
   const { toast } = useToast();
+  const { session } = useStaffSession();
+  const hasRestaurant = !!session?.restaurantId;
+
+  // Subscribe to staff collection
+  useEffect(() => {
+    if (!hasRestaurant) {
+      return;
+    }
+
+    const staffQuery = query(
+      collection(db, 'staff'),
+      where('restaurantId', '==', session!.restaurantId)
+    );
+
+    const unsubscribe: Unsubscribe = onSnapshot(
+      staffQuery,
+      (snapshot) => {
+        const staffData: StaffMember[] = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            restaurantId: data.restaurantId || session!.restaurantId,
+            name: data.name || 'Unknown',
+            email: data.email || '',
+            phone: data.phone || '',
+            role: data.role || 'waiter',
+            status: data.active ? 'active' : 'inactive',
+            shift: data.shift || 'morning',
+            tablesAssigned: data.tablesAssigned || 0,
+            ordersHandled: data.ordersHandled || 0,
+            rating: data.rating || 0,
+            joinedAt: data.createdAt?.toDate?.() || new Date(),
+            lastActive: data.updatedAt?.toDate?.() || new Date(),
+          };
+        });
+        setStaff(staffData);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Error fetching staff:', error);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [hasRestaurant, session]);
 
   const handleSave = useCallback((data: Omit<StaffMember, 'id' | 'restaurantId' | 'joinedAt' | 'lastActive' | 'tablesAssigned' | 'ordersHandled' | 'rating'>) => {
     if (editingStaff) {
@@ -357,7 +398,7 @@ export function StaffManager() {
     } else {
       const newStaff: StaffMember = {
         id: `staff-${Date.now()}`,
-        restaurantId: 'demo',
+        restaurantId: session?.restaurantId || '',
         ...data,
         tablesAssigned: 0,
         ordersHandled: 0,
@@ -369,7 +410,7 @@ export function StaffManager() {
       toast({ title: 'Staff Added', description: `${data.name} has been added to your team.` });
     }
     setEditingStaff(null);
-  }, [editingStaff, toast]);
+  }, [editingStaff, toast, session?.restaurantId]);
 
   const handleDelete = useCallback(() => {
     if (!staffToDelete) return;
@@ -401,25 +442,45 @@ export function StaffManager() {
 
   return (
     <div className="space-y-6">
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      )}
+
+      {/* No Restaurant Context */}
+      {!loading && !session?.restaurantId && (
+        <div className="text-center py-16">
+          <div className="w-16 h-16 bg-surface-container-high rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-on-surface-variant" />
+          </div>
+          <h3 className="font-display text-title-sm text-primary mb-2">No restaurant selected</h3>
+          <p className="text-on-surface-variant">Please log in to manage staff</p>
+        </div>
+      )}
+
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl p-4 shadow-card">
-          <p className="text-on-surface-variant text-xs uppercase tracking-wider">Total Staff</p>
-          <p className="font-display text-3xl text-primary mt-1">{stats.total}</p>
-        </div>
-        <div className="bg-white rounded-2xl p-4 shadow-card">
-          <p className="text-on-surface-variant text-xs uppercase tracking-wider">Active Now</p>
-          <p className="font-display text-3xl text-green-600 mt-1">{stats.active}</p>
-        </div>
-        <div className="bg-white rounded-2xl p-4 shadow-card">
-          <p className="text-on-surface-variant text-xs uppercase tracking-wider">Waiters</p>
-          <p className="font-display text-3xl text-secondary mt-1">{stats.waiters}</p>
-        </div>
-        <div className="bg-white rounded-2xl p-4 shadow-card">
-          <p className="text-on-surface-variant text-xs uppercase tracking-wider">Kitchen</p>
-          <p className="font-display text-3xl text-accent mt-1">{stats.kitchen}</p>
-        </div>
-      </div>
+      {!loading && session?.restaurantId && (
+        <>
+          <div className="grid grid-cols-4 gap-4">
+            <div className="bg-white rounded-2xl p-4 shadow-card">
+              <p className="text-on-surface-variant text-xs uppercase tracking-wider">Total Staff</p>
+              <p className="font-display text-3xl text-primary mt-1">{stats.total}</p>
+            </div>
+            <div className="bg-white rounded-2xl p-4 shadow-card">
+              <p className="text-on-surface-variant text-xs uppercase tracking-wider">Active Now</p>
+              <p className="font-display text-3xl text-green-600 mt-1">{stats.active}</p>
+            </div>
+            <div className="bg-white rounded-2xl p-4 shadow-card">
+              <p className="text-on-surface-variant text-xs uppercase tracking-wider">Waiters</p>
+              <p className="font-display text-3xl text-secondary mt-1">{stats.waiters}</p>
+            </div>
+            <div className="bg-white rounded-2xl p-4 shadow-card">
+              <p className="text-on-surface-variant text-xs uppercase tracking-wider">Kitchen</p>
+              <p className="font-display text-3xl text-accent mt-1">{stats.kitchen}</p>
+            </div>
+          </div>
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -476,7 +537,7 @@ export function StaffManager() {
           <div className="w-16 h-16 bg-surface-container-high rounded-full flex items-center justify-center mx-auto mb-4">
             <User className="w-8 h-8 text-on-surface-variant" />
           </div>
-          <h3 className="font-display text-title-sm text-primary mb-2">No staff found</h3>
+          <h3 className="font-display text-title-sm text-primary mb-2">No staff members yet</h3>
           <p className="text-on-surface-variant">Add your first team member to get started</p>
         </div>
       )}
@@ -509,6 +570,8 @@ export function StaffManager() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+        </>
+      )}
     </div>
   );
 }

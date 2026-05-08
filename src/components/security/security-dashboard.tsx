@@ -17,6 +17,7 @@ import {
   Activity,
   Search,
   Filter,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,79 +42,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { useSecurityActions } from '@/hooks/use-security';
+import { securityService } from '@/services/securityService';
+import { useStaffSession } from '@/contexts/StaffSessionContext';
 import type { SecurityLog, BannedDevice, KickedDevice } from '@/services/securityService';
-
-// Mock data for demo
-const mockLogs: SecurityLog[] = [
-  {
-    id: '1',
-    type: 'rate_limit',
-    deviceId: 'device_abc123',
-    ip: '192.168.1.100',
-    endpoint: 'createOrder',
-    restaurantId: 'demo',
-    tableId: 'T-01',
-    reason: 'Order rate limit exceeded',
-    timestamp: Date.now() - 300000,
-  },
-  {
-    id: '2',
-    type: 'honeypot',
-    deviceId: 'device_def456',
-    ip: '10.0.0.55',
-    endpoint: 'createOrder',
-    restaurantId: 'demo',
-    reason: 'Honeypot field triggered - likely bot',
-    timestamp: Date.now() - 600000,
-  },
-  {
-    id: '3',
-    type: 'ban',
-    deviceId: 'device_xyz789',
-    reason: 'Malicious activity detected',
-    timestamp: Date.now() - 3600000,
-  },
-  {
-    id: '4',
-    type: 'kick',
-    deviceId: 'device_qwe012',
-    tableId: 'T-03',
-    restaurantId: 'demo',
-    reason: 'Suspicious order pattern',
-    timestamp: Date.now() - 7200000,
-  },
-];
-
-const mockBannedDevices: BannedDevice[] = [
-  {
-    id: '1',
-    deviceId: 'device_xyz789',
-    ip: '203.0.113.42',
-    reason: 'Multiple failed payment attempts',
-    bannedAt: Date.now() - 86400000,
-    expiresAt: Date.now() + 86400000 * 6,
-  },
-  {
-    id: '2',
-    deviceId: 'device_spam001',
-    ip: '198.51.100.77',
-    reason: 'Spam orders',
-    bannedAt: Date.now() - 172800000,
-    expiresAt: null, // Permanent ban
-  },
-];
-
-const mockKickedDevices: KickedDevice[] = [
-  {
-    id: '1',
-    deviceId: 'device_qwe012',
-    tableId: 'T-03',
-    restaurantId: 'demo',
-    kickedAt: Date.now() - 1800000,
-    expiresAt: Date.now() + 1800000,
-    reason: 'Suspicious order pattern',
-  },
-];
 
 function LogTypeBadge({ type }: { type: SecurityLog['type'] }) {
   const colors = {
@@ -166,18 +97,44 @@ function formatExpiry(expiresAt: number | null): string {
 }
 
 export function SecurityDashboard() {
-  const [logs, setLogs] = useState<SecurityLog[]>(mockLogs);
-  const [bannedDevices, setBannedDevices] = useState<BannedDevice[]>(mockBannedDevices);
-  const [kickedDevices, setKickedDevices] = useState<KickedDevice[]>(mockKickedDevices);
+  const [logs, setLogs] = useState<SecurityLog[]>([]);
+  const [bannedDevices, setBannedDevices] = useState<BannedDevice[]>([]);
+  const [kickedDevices, setKickedDevices] = useState<KickedDevice[]>([]);
   const [logFilter, setLogFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [actionDialog, setActionDialog] = useState<{
     type: 'kick' | 'ban' | 'unban' | 'liftKick';
     device?: BannedDevice | KickedDevice;
   } | null>(null);
 
   const { kickDevice, liftKick, banDevice, unbanDevice, isProcessing } = useSecurityActions();
+  const { session } = useStaffSession();
+
+  // Fetch security data
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [logsResult, bannedResult, kickedResult] = await Promise.all([
+          securityService.getSecurityLogs(session?.restaurantId),
+          securityService.getBannedDevices(),
+          securityService.getKickedDevices(session?.restaurantId),
+        ]);
+        
+        setLogs(logsResult.logs);
+        setBannedDevices(bannedResult.devices);
+        setKickedDevices(kickedResult.devices);
+      } catch (error) {
+        console.error('Error fetching security data:', error);
+        toast.error('Failed to load security data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [session?.restaurantId]);
 
   const filteredLogs = logs.filter(log => {
     if (logFilter !== 'all' && log.type !== logFilter) return false;
@@ -202,10 +159,23 @@ export function SecurityDashboard() {
 
   const handleRefresh = async () => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
-    toast.success('Security data refreshed');
+    try {
+      const [logsResult, bannedResult, kickedResult] = await Promise.all([
+        securityService.getSecurityLogs(session?.restaurantId),
+        securityService.getBannedDevices(),
+        securityService.getKickedDevices(session?.restaurantId),
+      ]);
+      
+      setLogs(logsResult.logs);
+      setBannedDevices(bannedResult.devices);
+      setKickedDevices(kickedResult.devices);
+      toast.success('Security data refreshed');
+    } catch (error) {
+      console.error('Error refreshing security data:', error);
+      toast.error('Failed to refresh security data');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleAction = async () => {
@@ -218,307 +188,318 @@ export function SecurityDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-card border rounded-xl p-4"
-        >
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Activity className="h-4 w-4" />
-            <span className="text-sm">Total Events</span>
-          </div>
-          <div className="text-2xl font-bold mt-1">{stats.totalEvents}</div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4"
-        >
-          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
-            <Clock className="h-4 w-4" />
-            <span className="text-sm">Rate Limited</span>
-          </div>
-          <div className="text-2xl font-bold mt-1 text-amber-600 dark:text-amber-400">{stats.rateLimited}</div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-4"
-        >
-          <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
-            <Bug className="h-4 w-4" />
-            <span className="text-sm">Bots Detected</span>
-          </div>
-          <div className="text-2xl font-bold mt-1 text-purple-600 dark:text-purple-400">{stats.botsDetected}</div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4"
-        >
-          <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-            <Ban className="h-4 w-4" />
-            <span className="text-sm">Banned</span>
-          </div>
-          <div className="text-2xl font-bold mt-1 text-red-600 dark:text-red-400">{stats.banned}</div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl p-4"
-        >
-          <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
-            <Lock className="h-4 w-4" />
-            <span className="text-sm">Kicked</span>
-          </div>
-          <div className="text-2xl font-bold mt-1 text-orange-600 dark:text-orange-400">{stats.kicked}</div>
-        </motion.div>
-      </div>
-
-      {/* Tabs */}
-      <Tabs defaultValue="logs" className="w-full">
-        <div className="flex items-center justify-between mb-4">
-          <TabsList>
-            <TabsTrigger value="logs">
-              <Activity className="h-4 w-4 mr-2" />
-              Activity Logs
-            </TabsTrigger>
-            <TabsTrigger value="banned">
-              <Ban className="h-4 w-4 mr-2" />
-              Banned Devices
-            </TabsTrigger>
-            <TabsTrigger value="kicked">
-              <Lock className="h-4 w-4 mr-2" />
-              Kicked Devices
-            </TabsTrigger>
-          </TabsList>
-
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+      {/* Loading State */}
+      {isLoading && logs.length === 0 && bannedDevices.length === 0 && kickedDevices.length === 0 && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
+      )}
 
-        {/* Activity Logs Tab */}
-        <TabsContent value="logs">
-          <div className="space-y-4">
-            {/* Filters */}
-            <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by device, IP, or reason..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1"
-                />
+      {/* Stats Cards */}
+      {(!isLoading || logs.length > 0 || bannedDevices.length > 0 || kickedDevices.length > 0) && (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-card border rounded-xl p-4"
+            >
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Activity className="h-4 w-4" />
+                <span className="text-sm">Total Events</span>
               </div>
-              <Select value={logFilter} onValueChange={setLogFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Events</SelectItem>
-                  <SelectItem value="rate_limit">Rate Limited</SelectItem>
-                  <SelectItem value="honeypot">Bot Detected</SelectItem>
-                  <SelectItem value="ban">Bans</SelectItem>
-                  <SelectItem value="kick">Kicks</SelectItem>
-                  <SelectItem value="suspicious_activity">Suspicious</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="text-2xl font-bold mt-1">{stats.totalEvents}</div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4"
+            >
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                <Clock className="h-4 w-4" />
+                <span className="text-sm">Rate Limited</span>
+              </div>
+              <div className="text-2xl font-bold mt-1 text-amber-600 dark:text-amber-400">{stats.rateLimited}</div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-4"
+            >
+              <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+                <Bug className="h-4 w-4" />
+                <span className="text-sm">Bots Detected</span>
+              </div>
+              <div className="text-2xl font-bold mt-1 text-purple-600 dark:text-purple-400">{stats.botsDetected}</div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4"
+            >
+              <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                <Ban className="h-4 w-4" />
+                <span className="text-sm">Banned</span>
+              </div>
+              <div className="text-2xl font-bold mt-1 text-red-600 dark:text-red-400">{stats.banned}</div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl p-4"
+            >
+              <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
+                <Lock className="h-4 w-4" />
+                <span className="text-sm">Kicked</span>
+              </div>
+              <div className="text-2xl font-bold mt-1 text-orange-600 dark:text-orange-400">{stats.kicked}</div>
+            </motion.div>
+          </div>
+
+          {/* Tabs */}
+          <Tabs defaultValue="logs" className="w-full">
+            <div className="flex items-center justify-between mb-4">
+              <TabsList>
+                <TabsTrigger value="logs">
+                  <Activity className="h-4 w-4 mr-2" />
+                  Activity Logs
+                </TabsTrigger>
+                <TabsTrigger value="banned">
+                  <Ban className="h-4 w-4 mr-2" />
+                  Banned Devices
+                </TabsTrigger>
+                <TabsTrigger value="kicked">
+                  <Lock className="h-4 w-4 mr-2" />
+                  Kicked Devices
+                </TabsTrigger>
+              </TabsList>
+
+              <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
             </div>
 
-            {/* Logs Table */}
-            <div className="bg-card border rounded-xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Type</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Device ID</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">IP</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Reason</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium">Time</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {filteredLogs.map((log) => (
-                      <motion.tr
-                        key={log.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="hover:bg-muted/30 transition-colors"
-                      >
-                        <td className="px-4 py-3">
-                          <LogTypeBadge type={log.type} />
-                        </td>
-                        <td className="px-4 py-3 font-mono text-sm">
-                          {log.deviceId || '-'}
-                        </td>
-                        <td className="px-4 py-3 font-mono text-sm">
-                          {log.ip || '-'}
-                        </td>
-                        <td className="px-4 py-3 text-sm max-w-xs truncate">
-                          {log.reason}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">
-                          {formatTime(log.timestamp)}
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </tbody>
-                </table>
+            {/* Activity Logs Tab */}
+            <TabsContent value="logs">
+              <div className="space-y-4">
+                {/* Filters */}
+                <div className="flex items-center gap-4 flex-wrap">
+                  <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                    <Search className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by device, IP, or reason..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                  <Select value={logFilter} onValueChange={setLogFilter}>
+                    <SelectTrigger className="w-[180px]">
+                      <Filter className="h-4 w-4 mr-2" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Events</SelectItem>
+                      <SelectItem value="rate_limit">Rate Limited</SelectItem>
+                      <SelectItem value="honeypot">Bot Detected</SelectItem>
+                      <SelectItem value="ban">Bans</SelectItem>
+                      <SelectItem value="kick">Kicks</SelectItem>
+                      <SelectItem value="suspicious_activity">Suspicious</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Logs Table */}
+                <div className="bg-card border rounded-xl overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Type</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Device ID</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">IP</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Reason</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Time</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {filteredLogs.map((log) => (
+                          <motion.tr
+                            key={log.id}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="hover:bg-muted/30 transition-colors"
+                          >
+                            <td className="px-4 py-3">
+                              <LogTypeBadge type={log.type} />
+                            </td>
+                            <td className="px-4 py-3 font-mono text-sm">
+                              {log.deviceId || '-'}
+                            </td>
+                            <td className="px-4 py-3 font-mono text-sm">
+                              {log.ip || '-'}
+                            </td>
+                            <td className="px-4 py-3 text-sm max-w-xs truncate">
+                              {log.reason}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-muted-foreground">
+                              {formatTime(log.timestamp)}
+                            </td>
+                          </motion.tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {filteredLogs.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No logs found
+                    </div>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Banned Devices Tab */}
+            <TabsContent value="banned">
+              <div className="grid gap-4">
+                {bannedDevices.map((device) => (
+                  <motion.div
+                    key={device.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-card border rounded-xl p-4"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Ban className="h-5 w-5 text-red-500" />
+                          <span className="font-mono font-medium">{device.deviceId}</span>
+                          {device.expiresAt ? (
+                            <Badge variant="outline">{formatExpiry(device.expiresAt)}</Badge>
+                          ) : (
+                            <Badge variant="destructive">Permanent</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">{device.reason}</p>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          {device.ip && <span>IP: {device.ip}</span>}
+                          <span>Banned: {formatTime(device.bannedAt)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setActionDialog({ type: 'unban', device })}
+                        >
+                          <Unlock className="h-4 w-4 mr-1" />
+                          Unban
+                        </Button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+
+                {bannedDevices.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl">
+                    <Ban className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No banned devices</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* Kicked Devices Tab */}
+            <TabsContent value="kicked">
+              <div className="grid gap-4">
+                {kickedDevices.map((device) => (
+                  <motion.div
+                    key={device.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-card border rounded-xl p-4"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Lock className="h-5 w-5 text-orange-500" />
+                          <span className="font-mono font-medium">{device.deviceId}</span>
+                          <Badge variant="outline">{formatExpiry(device.expiresAt)}</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {device.reason || 'No reason provided'}
+                        </p>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span>Table: {device.tableId}</span>
+                          <span>Kicked: {formatTime(device.kickedAt)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setActionDialog({ type: 'liftKick', device })}
+                        >
+                          <Unlock className="h-4 w-4 mr-1" />
+                          Lift Kick
+                        </Button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+
+                {kickedDevices.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl">
+                    <Lock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No kicked devices</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          {/* Action Dialog */}
+          <Dialog open={!!actionDialog} onOpenChange={() => setActionDialog(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  {actionDialog?.type === 'unban' && 'Unban Device'}
+                  {actionDialog?.type === 'liftKick' && 'Lift Kick'}
+                </DialogTitle>
+                <DialogDescription>
+                  {actionDialog?.type === 'unban' && 'This will restore full access to the device.'}
+                  {actionDialog?.type === 'liftKick' && 'This will allow the device to place orders at this table again.'}
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="py-4">
+                <p className="text-sm text-muted-foreground">
+                  Device: <span className="font-mono">{actionDialog?.device?.deviceId}</span>
+                </p>
               </div>
 
-              {filteredLogs.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  No logs found
-                </div>
-              )}
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Banned Devices Tab */}
-        <TabsContent value="banned">
-          <div className="grid gap-4">
-            {bannedDevices.map((device) => (
-              <motion.div
-                key={device.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-card border rounded-xl p-4"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Ban className="h-5 w-5 text-red-500" />
-                      <span className="font-mono font-medium">{device.deviceId}</span>
-                      {device.expiresAt ? (
-                        <Badge variant="outline">{formatExpiry(device.expiresAt)}</Badge>
-                      ) : (
-                        <Badge variant="destructive">Permanent</Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-2">{device.reason}</p>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      {device.ip && <span>IP: {device.ip}</span>}
-                      <span>Banned: {formatTime(device.bannedAt)}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setActionDialog({ type: 'unban', device })}
-                    >
-                      <Unlock className="h-4 w-4 mr-1" />
-                      Unban
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-
-            {bannedDevices.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl">
-                <Ban className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No banned devices</p>
-              </div>
-            )}
-          </div>
-        </TabsContent>
-
-        {/* Kicked Devices Tab */}
-        <TabsContent value="kicked">
-          <div className="grid gap-4">
-            {kickedDevices.map((device) => (
-              <motion.div
-                key={device.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-card border rounded-xl p-4"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Lock className="h-5 w-5 text-orange-500" />
-                      <span className="font-mono font-medium">{device.deviceId}</span>
-                      <Badge variant="outline">{formatExpiry(device.expiresAt)}</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {device.reason || 'No reason provided'}
-                    </p>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span>Table: {device.tableId}</span>
-                      <span>Kicked: {formatTime(device.kickedAt)}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setActionDialog({ type: 'liftKick', device })}
-                    >
-                      <Unlock className="h-4 w-4 mr-1" />
-                      Lift Kick
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-
-            {kickedDevices.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl">
-                <Lock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No kicked devices</p>
-              </div>
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
-
-      {/* Action Dialog */}
-      <Dialog open={!!actionDialog} onOpenChange={() => setActionDialog(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {actionDialog?.type === 'unban' && 'Unban Device'}
-              {actionDialog?.type === 'liftKick' && 'Lift Kick'}
-            </DialogTitle>
-            <DialogDescription>
-              {actionDialog?.type === 'unban' && 'This will restore full access to the device.'}
-              {actionDialog?.type === 'liftKick' && 'This will allow the device to place orders at this table again.'}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4">
-            <p className="text-sm text-muted-foreground">
-              Device: <span className="font-mono">{actionDialog?.device?.deviceId}</span>
-            </p>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setActionDialog(null)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAction} disabled={isProcessing}>
-              {isProcessing ? 'Processing...' : 'Confirm'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setActionDialog(null)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAction} disabled={isProcessing}>
+                  {isProcessing ? 'Processing...' : 'Confirm'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
     </div>
   );
 }

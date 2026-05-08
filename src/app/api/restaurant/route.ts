@@ -220,6 +220,7 @@ export async function POST(request: NextRequest) {
       slugType: plan === 'free' ? 'free-random' : 'custom',
       watermarkEnabled: plan === 'free',
       maxMenuItems: plan === 'free' ? 8 : 999,
+      menuItemCount: 0, // Counter for Firestore rules enforcement
       ownerUid: user.uid,
       staffUids: { [user.uid]: 'owner' },
       createdAt: Timestamp.now(),

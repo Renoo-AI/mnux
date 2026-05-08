@@ -15,7 +15,6 @@ const config: Config = {
                 // Menux Brand Colors
                 background: '#FCFBF9',
                 espresso: '#3A322D',
-                accent: '#C9A07E',
                 'soft-beige': '#EFE4D8',
                 white: '#FFFFFF',
                 

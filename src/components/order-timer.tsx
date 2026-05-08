@@ -254,7 +254,13 @@ export function KitchenTimerDisplay({ orders, onOrderClick }: KitchenTimerDispla
         {sortedOrders.map((order) => (
           <OrderTimerCard
             key={order.id}
-            {...order}
+            orderId={order.id}
+            tableName={order.tableName}
+            startTime={order.startTime}
+            items={order.items}
+            total={order.total}
+            estimatedMinutes={order.estimatedMinutes}
+            priority={order.priority}
             onClick={() => onOrderClick?.(order.id)}
           />
         ))}

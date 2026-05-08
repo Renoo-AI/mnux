@@ -47,7 +47,6 @@ import {
 import type { Order, Table, OrderStatus } from '@/types';
 import { 
   subscribeToActiveOrders, 
-  subscribeToTables, 
   acceptOrder, 
   closeOrder, 
   cancelOrder,

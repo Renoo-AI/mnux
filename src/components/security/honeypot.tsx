@@ -111,7 +111,12 @@ export function checkFormTiming(
   if (!timestamp || !minTime) {
     return { isValid: true, submittedTooFast: false };
   }
-  
+
+  // Type check: FormDataEntryValue can be File or string, we need string
+  if (typeof timestamp !== 'string' || typeof minTime !== 'string') {
+    return { isValid: true, submittedTooFast: false };
+  }
+
   const elapsed = Date.now() - parseInt(timestamp, 10);
   const minimum = parseInt(minTime, 10);
   

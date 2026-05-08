@@ -47,7 +47,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
     description: 'Single-origin pour-over with bright citrus notes and a floral finish. Sourced from smallholder farms in the Sidamo region.',
     price: 5.50,
     imageUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=300&fit=crop',
-    isAvailable: true,
+    available: true,
     isFeatured: true,
     tags: ['BESTSELLER'],
     sortOrder: 1,
@@ -62,7 +62,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
     description: 'Rich and full-bodied with caramel sweetness and a hint of dark chocolate. A classic espresso blend.',
     price: 4.50,
     imageUrl: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400&h=300&fit=crop',
-    isAvailable: true,
+    available: true,
     isFeatured: false,
     tags: [],
     sortOrder: 2,
@@ -77,7 +77,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
     description: 'House-made lavender syrup swirled into velvety oat milk and double-shot espresso.',
     price: 6.50,
     imageUrl: 'https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?w=400&h=300&fit=crop',
-    isAvailable: true,
+    available: true,
     isFeatured: true,
     tags: ['VEGAN', 'POPULAR'],
     sortOrder: 3,
@@ -92,7 +92,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
     description: 'Buttery croissant filled with frangipane and topped with sliced almonds and powdered sugar.',
     price: 4.80,
     imageUrl: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400&h=300&fit=crop',
-    isAvailable: true,
+    available: true,
     isFeatured: false,
     tags: [],
     sortOrder: 1,
@@ -107,7 +107,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
     description: 'Classic French pastry with dark chocolate batons, baked to golden perfection.',
     price: 4.20,
     imageUrl: 'https://images.unsplash.com/photo-1530610476181-d83430b64dcd?w=400&h=300&fit=crop',
-    isAvailable: true,
+    available: true,
     isFeatured: true,
     tags: ['BESTSELLER'],
     sortOrder: 2,
@@ -122,7 +122,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
     description: 'Sourdough topped with smashed avocado, cherry tomatoes, microgreens, and a sprinkle of everything seasoning.',
     price: 12.50,
     imageUrl: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=400&h=300&fit=crop',
-    isAvailable: true,
+    available: true,
     isFeatured: false,
     tags: ['VEGAN'],
     sortOrder: 1,
@@ -137,7 +137,7 @@ const DEMO_MENU_ITEMS: MenuItem[] = [
     description: 'House-cured salmon on rye bread with cream cheese, capers, red onion, and fresh dill.',
     price: 15.00,
     imageUrl: 'https://images.unsplash.com/photo-1514326640560-7d063ef2b88f?w=400&h=300&fit=crop',
-    isAvailable: true,
+    available: true,
     isFeatured: true,
     tags: ['POPULAR'],
     sortOrder: 2,
@@ -221,8 +221,8 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
   }, [resolvedParams.slug]);
 
   const filteredItems = selectedCategory 
-    ? menuItems.filter(item => item.categoryId === selectedCategory && item.isAvailable)
-    : menuItems.filter(item => item.isAvailable);
+    ? menuItems.filter(item => item.categoryId === selectedCategory && item.available)
+    : menuItems.filter(item => item.available);
 
   const handleAddToCart = (item: MenuItem) => {
     addItem({

@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, User, Clock, Phone, Mail, Check, AlertCircle, Users, Edit, Plus } from 'lucide-react';
+import { X, User, Clock, Phone, Mail, Check, AlertCircle, Users, Edit, Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useStaffSession } from '@/contexts/StaffSessionContext';
+import { db } from '@/lib/firebase';
+import { collection, query, where, onSnapshot, Unsubscribe } from 'firebase/firestore';
 
 interface Waiter {
   id: string;
@@ -25,14 +28,6 @@ interface WaiterAssignmentProps {
   onClose: () => void;
 }
 
-const demoWaiters: Waiter[] = [
-  { id: 'w1', name: 'Marie Laurent', status: 'available', assignedTables: 3, shift: 'morning', phone: '+33 6 12 34 56 78' },
-  { id: 'w2', name: 'Pierre Dubois', status: 'busy', assignedTables: 5, shift: 'morning', phone: '+33 6 98 76 54 32' },
-  { id: 'w3', name: 'Sophie Martin', status: 'available', assignedTables: 2, shift: 'afternoon', phone: '+33 6 11 22 33 44' },
-  { id: 'w4', name: 'Jean Moreau', status: 'off-duty', assignedTables: 0, shift: 'evening' },
-  { id: 'w5', name: 'Claire Petit', status: 'available', assignedTables: 4, shift: 'afternoon', phone: '+33 6 55 66 77 88' },
-];
-
 export function WaiterAssignmentPanel({
   tableId,
   tableName,
@@ -41,13 +36,55 @@ export function WaiterAssignmentPanel({
   onUnassign,
   onClose,
 }: WaiterAssignmentProps) {
-  const [waiters] = useState<Waiter[]>(demoWaiters);
+  const [waiters, setWaiters] = useState<Waiter[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedWaiter, setSelectedWaiter] = useState<Waiter | null>(currentWaiter || null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAssigning, setIsAssigning] = useState(false);
   const [showAddWaiter, setShowAddWaiter] = useState(false);
   const [newWaiterName, setNewWaiterName] = useState('');
   const panelRef = useRef<HTMLDivElement>(null);
+  const { session } = useStaffSession();
+  const hasRestaurant = !!session?.restaurantId;
+
+  // Subscribe to staff collection for waiters
+  useEffect(() => {
+    if (!hasRestaurant) {
+      return;
+    }
+
+    const staffQuery = query(
+      collection(db, 'staff'),
+      where('restaurantId', '==', session!.restaurantId),
+      where('role', '==', 'waiter')
+    );
+
+    const unsubscribe: Unsubscribe = onSnapshot(
+      staffQuery,
+      (snapshot) => {
+        const waiterData: Waiter[] = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            name: data.name || 'Unknown',
+            phone: data.phone || '',
+            email: data.email || '',
+            status: data.active ? 'available' : 'off-duty',
+            assignedTables: data.tablesAssigned || 0,
+            shift: data.shift || 'morning',
+          };
+        });
+        setWaiters(waiterData);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Error fetching waiters:', error);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [hasRestaurant, session]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -147,50 +184,64 @@ export function WaiterAssignmentPanel({
 
         {/* Waiters List */}
         <div className="max-h-64 overflow-y-auto space-y-2 custom-scrollbar">
-          {filteredWaiters.map((waiter) => (
-            <button
-              key={waiter.id}
-              onClick={() => waiter.status !== 'off-duty' && setSelectedWaiter(waiter)}
-              disabled={waiter.status === 'off-duty'}
-              className={`w-full p-4 rounded-xl flex items-center justify-between transition-all duration-200 ${
-                waiter.status === 'off-duty'
-                  ? 'bg-surface-container-low opacity-50 cursor-not-allowed'
-                  : selectedWaiter?.id === waiter.id
-                    ? 'bg-secondary-fixed/30 border-2 border-secondary ring-2 ring-secondary-fixed/20'
-                    : 'bg-surface-container-low hover:bg-surface-container border border-outline-variant/30 hover:border-secondary'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-semibold">
-                    {waiter.name.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 ${getStatusColor(waiter.status)} rounded-full border-2 border-white`} />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-primary">{waiter.name}</p>
-                  <div className="flex items-center gap-2 text-xs text-on-surface-variant">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                      waiter.status === 'available' ? 'bg-green-100 text-green-700' :
-                      waiter.status === 'busy' ? 'bg-amber-100 text-amber-700' :
-                      'bg-gray-100 text-gray-500'
-                    }`}>
-                      {getStatusLabel(waiter.status)}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="w-3 h-3" />
-                      {waiter.assignedTables} tables
-                    </span>
-                  </div>
-                </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : filteredWaiters.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="w-12 h-12 bg-surface-container-high rounded-full flex items-center justify-center mx-auto mb-3">
+                <User className="w-6 h-6 text-on-surface-variant" />
               </div>
-              {selectedWaiter?.id === waiter.id && (
-                <div className="w-6 h-6 bg-secondary rounded-full flex items-center justify-center">
-                  <Check className="w-4 h-4 text-white" />
+              <h3 className="font-display text-title-sm text-primary mb-1">No waiters yet</h3>
+              <p className="text-on-surface-variant text-sm">Add staff with waiter role to assign them to tables</p>
+            </div>
+          ) : (
+            filteredWaiters.map((waiter) => (
+              <button
+                key={waiter.id}
+                onClick={() => waiter.status !== 'off-duty' && setSelectedWaiter(waiter)}
+                disabled={waiter.status === 'off-duty'}
+                className={`w-full p-4 rounded-xl flex items-center justify-between transition-all duration-200 ${
+                  waiter.status === 'off-duty'
+                    ? 'bg-surface-container-low opacity-50 cursor-not-allowed'
+                    : selectedWaiter?.id === waiter.id
+                      ? 'bg-secondary-fixed/30 border-2 border-secondary ring-2 ring-secondary-fixed/20'
+                      : 'bg-surface-container-low hover:bg-surface-container border border-outline-variant/30 hover:border-secondary'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-semibold">
+                      {waiter.name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                    <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 ${getStatusColor(waiter.status)} rounded-full border-2 border-white`} />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-semibold text-primary">{waiter.name}</p>
+                    <div className="flex items-center gap-2 text-xs text-on-surface-variant">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                        waiter.status === 'available' ? 'bg-green-100 text-green-700' :
+                        waiter.status === 'busy' ? 'bg-amber-100 text-amber-700' :
+                        'bg-gray-100 text-gray-500'
+                      }`}>
+                        {getStatusLabel(waiter.status)}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Users className="w-3 h-3" />
+                        {waiter.assignedTables} tables
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </button>
-          ))}
+                {selectedWaiter?.id === waiter.id && (
+                  <div className="w-6 h-6 bg-secondary rounded-full flex items-center justify-center">
+                    <Check className="w-4 h-4 text-white" />
+                  </div>
+                )}
+              </button>
+            ))
+          )}
         </div>
 
         {/* Add New Waiter */}

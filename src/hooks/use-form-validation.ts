@@ -29,7 +29,7 @@ export interface FormTouched {
   [fieldName: string]: boolean;
 }
 
-export function useFormValidation<T extends Record<string, unknown>>(
+export function useFormValidation<T extends object = Record<string, unknown>>(
   initialValues: T,
   config: FormConfig
 ) {
@@ -91,7 +91,7 @@ export function useFormValidation<T extends Record<string, unknown>>(
     let isValid = true;
 
     Object.keys(config).forEach((name) => {
-      const error = validateField(name, values[name]);
+      const error = validateField(name, (values as Record<string, unknown>)[name]);
       if (error) {
         newErrors[name] = error;
         isValid = false;
@@ -120,7 +120,7 @@ export function useFormValidation<T extends Record<string, unknown>>(
   const handleBlur = useCallback(
     (name: string) => {
       setTouched((prev) => ({ ...prev, [name]: true }));
-      const error = validateField(name, values[name]);
+      const error = validateField(name, (values as Record<string, unknown>)[name]);
       setErrors((prev) => ({ ...prev, [name]: error }));
     },
     [values, validateField]

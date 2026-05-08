@@ -294,6 +294,11 @@ export interface MenuItemDocument extends Omit<MenuItem, 'createdAt' | 'updatedA
   updatedAt: { seconds: number; nanoseconds: number };
 }
 
+export interface MenuCategoryDocument extends Omit<MenuCategory, 'createdAt' | 'updatedAt'> {
+  createdAt: { seconds: number; nanoseconds: number };
+  updatedAt: { seconds: number; nanoseconds: number };
+}
+
 export interface OrderDocument extends Omit<Order, 'createdAt' | 'updatedAt'> {
   createdAt: { seconds: number; nanoseconds: number };
   updatedAt: { seconds: number; nanoseconds: number };

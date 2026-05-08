@@ -2,7 +2,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper functions
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+    
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -39,12 +42,29 @@ service cloud.firestore {
     function sanitizeString(value) {
       return value.matches('^[-a-zA-Z0-9 ]*$');
     }
+    
+    // Check if restaurant is on free plan
+    function isFreePlan(restaurantId) {
+      let restaurant = get(/databases/$(database)/documents/restaurants/$(restaurantId)).data;
+      return restaurant.plan == 'free';
+    }
+    
+    // Count current menu items for a restaurant (used for free plan limit)
+    // Note: This is expensive - prefer using Cloud Functions for counting
+    function countMenuItems(restaurantId) {
+      return 0; // Placeholder - actual counting requires Cloud Functions
+    }
+    
+    // Free plan menu item limit (max 8 items)
+    function FREE_PLAN_ITEM_LIMIT() {
+      return 8;
+    }
 
     // ============================================
     // RESTAURANTS
     // ============================================
     match /restaurants/{restaurantId} {
-      // Public read for active restaurants (for menu display)
+      // 1. Public can read public restaurant/menu data (ACTIVE restaurants)
       allow read: if resource.data.status == 'ACTIVE' || isStaff(restaurantId) || isSuperAdmin();
       
       // Authenticated users can create restaurants (for free plan signup)
@@ -55,7 +75,8 @@ service cloud.firestore {
         && resource.data.ownerUid == request.auth.uid
         && resource.data.plan in ['free', 'pro'];
       
-      // Owner or superadmin can update
+      // 6. Owner can edit own restaurant
+      // 7. Owner cannot edit another restaurant (enforced by isOwner check)
       allow update: if isOwner(restaurantId) || isSuperAdmin();
       
       // Only superadmin can delete
@@ -63,16 +84,16 @@ service cloud.firestore {
     }
     
     // ============================================
-    // TABLES (top-level collection)
+    // TABLES
     // ============================================
     match /tables/{tableId} {
-      // Public read for active restaurant tables (for QR code access)
+      // 1. Public can read tables for ACTIVE restaurants
       allow read: if resource.data.restaurantId != null && 
         (get(/databases/$(database)/documents/restaurants/$(resource.data.restaurantId)).data.status == 'ACTIVE' ||
          isStaff(resource.data.restaurantId) || 
          isSuperAdmin());
       
-      // Staff can create tables for their restaurant
+      // 4. Public cannot edit tables - only staff/superadmin can create
       allow create: if isAuthenticated() && 
         (isStaff(resource.data.restaurantId) || isSuperAdmin())
         && isValidString(resource.data.name, 10);
@@ -85,37 +106,54 @@ service cloud.firestore {
     }
     
     // ============================================
-    // CATEGORIES (top-level collection)
+    // CATEGORIES
     // ============================================
     match /categories/{categoryId} {
-      // Public read for active restaurant categories
+      // 1. Public can read categories for ACTIVE restaurants
       allow read: if resource.data.restaurantId != null && 
         (get(/databases/$(database)/documents/restaurants/$(resource.data.restaurantId)).data.status == 'ACTIVE' ||
          isStaff(resource.data.restaurantId) || 
          isSuperAdmin());
       
-      // Staff can manage categories
+      // 3. Public cannot edit menu (categories are part of menu) - staff only
       allow create, update, delete: if isStaff(resource.data.restaurantId) || isSuperAdmin();
     }
     
     // ============================================
-    // MENU ITEMS (top-level collection)
+    // MENU ITEMS
     // ============================================
+    // Helper to check menu item limit for free plan
+    // Uses menuItemCount counter maintained by API routes
+    function isWithinMenuItemLimit(restaurantId) {
+      let restaurant = get(/databases/$(database)/documents/restaurants/$(restaurantId)).data;
+      // Pro/Business plans have unlimited items
+      if (restaurant.plan == 'pro' || restaurant.plan == 'business') {
+        return true;
+      }
+      // Free plan: check current count against maxMenuItems (default 8)
+      let maxItems = restaurant.maxMenuItems != null ? restaurant.maxMenuItems : 8;
+      let currentCount = restaurant.menuItemCount != null ? restaurant.menuItemCount : 0;
+      return currentCount < maxItems;
+    }
+    
+    // IMPORTANT: Collection name is 'menuItems' (camelCase) to match API
     match /menuItems/{itemId} {
-      // Public read for active restaurant menu items
+      // 1. Public can read menu items for ACTIVE restaurants
       allow read: if resource.data.restaurantId != null && 
         (get(/databases/$(database)/documents/restaurants/$(resource.data.restaurantId)).data.status == 'ACTIVE' ||
          isStaff(resource.data.restaurantId) || 
          isSuperAdmin());
       
-      // Staff can create/update with validation
-      allow create: if isStaff(resource.data.restaurantId) || isSuperAdmin()
+      // 3. Public cannot edit menu items - staff only with validation
+      // 11. Free plan item limit (max 8 items) - enforced via menuItemCount counter
+      // The counter is maintained by API routes on create/delete operations
+      allow create: if (isStaff(resource.data.restaurantId) || isSuperAdmin())
         && isValidString(resource.data.name, 100)
-        && isValidPrice(resource.data.price);
+        && isValidPrice(resource.data.price)
+        && isWithinMenuItemLimit(resource.data.restaurantId);
       
-      allow update: if isStaff(resource.data.restaurantId) || isSuperAdmin()
-        && (!request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'description', 'price', 'imageUrl', 'available', 'isFeatured', 'tags', 'allergens', 'sortOrder', 'categoryId', 'updatedAt']) 
-            || isSuperAdmin());
+      allow update: if (isStaff(resource.data.restaurantId) || isSuperAdmin())
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'description', 'price', 'imageUrl', 'available', 'isFeatured', 'tags', 'allergens', 'sortOrder', 'categoryId', 'updatedAt']);
       
       allow delete: if isStaff(resource.data.restaurantId) || isSuperAdmin();
     }
@@ -125,14 +163,13 @@ service cloud.firestore {
     // ============================================
     match /orders/{orderId} {
       // Staff can read orders for their restaurant
-      // Public can read their own order (for confirmation pages)
       allow read: if resource.data.restaurantId != null && (
-        isAuthenticated() && isStaff(resource.data.restaurantId) ||
+        (isAuthenticated() && isStaff(resource.data.restaurantId)) ||
         isSuperAdmin()
       );
       
-      // Public can create orders via API (with server-side validation)
-      // Note: This is for direct client writes, prefer using Cloud Functions/API
+      // 5. Public can create a valid order
+      // Note: Order creation from unauthenticated users (via QR codes)
       allow create: if isValidString(resource.data.restaurantId, 128)
         && resource.data.status == 'CREATED'
         && isValidPrice(resource.data.totalAmount)
@@ -140,8 +177,9 @@ service cloud.firestore {
         && resource.data.items.size() > 0
         && resource.data.items.size() <= 50;
       
-      // Status updates - staff only, with field restrictions
-      allow update: if isStaff(resource.data.restaurantId) || isSuperAdmin()
+      // 8. Staff can update order for own restaurant
+      // 9. Staff cannot update another restaurant order (enforced by isStaff check)
+      allow update: if (isStaff(resource.data.restaurantId) || isSuperAdmin())
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'acceptedAt', 'paidAt', 'closedAt', 'cancelledAt', 'rejectReason', 'cancelReason']);
       
       // Only superadmin can delete orders
@@ -149,7 +187,7 @@ service cloud.firestore {
     }
     
     // ============================================
-    // LOGS (Activity logs per restaurant)
+    // LOGS (Activity logs)
     // ============================================
     match /logs/{logId} {
       // Staff can read logs for their restaurant
@@ -164,12 +202,12 @@ service cloud.firestore {
     }
     
     // ============================================
-    // STAFF (per restaurant)
+    // STAFF
     // ============================================
     match /staff/{staffId} {
       // Staff can read other staff in their restaurant
       allow read: if isAuthenticated() && (
-        resource.data.restaurantId != null && isStaff(resource.data.restaurantId) ||
+        (resource.data.restaurantId != null && isStaff(resource.data.restaurantId)) ||
         isSuperAdmin()
       );
       
@@ -195,19 +233,17 @@ service cloud.firestore {
     }
     
     // ============================================
-    // BANNED USERS (Security)
+    // BANNED USERS (SuperAdmin data)
     // ============================================
     match /banned_users/{userId} {
-      // Only superadmin can manage banned users
-      allow read: if isSuperAdmin();
-      allow write: if isSuperAdmin();
+      // 10. Non-superadmin cannot access superadmin data
+      allow read, write: if isSuperAdmin();
     }
     
     // ============================================
     // MAGIC LINKS
     // ============================================
     match /magic_links/{tokenId} {
-      // Magic links are one-time use
       allow read: if isAuthenticated() && (
         resource.data.createdBy == request.auth.uid ||
         isSuperAdmin()
@@ -219,10 +255,10 @@ service cloud.firestore {
     }
     
     // ============================================
-    // SYSTEM LOGS (Audit Trail)
+    // SYSTEM LOGS (SuperAdmin data)
     // ============================================
     match /system_logs/{logId} {
-      // Only superadmin can read logs
+      // 10. Non-superadmin cannot access superadmin data
       allow read: if isSuperAdmin();
       
       // System can create logs
@@ -233,7 +269,7 @@ service cloud.firestore {
     }
     
     // ============================================
-    // RATE LIMITING (Security)
+    // RATE LIMITING
     // ============================================
     match /rate_limits/{rateLimitId} {
       allow read, write: if false; // Managed by Cloud Functions only

@@ -7,22 +7,41 @@ import {
   where, 
   getDocs,
   onSnapshot,
-  DocumentSnapshot
+  DocumentSnapshot,
+  QueryDocumentSnapshot
 } from 'firebase/firestore';
-import type { Restaurant, RestaurantDocument } from '@/types';
+import type { Restaurant } from '@/types';
 
 const COLLECTION = 'restaurants';
 
+type FirestoreTimestamp = { seconds: number; nanoseconds: number };
+
 // Convert Firestore document to Restaurant type
-function documentToRestaurant(doc: DocumentSnapshot): Restaurant | null {
-  if (!doc.exists()) return null;
+function documentToRestaurant(docSnap: DocumentSnapshot | QueryDocumentSnapshot): Restaurant | null {
+  if (!docSnap.exists()) return null;
   
-  const data = doc.data() as RestaurantDocument;
+  const data = docSnap.data()!;
   return {
-    id: doc.id,
-    ...data,
-    createdAt: data.createdAt?.seconds ? new Date(data.createdAt.seconds * 1000) : new Date(),
-    updatedAt: data.updatedAt?.seconds ? new Date(data.updatedAt.seconds * 1000) : new Date(),
+    slug: data.slug,
+    name: data.name,
+    status: data.status,
+    currency: data.currency,
+    cuisineType: data.cuisineType,
+    address: data.address,
+    logoUrl: data.logoUrl,
+    phone: data.phone,
+    email: data.email,
+    ownerUid: data.ownerUid,
+    plan: data.plan,
+    slugType: data.slugType,
+    watermarkEnabled: data.watermarkEnabled,
+    maxMenuItems: data.maxMenuItems,
+    branding: data.branding,
+    openingHours: data.openingHours,
+    staffUids: data.staffUids,
+    id: docSnap.id,
+    createdAt: data.createdAt ? new Date((data.createdAt as FirestoreTimestamp).seconds * 1000) : new Date(),
+    updatedAt: data.updatedAt ? new Date((data.updatedAt as FirestoreTimestamp).seconds * 1000) : new Date(),
   };
 }
 

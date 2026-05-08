@@ -10,21 +10,39 @@ import {
   orderBy,
   limit,
   DocumentSnapshot,
+  QueryDocumentSnapshot,
   serverTimestamp
 } from 'firebase/firestore';
-import type { ActivityLog, ActivityLogDocument, LogAction, StaffRole } from '@/types';
+import type { ActivityLog, LogAction, StaffRole } from '@/types';
 
 const COLLECTION = 'logs';
 
+type FirestoreTimestamp = { seconds: number; nanoseconds: number };
+
 // Convert Firestore document to ActivityLog type
-function documentToActivityLog(docSnap: DocumentSnapshot): ActivityLog | null {
+function documentToActivityLog(docSnap: DocumentSnapshot | QueryDocumentSnapshot): ActivityLog | null {
   if (!docSnap.exists()) return null;
   
-  const data = docSnap.data() as ActivityLogDocument;
+  const data = docSnap.data()!;
   return {
+    restaurantId: data.restaurantId,
+    actorId: data.actorId,
+    actorName: data.actorName,
+    actorRole: data.actorRole,
+    action: data.action,
+    targetType: data.targetType,
+    targetId: data.targetId,
+    before: data.before,
+    after: data.after,
+    reason: data.reason,
+    message: data.message,
+    metadata: data.metadata,
+    userId: data.userId,
+    userName: data.userName,
+    tableId: data.tableId,
+    orderId: data.orderId,
     id: docSnap.id,
-    ...data,
-    createdAt: new Date(data.createdAt.seconds * 1000),
+    createdAt: new Date((data.createdAt as FirestoreTimestamp).seconds * 1000),
   };
 }
 

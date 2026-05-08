@@ -17,58 +17,13 @@ interface Notification {
   };
 }
 
-const demoNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'order',
-    title: 'New Order Received',
-    message: 'Table 03 just placed an order for 3 items totaling $42.50',
-    time: new Date(Date.now() - 2 * 60000),
-    read: false,
-    action: { label: 'View Order', href: '/dashboard' },
-  },
-  {
-    id: '2',
-    type: 'system',
-    title: 'Table 08 marked as paid',
-    message: 'Order #4A2B has been completed successfully',
-    time: new Date(Date.now() - 15 * 60000),
-    read: false,
-  },
-  {
-    id: '3',
-    type: 'warning',
-    title: 'Low Stock Alert',
-    message: 'Almond Croissant is running low (3 remaining)',
-    time: new Date(Date.now() - 30 * 60000),
-    read: true,
-    action: { label: 'Update Stock', href: '/dashboard/menu' },
-  },
-  {
-    id: '4',
-    type: 'info',
-    title: 'New staff member added',
-    message: 'Sarah Chen has been added as a Waiter',
-    time: new Date(Date.now() - 60 * 60000),
-    read: true,
-  },
-  {
-    id: '5',
-    type: 'order',
-    title: 'Order cancelled',
-    message: 'Table 12 cancelled their order due to wait time',
-    time: new Date(Date.now() - 90 * 60000),
-    read: true,
-  },
-];
-
 interface NotificationCenterProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
 export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps) {
-  const [notifications, setNotifications] = useState<Notification[]>(demoNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -151,8 +106,8 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-6">
               <Bell className="w-16 h-16 text-outline mb-4" />
-              <h3 className="font-display text-title-sm text-primary mb-2">No notifications</h3>
-              <p className="text-on-surface-variant">You&apos;re all caught up!</p>
+              <h3 className="font-display text-title-sm text-primary mb-2">No notifications yet</h3>
+              <p className="text-on-surface-variant">When you receive notifications, they&apos;ll appear here</p>
             </div>
           ) : (
             <div className="divide-y divide-outline-variant/50">

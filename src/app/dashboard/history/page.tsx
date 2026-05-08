@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { 
   Clock, 
@@ -19,146 +19,69 @@ import {
   ArrowUpRight,
   X,
   Printer,
-  Receipt
+  Receipt,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DashboardLayout } from '@/components/layout';
 import { TopAppBar } from '@/components/layout';
 import { useToast } from '@/hooks/use-toast';
-import type { Order, OrderState } from '@/types';
+import { useStaffSession } from '@/contexts/StaffSessionContext';
+import { orderService } from '@/services/orderService';
+import type { Order, OrderStatus } from '@/types';
 
-// Demo historical orders data
-const demoHistoricalOrders: Order[] = [
-  {
-    id: 'h1',
-    restaurantId: 'demo',
-    tableId: 't1',
-    tableName: 'Table 01',
-    items: [
-      { itemId: '1', name: 'Signature Latte', quantity: 2, unitPrice: 5.50 },
-      { itemId: '2', name: 'Almond Croissant', quantity: 1, unitPrice: 4.50 },
-    ],
-    totalAmount: 15.50,
-    state: 'COMPLETED',
-    createdAt: new Date(Date.now() - 2 * 3600000),
-    updatedAt: new Date(Date.now() - 2 * 3600000),
-  },
-  {
-    id: 'h2',
-    restaurantId: 'demo',
-    tableId: 't2',
-    tableName: 'Table 03',
-    items: [
-      { itemId: '3', name: 'Cappuccino', quantity: 2, unitPrice: 4.50 },
-      { itemId: '4', name: 'Avocado Toast', quantity: 1, unitPrice: 12.00 },
-      { itemId: '5', name: 'Fresh Juice', quantity: 2, unitPrice: 6.00 },
-    ],
-    totalAmount: 33.00,
-    state: 'COMPLETED',
-    createdAt: new Date(Date.now() - 5 * 3600000),
-    updatedAt: new Date(Date.now() - 5 * 3600000),
-  },
-  {
-    id: 'h3',
-    restaurantId: 'demo',
-    tableId: 't3',
-    tableName: 'Table 12',
-    items: [
-      { itemId: '6', name: 'Truffle Tagliatelle', quantity: 1, unitPrice: 28.00 },
-      { itemId: '7', name: 'Burrata Salad', quantity: 1, unitPrice: 14.00 },
-    ],
-    totalAmount: 42.00,
-    state: 'CANCELLED',
-    createdAt: new Date(Date.now() - 18 * 3600000),
-    updatedAt: new Date(Date.now() - 18 * 3600000),
-  },
-  {
-    id: 'h4',
-    restaurantId: 'demo',
-    tableId: 't4',
-    tableName: 'Table 08',
-    items: [
-      { itemId: '8', name: 'Wagyu Burger', quantity: 2, unitPrice: 32.00 },
-      { itemId: '9', name: 'Wine Selection', quantity: 1, unitPrice: 48.00 },
-    ],
-    totalAmount: 112.00,
-    state: 'COMPLETED',
-    createdAt: new Date(Date.now() - 24 * 3600000),
-    updatedAt: new Date(Date.now() - 24 * 3600000),
-  },
-  {
-    id: 'h5',
-    restaurantId: 'demo',
-    tableId: 't5',
-    tableName: 'Table 02',
-    items: [
-      { itemId: '1', name: 'Signature Latte', quantity: 3, unitPrice: 5.50 },
-    ],
-    totalAmount: 16.50,
-    state: 'COMPLETED',
-    createdAt: new Date(Date.now() - 28 * 3600000),
-    updatedAt: new Date(Date.now() - 28 * 3600000),
-  },
-  {
-    id: 'h6',
-    restaurantId: 'demo',
-    tableId: 't1',
-    tableName: 'Table 01',
-    items: [
-      { itemId: '10', name: 'Breakfast Platter', quantity: 2, unitPrice: 18.00 },
-      { itemId: '11', name: 'Fresh Orange Juice', quantity: 2, unitPrice: 5.50 },
-    ],
-    totalAmount: 47.00,
-    state: 'COMPLETED',
-    createdAt: new Date(Date.now() - 48 * 3600000),
-    updatedAt: new Date(Date.now() - 48 * 3600000),
-  },
-  {
-    id: 'h7',
-    restaurantId: 'demo',
-    tableId: 't6',
-    tableName: 'Table 05',
-    items: [
-      { itemId: '12', name: 'Caesar Salad', quantity: 1, unitPrice: 14.00 },
-      { itemId: '13', name: 'Grilled Salmon', quantity: 1, unitPrice: 28.00 },
-    ],
-    totalAmount: 42.00,
-    state: 'COMPLETED',
-    createdAt: new Date(Date.now() - 72 * 3600000),
-    updatedAt: new Date(Date.now() - 72 * 3600000),
-  },
-  {
-    id: 'h8',
-    restaurantId: 'demo',
-    tableId: 't7',
-    tableName: 'B-01',
-    items: [
-      { itemId: '14', name: 'Espresso', quantity: 2, unitPrice: 3.50 },
-    ],
-    totalAmount: 7.00,
-    state: 'CANCELLED',
-    createdAt: new Date(Date.now() - 96 * 3600000),
-    updatedAt: new Date(Date.now() - 96 * 3600000),
-  },
-];
-
-type FilterStatus = 'all' | 'COMPLETED' | 'CANCELLED';
+type FilterStatus = 'all' | 'CLOSED' | 'CANCELLED';
 type DateFilter = 'today' | 'week' | 'month' | 'all';
 
 export default function OrderHistoryPage() {
-  const [orders] = useState<Order[]>(demoHistoricalOrders);
+  const { session } = useStaffSession();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const { toast } = useToast();
 
+  // Check if session is ready
+  const isSessionReady = !!session?.restaurantId;
+
+  // Fetch orders from Firebase
+  useEffect(() => {
+    if (!isSessionReady) {
+      return;
+    }
+
+    const unsubscribe = orderService.subscribeToOrders(
+      session.restaurantId,
+      (fetchedOrders) => {
+        // Filter to only show historical orders (CLOSED or CANCELLED)
+        const historicalOrders = fetchedOrders.filter(
+          order => order.status === 'CLOSED' || order.status === 'CANCELLED'
+        );
+        setOrders(historicalOrders);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error('Error fetching orders:', error);
+        setIsLoading(false);
+        toast({
+          title: 'Error',
+          description: 'Failed to load order history.',
+          variant: 'destructive',
+        });
+      }
+    );
+
+    return () => unsubscribe();
+  }, [isSessionReady, session?.restaurantId, toast]);
+
   // Filter orders
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
       // Status filter
-      if (statusFilter !== 'all' && order.state !== statusFilter) return false;
+      if (statusFilter !== 'all' && order.status !== statusFilter) return false;
       
       // Date filter
       const orderDate = new Date(order.createdAt);
@@ -191,8 +114,8 @@ export default function OrderHistoryPage() {
 
   // Calculate stats
   const stats = useMemo(() => {
-    const completed = filteredOrders.filter(o => o.state === 'COMPLETED');
-    const cancelled = filteredOrders.filter(o => o.state === 'CANCELLED');
+    const completed = filteredOrders.filter(o => o.status === 'CLOSED');
+    const cancelled = filteredOrders.filter(o => o.status === 'CANCELLED');
     
     return {
       totalRevenue: completed.reduce((sum, o) => sum + o.totalAmount, 0),
@@ -234,9 +157,9 @@ export default function OrderHistoryPage() {
     });
   };
 
-  const getStateBadge = (state: OrderState) => {
-    switch (state) {
-      case 'COMPLETED':
+  const getStatusBadge = (status: OrderStatus) => {
+    switch (status) {
+      case 'CLOSED':
         return (
           <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
             <CheckCircle className="w-3 h-3" />
@@ -269,13 +192,58 @@ export default function OrderHistoryPage() {
     });
   };
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <TopAppBar
+          title="Order History"
+          subtitle="Loading..."
+          showSearch={false}
+          user={{ name: session?.staffName || 'Manager', role: session?.role || 'manager' }}
+        />
+        <div className="p-6 md:p-10 max-w-7xl w-full mx-auto flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-8 h-8 animate-spin text-secondary" />
+            <p className="text-on-surface-variant">Loading order history...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show empty state if no session
+  if (!session?.restaurantId) {
+    return (
+      <DashboardLayout>
+        <TopAppBar
+          title="Order History"
+          showSearch={false}
+          user={{ name: 'Manager', role: 'manager' }}
+        />
+        <div className="p-6 md:p-10 max-w-7xl w-full mx-auto">
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-16 h-16 bg-surface-container-high rounded-full flex items-center justify-center mb-4">
+              <Receipt className="w-8 h-8 text-on-surface-variant" />
+            </div>
+            <h3 className="font-display text-title-sm text-primary mb-2">No restaurant selected</h3>
+            <p className="text-on-surface-variant mb-4">Please log in to view order history</p>
+            <Link href="/login">
+              <Button className="rounded-full">Go to Login</Button>
+            </Link>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <TopAppBar
         title="Order History"
         subtitle={`${filteredOrders.length} orders`}
         showSearch={false}
-        user={{ name: 'Manager', role: 'manager' }}
+        user={{ name: session.staffName, role: session.role }}
       />
 
       <div className="p-6 md:p-10 max-w-7xl w-full mx-auto space-y-8 animate-fade-in">
@@ -357,7 +325,7 @@ export default function OrderHistoryPage() {
               
               {/* Status Filter */}
               <div className="flex gap-2">
-                {(['all', 'COMPLETED', 'CANCELLED'] as FilterStatus[]).map((status) => (
+                {(['all', 'CLOSED', 'CANCELLED'] as FilterStatus[]).map((status) => (
                   <button
                     key={status}
                     onClick={() => setStatusFilter(status)}
@@ -367,7 +335,7 @@ export default function OrderHistoryPage() {
                         : 'bg-surface-container-high text-on-surface hover:bg-surface-container-highest'
                     }`}
                   >
-                    {status === 'all' ? 'All' : status === 'COMPLETED' ? 'Completed' : 'Cancelled'}
+                    {status === 'all' ? 'All' : status === 'CLOSED' ? 'Completed' : 'Cancelled'}
                   </button>
                 ))}
               </div>
@@ -401,76 +369,89 @@ export default function OrderHistoryPage() {
 
         {/* Orders Table */}
         <section className="bg-white rounded-2xl shadow-card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-surface-container-low border-b border-outline-variant">
-                <tr>
-                  <th className="text-left px-6 py-4 font-label-caps text-xs uppercase tracking-wider text-on-surface-variant">Order ID</th>
-                  <th className="text-left px-6 py-4 font-label-caps text-xs uppercase tracking-wider text-on-surface-variant">Table</th>
-                  <th className="text-left px-6 py-4 font-label-caps text-xs uppercase tracking-wider text-on-surface-variant">Items</th>
-                  <th className="text-left px-6 py-4 font-label-caps text-xs uppercase tracking-wider text-on-surface-variant">Amount</th>
-                  <th className="text-left px-6 py-4 font-label-caps text-xs uppercase tracking-wider text-on-surface-variant">Status</th>
-                  <th className="text-left px-6 py-4 font-label-caps text-xs uppercase tracking-wider text-on-surface-variant">Date</th>
-                  <th className="text-right px-6 py-4 font-label-caps text-xs uppercase tracking-wider text-on-surface-variant">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant/30">
-                {filteredOrders.map((order) => (
-                  <tr 
-                    key={order.id} 
-                    className="hover:bg-surface-container-low/50 transition-colors cursor-pointer"
-                    onClick={() => setSelectedOrder(order)}
-                  >
-                    <td className="px-6 py-4">
-                      <span className="font-mono text-sm text-primary">#{order.id.slice(-6).toUpperCase()}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="font-medium text-primary">{order.tableName}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-on-surface-variant">{order.items.length} items</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="font-display font-bold text-primary">${order.totalAmount.toFixed(2)}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      {getStateBadge(order.state)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-on-surface-variant text-sm">{formatDate(order.createdAt)}</span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePrint(order);
-                          }}
-                          className="p-2 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors"
-                          title="Print Receipt"
-                        >
-                          <Printer className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedOrder(order);
-                          }}
-                          className="p-2 rounded-lg hover:bg-secondary-fixed text-on-surface-variant hover:text-on-secondary-fixed-variant transition-colors"
-                          title="View Details"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+          {orders.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-16 h-16 bg-surface-container-high rounded-full flex items-center justify-center mb-4">
+                <Receipt className="w-8 h-8 text-on-surface-variant" />
+              </div>
+              <h3 className="font-display text-title-sm text-primary mb-2">No order history yet</h3>
+              <p className="text-on-surface-variant mb-4">Completed and cancelled orders will appear here</p>
+              <Link href="/dashboard">
+                <Button className="rounded-full">Go to Dashboard</Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-surface-container-low border-b border-outline-variant">
+                  <tr>
+                    <th className="text-left px-6 py-4 font-label-caps text-xs uppercase tracking-wider text-on-surface-variant">Order ID</th>
+                    <th className="text-left px-6 py-4 font-label-caps text-xs uppercase tracking-wider text-on-surface-variant">Table</th>
+                    <th className="text-left px-6 py-4 font-label-caps text-xs uppercase tracking-wider text-on-surface-variant">Items</th>
+                    <th className="text-left px-6 py-4 font-label-caps text-xs uppercase tracking-wider text-on-surface-variant">Amount</th>
+                    <th className="text-left px-6 py-4 font-label-caps text-xs uppercase tracking-wider text-on-surface-variant">Status</th>
+                    <th className="text-left px-6 py-4 font-label-caps text-xs uppercase tracking-wider text-on-surface-variant">Date</th>
+                    <th className="text-right px-6 py-4 font-label-caps text-xs uppercase tracking-wider text-on-surface-variant">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/30">
+                  {filteredOrders.map((order) => (
+                    <tr 
+                      key={order.id} 
+                      className="hover:bg-surface-container-low/50 transition-colors cursor-pointer"
+                      onClick={() => setSelectedOrder(order)}
+                    >
+                      <td className="px-6 py-4">
+                        <span className="font-mono text-sm text-primary">#{order.id.slice(-6).toUpperCase()}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="font-medium text-primary">{order.tableName}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-on-surface-variant">{order.items.length} items</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="font-display font-bold text-primary">${order.totalAmount.toFixed(2)}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {getStatusBadge(order.status)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-on-surface-variant text-sm">{formatDate(order.createdAt)}</span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePrint(order);
+                            }}
+                            className="p-2 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors"
+                            title="Print Receipt"
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedOrder(order);
+                            }}
+                            className="p-2 rounded-lg hover:bg-secondary-fixed text-on-surface-variant hover:text-on-secondary-fixed-variant transition-colors"
+                            title="View Details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
           
-          {/* Empty State */}
-          {filteredOrders.length === 0 && (
+          {/* Empty State for filtered results */}
+          {orders.length > 0 && filteredOrders.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="w-16 h-16 bg-surface-container-high rounded-full flex items-center justify-center mb-4">
                 <Receipt className="w-8 h-8 text-on-surface-variant" />
@@ -505,7 +486,7 @@ export default function OrderHistoryPage() {
               {/* Header */}
               <div className="p-6 border-b border-outline-variant relative">
                 <div className={`absolute top-0 left-0 w-full h-1 ${
-                  selectedOrder.state === 'COMPLETED' ? 'bg-green-500' : 'bg-error'
+                  selectedOrder.status === 'CLOSED' ? 'bg-green-500' : 'bg-error'
                 }`} />
                 <div className="flex justify-between items-start">
                   <div>

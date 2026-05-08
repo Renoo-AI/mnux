@@ -7,37 +7,54 @@ import {
   onSnapshot,
   orderBy,
   DocumentSnapshot,
+  QueryDocumentSnapshot,
   doc,
   getDoc
 } from 'firebase/firestore';
-import type { MenuItem, MenuCategory, MenuItemDocument, MenuCategoryDocument } from '@/types';
+import type { MenuItem, MenuCategory } from '@/types';
 
 const MENU_ITEMS_COLLECTION = 'menuItems';
 const CATEGORIES_COLLECTION = 'categories';
 
+type FirestoreTimestamp = { seconds: number; nanoseconds: number };
+
 // Convert Firestore document to MenuItem type
-function documentToMenuItem(doc: DocumentSnapshot): MenuItem | null {
-  if (!doc.exists()) return null;
+function documentToMenuItem(docSnap: DocumentSnapshot | QueryDocumentSnapshot): MenuItem | null {
+  if (!docSnap.exists()) return null;
   
-  const data = doc.data() as MenuItemDocument;
+  const data = docSnap.data()!;
   return {
-    id: doc.id,
-    ...data,
-    createdAt: data.createdAt?.seconds ? new Date(data.createdAt.seconds * 1000) : new Date(),
-    updatedAt: data.updatedAt?.seconds ? new Date(data.updatedAt.seconds * 1000) : new Date(),
+    restaurantId: data.restaurantId,
+    categoryId: data.categoryId,
+    name: data.name,
+    description: data.description,
+    price: data.price,
+    imageUrl: data.imageUrl,
+    available: data.available,
+    isFeatured: data.isFeatured,
+    tags: data.tags,
+    allergens: data.allergens,
+    sortOrder: data.sortOrder,
+    id: docSnap.id,
+    createdAt: data.createdAt ? new Date((data.createdAt as FirestoreTimestamp).seconds * 1000) : new Date(),
+    updatedAt: data.updatedAt ? new Date((data.updatedAt as FirestoreTimestamp).seconds * 1000) : new Date(),
   };
 }
 
 // Convert Firestore document to MenuCategory type
-function documentToCategory(doc: DocumentSnapshot): MenuCategory | null {
-  if (!doc.exists()) return null;
+function documentToCategory(docSnap: DocumentSnapshot | QueryDocumentSnapshot): MenuCategory | null {
+  if (!docSnap.exists()) return null;
   
-  const data = doc.data() as MenuCategoryDocument;
+  const data = docSnap.data()!;
   return {
-    id: doc.id,
-    ...data,
-    createdAt: data.createdAt?.seconds ? new Date(data.createdAt.seconds * 1000) : new Date(),
-    updatedAt: data.updatedAt?.seconds ? new Date(data.updatedAt.seconds * 1000) : new Date(),
+    restaurantId: data.restaurantId,
+    name: data.name,
+    slug: data.slug,
+    sortOrder: data.sortOrder,
+    isActive: data.isActive,
+    id: docSnap.id,
+    createdAt: data.createdAt ? new Date((data.createdAt as FirestoreTimestamp).seconds * 1000) : new Date(),
+    updatedAt: data.updatedAt ? new Date((data.updatedAt as FirestoreTimestamp).seconds * 1000) : new Date(),
   };
 }
 

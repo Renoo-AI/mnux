@@ -7,25 +7,34 @@ import {
   onSnapshot,
   orderBy,
   DocumentSnapshot,
+  QueryDocumentSnapshot,
   doc,
   getDoc,
   updateDoc,
   Timestamp
 } from 'firebase/firestore';
-import type { Table, TableDocument, TableStatus } from '@/types';
+import type { Table, TableStatus } from '@/types';
 
 const COLLECTION = 'tables';
 
+type FirestoreTimestamp = { seconds: number; nanoseconds: number };
+
 // Convert Firestore document to Table type
-function documentToTable(doc: DocumentSnapshot): Table | null {
-  if (!doc.exists()) return null;
+function documentToTable(docSnap: DocumentSnapshot | QueryDocumentSnapshot): Table | null {
+  if (!docSnap.exists()) return null;
   
-  const data = doc.data() as TableDocument;
+  const data = docSnap.data()!;
   return {
-    id: doc.id,
-    ...data,
-    createdAt: data.createdAt?.seconds ? new Date(data.createdAt.seconds * 1000) : new Date(),
-    updatedAt: data.updatedAt?.seconds ? new Date(data.updatedAt.seconds * 1000) : new Date(),
+    restaurantId: data.restaurantId,
+    name: data.name,
+    label: data.label,
+    seats: data.seats,
+    status: data.status,
+    qrCodeUrl: data.qrCodeUrl,
+    activeOrderId: data.activeOrderId,
+    id: docSnap.id,
+    createdAt: data.createdAt ? new Date((data.createdAt as FirestoreTimestamp).seconds * 1000) : new Date(),
+    updatedAt: data.updatedAt ? new Date((data.updatedAt as FirestoreTimestamp).seconds * 1000) : new Date(),
   };
 }
 

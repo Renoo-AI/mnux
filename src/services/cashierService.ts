@@ -10,16 +10,15 @@ import {
   where,
   orderBy,
   getDocs,
-  onSnapshot
+  onSnapshot,
+  DocumentSnapshot,
+  QueryDocumentSnapshot
 } from 'firebase/firestore';
 import type { 
   Order, 
-  OrderDocument, 
   OrderStatus,
   Table,
-  TableDocument,
   TableStatus,
-  ActivityLog,
   AcceptOrderParams,
   RejectOrderParams,
   MarkPaidParams,
@@ -34,31 +33,49 @@ const LOGS_COLLECTION = 'logs';
 
 // ============ Helper Functions ============
 
-function documentToOrder(docSnap: FirebaseFirestore.DocumentSnapshot): Order | null {
+type FirestoreTimestamp = { seconds: number; nanoseconds: number };
+
+function documentToOrder(docSnap: DocumentSnapshot | QueryDocumentSnapshot): Order | null {
   if (!docSnap.exists()) return null;
   
-  const data = docSnap.data() as OrderDocument;
+  const data = docSnap.data()!;
   return {
+    restaurantId: data.restaurantId,
+    tableId: data.tableId,
+    tableName: data.tableName,
+    items: data.items,
+    subtotal: data.subtotal,
+    totalAmount: data.totalAmount,
+    status: data.status,
+    notes: data.notes,
+    customerNote: data.customerNote,
+    rejectReason: data.rejectReason,
+    cancelReason: data.cancelReason,
     id: docSnap.id,
-    ...data,
-    createdAt: new Date(data.createdAt.seconds * 1000),
-    updatedAt: new Date(data.updatedAt.seconds * 1000),
-    acceptedAt: data.acceptedAt ? new Date(data.acceptedAt.seconds * 1000) : undefined,
-    paidAt: data.paidAt ? new Date(data.paidAt.seconds * 1000) : undefined,
-    closedAt: data.closedAt ? new Date(data.closedAt.seconds * 1000) : undefined,
-    cancelledAt: data.cancelledAt ? new Date(data.cancelledAt.seconds * 1000) : undefined,
+    createdAt: new Date((data.createdAt as FirestoreTimestamp).seconds * 1000),
+    updatedAt: new Date((data.updatedAt as FirestoreTimestamp).seconds * 1000),
+    acceptedAt: data.acceptedAt ? new Date((data.acceptedAt as FirestoreTimestamp).seconds * 1000) : undefined,
+    paidAt: data.paidAt ? new Date((data.paidAt as FirestoreTimestamp).seconds * 1000) : undefined,
+    closedAt: data.closedAt ? new Date((data.closedAt as FirestoreTimestamp).seconds * 1000) : undefined,
+    cancelledAt: data.cancelledAt ? new Date((data.cancelledAt as FirestoreTimestamp).seconds * 1000) : undefined,
   };
 }
 
-function documentToTable(docSnap: FirebaseFirestore.DocumentSnapshot): Table | null {
+function documentToTable(docSnap: DocumentSnapshot | QueryDocumentSnapshot): Table | null {
   if (!docSnap.exists()) return null;
   
-  const data = docSnap.data() as TableDocument;
+  const data = docSnap.data()!;
   return {
+    restaurantId: data.restaurantId,
+    name: data.name,
+    label: data.label,
+    seats: data.seats,
+    status: data.status,
+    qrCodeUrl: data.qrCodeUrl,
+    activeOrderId: data.activeOrderId,
     id: docSnap.id,
-    ...data,
-    createdAt: new Date(data.createdAt.seconds * 1000),
-    updatedAt: new Date(data.updatedAt.seconds * 1000),
+    createdAt: new Date((data.createdAt as FirestoreTimestamp).seconds * 1000),
+    updatedAt: new Date((data.updatedAt as FirestoreTimestamp).seconds * 1000),
   };
 }
 

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { Plus, Camera, Edit, QrCode, MoreVertical, AlertCircle, Check, Loader2, Sun, Moon, Monitor, Palette } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import { Plus, Camera, Edit, QrCode, MoreVertical, AlertCircle, Check, Loader2, Sun, Moon, Monitor, Palette, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DashboardLayout } from '@/components/layout';
@@ -9,12 +9,9 @@ import { TopAppBar } from '@/components/layout';
 import { useFormValidation, validationPatterns } from '@/hooks/use-form-validation';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
-
-// Demo staff data
-const demoStaff = [
-  { id: '1', name: 'Elena Aris', email: 'elena.a@menuxpro.com', role: 'MANAGER', status: 'ACTIVE' },
-  { id: '2', name: 'Marcus Wade', email: 'marcus.w@menuxpro.com', role: 'WAITER', status: 'ACTIVE' },
-];
+import { useStaffSession } from '@/contexts/StaffSessionContext';
+import { db } from '@/lib/firebase';
+import { collection, query, where, onSnapshot, Unsubscribe } from 'firebase/firestore';
 
 interface SettingsFormValues {
   restaurantName: string;
@@ -58,11 +55,51 @@ const formConfig = {
 export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [staff, setStaff] = useState<Array<{ id: string; name: string; email: string; role: string; status: string }>>([]);
+  const [loadingStaff, setLoadingStaff] = useState(true);
   const { toast } = useToast();
   const { theme, setTheme, resolvedTheme } = useTheme();
+  const { session } = useStaffSession();
   
   // Use resolvedTheme which handles hydration automatically
   const currentTheme = resolvedTheme || 'light';
+
+  // Fetch staff data
+  useEffect(() => {
+    const restaurantId = session?.restaurantId;
+    if (!restaurantId) {
+      return;
+    }
+
+    const staffQuery = query(
+      collection(db, 'staff'),
+      where('restaurantId', '==', restaurantId)
+    );
+
+    const unsubscribe: Unsubscribe = onSnapshot(
+      staffQuery,
+      (snapshot) => {
+        const staffData = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            name: data.name || 'Unknown',
+            email: data.email || '',
+            role: (data.role || 'waiter').toUpperCase(),
+            status: data.active ? 'ACTIVE' : 'INACTIVE',
+          };
+        });
+        setStaff(staffData);
+        setLoadingStaff(false);
+      },
+      (error) => {
+        console.error('Error fetching staff:', error);
+        setLoadingStaff(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [session?.restaurantId]);
   
   const {
     values,
@@ -402,54 +439,70 @@ export default function SettingsPage() {
           </div>
           
           <div className="lg:col-span-2 bg-white rounded-xl shadow-card overflow-hidden">
-            <table className="w-full text-left">
-              <thead className="bg-surface-container-low border-b border-outline-variant">
-                <tr>
-                  <th className="p-4 font-label-caps text-label-caps text-on-surface-variant">STAFF MEMBER</th>
-                  <th className="p-4 font-label-caps text-label-caps text-on-surface-variant">ROLE</th>
-                  <th className="p-4 font-label-caps text-label-caps text-on-surface-variant">STATUS</th>
-                  <th className="p-4"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant">
-                {demoStaff.map((staff) => (
-                  <tr key={staff.id} className="hover:bg-surface-container-lowest transition-colors">
-                    <td className="p-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-secondary-fixed flex items-center justify-center font-bold text-on-secondary-fixed">
-                          {staff.name.split(' ').map(n => n[0]).join('')}
-                        </div>
-                        <div>
-                          <p className="font-body font-bold">{staff.name}</p>
-                          <p className="text-[12px] text-on-surface-variant">{staff.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <span className={`font-label-caps text-[10px] px-3 py-1 rounded-full ${
-                        staff.role === 'MANAGER' ? 'bg-tertiary-fixed text-on-tertiary-fixed' : 'bg-surface-container-highest text-on-surface-variant'
-                      }`}>
-                        {staff.role}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                        <span className="font-label-caps text-[10px]">{staff.status}</span>
-                      </div>
-                    </td>
-                    <td className="p-4 text-right">
-                      <button className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-full transition-all">
-                        <MoreVertical className="w-5 h-5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="p-4 text-center bg-surface-container-low">
-              <button className="text-secondary font-label-caps text-label-caps hover:underline hover:text-primary transition-colors">VIEW ALL STAFF</button>
-            </div>
+            {loadingStaff ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : staff.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-12 h-12 bg-surface-container-high rounded-full flex items-center justify-center mx-auto mb-3">
+                  <User className="w-6 h-6 text-on-surface-variant" />
+                </div>
+                <h3 className="font-display text-title-sm text-primary mb-1">No staff members yet</h3>
+                <p className="text-on-surface-variant">Add staff from the Staff Management page</p>
+              </div>
+            ) : (
+              <>
+                <table className="w-full text-left">
+                  <thead className="bg-surface-container-low border-b border-outline-variant">
+                    <tr>
+                      <th className="p-4 font-label-caps text-label-caps text-on-surface-variant">STAFF MEMBER</th>
+                      <th className="p-4 font-label-caps text-label-caps text-on-surface-variant">ROLE</th>
+                      <th className="p-4 font-label-caps text-label-caps text-on-surface-variant">STATUS</th>
+                      <th className="p-4"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-outline-variant">
+                    {staff.map((staffMember) => (
+                      <tr key={staffMember.id} className="hover:bg-surface-container-lowest transition-colors">
+                        <td className="p-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-secondary-fixed flex items-center justify-center font-bold text-on-secondary-fixed">
+                              {staffMember.name.split(' ').map(n => n[0]).join('')}
+                            </div>
+                            <div>
+                              <p className="font-body font-bold">{staffMember.name}</p>
+                              <p className="text-[12px] text-on-surface-variant">{staffMember.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className={`font-label-caps text-[10px] px-3 py-1 rounded-full ${
+                            staffMember.role === 'MANAGER' ? 'bg-tertiary-fixed text-on-tertiary-fixed' : 'bg-surface-container-highest text-on-surface-variant'
+                          }`}>
+                            {staffMember.role}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-1">
+                            <div className={`w-2 h-2 rounded-full ${staffMember.status === 'ACTIVE' ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                            <span className="font-label-caps text-[10px]">{staffMember.status}</span>
+                          </div>
+                        </td>
+                        <td className="p-4 text-right">
+                          <button className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-full transition-all">
+                            <MoreVertical className="w-5 h-5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="p-4 text-center bg-surface-container-low">
+                  <button className="text-secondary font-label-caps text-label-caps hover:underline hover:text-primary transition-colors">VIEW ALL STAFF</button>
+                </div>
+              </>
+            )}
           </div>
         </section>
       </div>

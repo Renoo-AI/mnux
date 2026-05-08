@@ -7,16 +7,55 @@ import {
   Wheat,
   Egg,
   Fish,
-  Peanut,
   Milk,
-  TreeNut,
-  Shellfish,
-  Soy,
-  Sesame,
   HelpCircle,
   Check,
   X,
 } from 'lucide-react';
+
+// Custom SVG icons for allergens not available in Lucide
+const PeanutIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3c-1.5 0-3 1-3 3v2c0 1-1 2-2 2s-2 1-2 2.5c0 2 1.5 3.5 3 3.5h8c1.5 0 3-1.5 3-3.5 0-1.5-1-2.5-2-2.5s-2-1-2-2V6c0-2-1.5-3-3-3z"/>
+    <ellipse cx="9" cy="14" rx="1" ry="1.5"/>
+    <ellipse cx="12" cy="15" rx="1" ry="1.5"/>
+    <ellipse cx="15" cy="14" rx="1" ry="1.5"/>
+  </svg>
+);
+
+const TreeNutIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2C8 2 5 5 5 9c0 3 1.5 5 3 7 1 1.5 2 3 2 5h4c0-2 1-3.5 2-5 1.5-2 3-4 3-7 0-4-3-7-7-7z"/>
+    <path d="M12 6v4"/>
+    <path d="M10 8h4"/>
+  </svg>
+);
+
+const ShellfishIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3C7 3 4 7 4 12c0 3 1.5 5 4 6l1 3h6l1-3c2.5-1 4-3 4-6 0-5-3-9-8-9z"/>
+    <path d="M9 12l3-3 3 3"/>
+    <path d="M12 9v6"/>
+  </svg>
+);
+
+const SoyIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2v4"/>
+    <path d="M8 4c0 0 4 2 4 6s-4 6-4 6"/>
+    <path d="M16 4c0 0-4 2-4 6s4 6 4 6"/>
+    <ellipse cx="12" cy="18" rx="3" ry="4"/>
+  </svg>
+);
+
+const SesameIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3C8 3 5 6 5 10c0 2 .5 3.5 1.5 5l-1.5 4h14l-1.5-4c1-1.5 1.5-3 1.5-5 0-4-3-7-7-7z"/>
+    <ellipse cx="9" cy="10" rx="1.5" ry="2"/>
+    <ellipse cx="12" cy="12" rx="1.5" ry="2"/>
+    <ellipse cx="15" cy="10" rx="1.5" ry="2"/>
+  </svg>
+);
 import { Badge } from '@/components/ui/badge';
 import {
   Tooltip,
@@ -78,7 +117,7 @@ export const allergenDefinitions: Record<AllergenType, AllergenInfo> = {
   peanuts: {
     type: 'peanuts',
     name: 'Peanuts',
-    icon: <Peanut className="h-4 w-4" />,
+    icon: <PeanutIcon className="h-4 w-4" />,
     description: 'Contains peanuts or peanut products.',
     color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
   },
@@ -92,28 +131,28 @@ export const allergenDefinitions: Record<AllergenType, AllergenInfo> = {
   tree_nuts: {
     type: 'tree_nuts',
     name: 'Tree Nuts',
-    icon: <TreeNut className="h-4 w-4" />,
+    icon: <TreeNutIcon className="h-4 w-4" />,
     description: 'Contains tree nuts like almonds, cashews, walnuts, etc.',
     color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   },
   shellfish: {
     type: 'shellfish',
     name: 'Shellfish',
-    icon: <Shellfish className="h-4 w-4" />,
+    icon: <ShellfishIcon className="h-4 w-4" />,
     description: 'Contains crustaceans like shrimp, crab, lobster.',
     color: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
   },
   soy: {
     type: 'soy',
     name: 'Soy',
-    icon: <Soy className="h-4 w-4" />,
+    icon: <SoyIcon className="h-4 w-4" />,
     description: 'Contains soy or soy products.',
     color: 'bg-lime-100 text-lime-700 dark:bg-lime-900/30 dark:text-lime-400',
   },
   sesame: {
     type: 'sesame',
     name: 'Sesame',
-    icon: <Sesame className="h-4 w-4" />,
+    icon: <SesameIcon className="h-4 w-4" />,
     description: 'Contains sesame seeds or sesame oil.',
     color: 'bg-stone-100 text-stone-700 dark:bg-stone-900/30 dark:text-stone-400',
   },

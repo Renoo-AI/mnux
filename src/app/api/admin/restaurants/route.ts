@@ -85,6 +85,8 @@ export async function POST(request: NextRequest) {
       slug: sanitizeText(slug, 50).toLowerCase().replace(/[^a-z0-9-]/g, ''),
       ownerUid: ownerUid ? sanitizeText(ownerUid, 128) : 'unassigned',
       plan: ['free', 'pro', 'business'].includes(plan) ? plan : 'free',
+      maxMenuItems: ['free', 'pro', 'business'].includes(plan) && plan === 'free' ? 8 : 999,
+      menuItemCount: 0, // Counter for Firestore rules enforcement
       status: 'active',
       createdAt: Date.now(),
       createdBy: user.uid,

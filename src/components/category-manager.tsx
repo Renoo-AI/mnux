@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Plus, Edit, Trash2, X, GripVertical, Eye, EyeOff, Check, AlertCircle, Loader2, Tag, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { useStaffSession } from '@/contexts/StaffSessionContext';
+import { menuService } from '@/services/menuService';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,15 +30,6 @@ export interface MenuCategory {
   createdAt: Date;
   updatedAt: Date;
 }
-
-// Demo categories
-const demoCategories: MenuCategory[] = [
-  { id: '1', restaurantId: 'demo', name: 'Coffee', slug: 'coffee', description: 'Espresso-based drinks and brews', sortOrder: 1, isActive: true, itemCount: 12 },
-  { id: '2', restaurantId: 'demo', name: 'Pastries', slug: 'pastries', description: 'Fresh baked goods', sortOrder: 2, isActive: true, itemCount: 8 },
-  { id: '3', restaurantId: 'demo', name: 'Teas', slug: 'teas', description: 'Premium loose leaf teas', sortOrder: 3, isActive: true, itemCount: 6 },
-  { id: '4', restaurantId: 'demo', name: 'Brunch', slug: 'brunch', description: 'Weekend specials', sortOrder: 4, isActive: true, itemCount: 10 },
-  { id: '5', restaurantId: 'demo', name: 'Seasonal', slug: 'seasonal', description: 'Limited time offerings', sortOrder: 5, isActive: false, itemCount: 3 },
-];
 
 interface CategoryModalProps {
   category?: MenuCategory;
@@ -276,7 +269,7 @@ function CategoryCard({ category, onEdit, onDelete, onToggleActive, onMoveUp, on
 
           <div className="flex items-center justify-between">
             <span className="text-on-surface-variant text-sm">
-              {category.itemCount} items
+              {category.itemCount ?? 0} items
             </span>
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
@@ -309,12 +302,45 @@ function CategoryCard({ category, onEdit, onDelete, onToggleActive, onMoveUp, on
 }
 
 export function CategoryManager() {
-  const [categories, setCategories] = useState<MenuCategory[]>(demoCategories);
+  const { session } = useStaffSession();
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<MenuCategory | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<MenuCategory | null>(null);
   const { toast } = useToast();
+
+  // Subscribe to categories from Firebase
+  useEffect(() => {
+    if (!session?.restaurantId) {
+      return;
+    }
+
+    const unsubscribe = menuService.subscribeToCategories(
+      session.restaurantId,
+      (fetchedCategories) => {
+        // Convert to local MenuCategory type with optional fields
+        const localCategories: MenuCategory[] = fetchedCategories.map(cat => ({
+          ...cat,
+          itemCount: 0, // Would need separate query to count items
+        }));
+        setCategories(localCategories);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error('Error fetching categories:', error);
+        setIsLoading(false);
+        toast({
+          title: 'Error',
+          description: 'Failed to load categories.',
+          variant: 'destructive',
+        });
+      }
+    );
+
+    return () => unsubscribe();
+  }, [session?.restaurantId, toast]);
 
   const handleSave = useCallback((data: Omit<MenuCategory, 'id' | 'restaurantId' | 'createdAt' | 'updatedAt' | 'itemCount'>) => {
     if (editingCategory) {
@@ -330,7 +356,7 @@ export function CategoryManager() {
     } else {
       const newCategory: MenuCategory = {
         id: `cat-${Date.now()}`,
-        restaurantId: 'demo',
+        restaurantId: session?.restaurantId || '',
         ...data,
         itemCount: 0,
         createdAt: new Date(),
@@ -343,7 +369,7 @@ export function CategoryManager() {
       });
     }
     setEditingCategory(null);
-  }, [editingCategory, toast]);
+  }, [editingCategory, session?.restaurantId, toast]);
 
   const handleDelete = useCallback(() => {
     if (!categoryToDelete) return;
@@ -362,7 +388,7 @@ export function CategoryManager() {
     if (!category) return;
     
     setCategories(prev => prev.map(c => 
-      c.id === id ? { ...c, isActive: !c.isActive } : c
+      c.id === id ? { ...c, isActive: !c.isActive, updatedAt: new Date() } : c
     ));
     
     toast({
@@ -383,11 +409,28 @@ export function CategoryManager() {
       [newCategories[index], newCategories[newIndex]] = [newCategories[newIndex], newCategories[index]];
       
       // Update sort orders
-      return newCategories.map((c, i) => ({ ...c, sortOrder: i + 1 }));
+      return newCategories.map((c, i) => ({ ...c, sortOrder: i + 1, updatedAt: new Date() }));
     });
   }, []);
 
   const sortedCategories = [...categories].sort((a, b) => a.sortOrder - b.sortOrder);
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-display text-headline-sm text-primary">Menu Categories</h2>
+            <p className="text-on-surface-variant text-sm">Loading...</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-8 h-8 animate-spin text-secondary" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -409,29 +452,42 @@ export function CategoryManager() {
         </Button>
       </div>
 
+      {/* No restaurant selected */}
+      {!session?.restaurantId && (
+        <div className="text-center py-16">
+          <div className="w-16 h-16 bg-surface-container-high rounded-full flex items-center justify-center mx-auto mb-4">
+            <Tag className="w-8 h-8 text-on-surface-variant" />
+          </div>
+          <h3 className="font-display text-title-sm text-primary mb-2">No restaurant selected</h3>
+          <p className="text-on-surface-variant">Please log in to manage categories</p>
+        </div>
+      )}
+
       {/* Categories List */}
-      <div className="space-y-4">
-        {sortedCategories.map((category, index) => (
-          <CategoryCard
-            key={category.id}
-            category={category}
-            onEdit={() => {
-              setEditingCategory(category);
-              setShowModal(true);
-            }}
-            onDelete={() => {
-              setCategoryToDelete(category);
-              setShowDeleteDialog(true);
-            }}
-            onToggleActive={() => handleToggleActive(category.id)}
-            onMoveUp={index > 0 ? () => handleMove(category.id, 'up') : undefined}
-            onMoveDown={index < sortedCategories.length - 1 ? () => handleMove(category.id, 'down') : undefined}
-          />
-        ))}
-      </div>
+      {session?.restaurantId && categories.length > 0 && (
+        <div className="space-y-4">
+          {sortedCategories.map((category, index) => (
+            <CategoryCard
+              key={category.id}
+              category={category}
+              onEdit={() => {
+                setEditingCategory(category);
+                setShowModal(true);
+              }}
+              onDelete={() => {
+                setCategoryToDelete(category);
+                setShowDeleteDialog(true);
+              }}
+              onToggleActive={() => handleToggleActive(category.id)}
+              onMoveUp={index > 0 ? () => handleMove(category.id, 'up') : undefined}
+              onMoveDown={index < sortedCategories.length - 1 ? () => handleMove(category.id, 'down') : undefined}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Empty State */}
-      {categories.length === 0 && (
+      {session?.restaurantId && categories.length === 0 && (
         <div className="text-center py-16">
           <div className="w-16 h-16 bg-surface-container-high rounded-full flex items-center justify-center mx-auto mb-4">
             <Tag className="w-8 h-8 text-on-surface-variant" />

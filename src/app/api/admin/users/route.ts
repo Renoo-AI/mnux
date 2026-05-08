@@ -89,10 +89,10 @@ export async function POST(request: NextRequest) {
     }
 
     const SUPERADMIN_UID = process.env.NEXT_PUBLIC_SUPERADMIN_UID;
-  if (!SUPERADMIN_UID) {
-    console.error('SECURITY ERROR: SUPERADMIN_UID not configured');
-    return null;
-  }
+    if (!SUPERADMIN_UID) {
+      console.error('SECURITY ERROR: SUPERADMIN_UID not configured');
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
     
     // Prevent banning superadmin
     if (userId === SUPERADMIN_UID) {
