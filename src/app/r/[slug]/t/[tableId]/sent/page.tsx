@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { CheckCircle, RoomService, Loader2 } from 'lucide-react';
+import { CheckCircle, ConciergeBell, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { restaurantService } from '@/services/restaurantService';
 import { tableService } from '@/services/tableService';
@@ -117,7 +117,7 @@ export default function OrderSentPage({ params }: { params: Promise<{ slug: stri
           className="w-full bg-surface-container rounded-full py-4 flex items-center justify-center gap-2 text-primary"
         >
           <Link href="#">
-            <RoomService className="w-5 h-5 text-secondary" />
+            <ConciergeBell className="w-5 h-5 text-secondary" />
             Need something else? Call staff
           </Link>
         </Button>

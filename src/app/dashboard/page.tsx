@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
@@ -14,12 +14,27 @@ import {
   Armchair,
   Loader2,
   Bell,
-  Volume2
+  Volume2,
+  VolumeX,
+  AlertCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DashboardLayout } from '@/components/layout';
 import { TopAppBar } from '@/components/layout';
 import { useAuthStore } from '@/stores/authStore';
+import { useSoundNotification } from '@/hooks/use-sound-notification';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import type { Order, Table, OrderState } from '@/types';
 
 // Demo data for development/preview mode
@@ -102,14 +117,39 @@ export default function CashierDashboard() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [loading, setLoadingState] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [soundEnabled, setSoundEnabled] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showNewOrderAlert, setShowNewOrderAlert] = useState(false);
+  const previousNewOrdersCount = useRef(0);
+  const { playSound, isMuted, toggleMute } = useSoundNotification({ enabled: true, volume: 0.4 });
+  const { toast } = useToast();
+  
+  // Cancel order dialog state
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
 
   // Update current time every minute
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
+
+  // Sound notification for new orders
+  useEffect(() => {
+    const currentNewOrdersCount = orders.filter(o => o.state === 'NEW').length;
+    
+    // Check if new orders increased
+    if (currentNewOrdersCount > previousNewOrdersCount.current && previousNewOrdersCount.current >= 0) {
+      playSound('urgent');
+      // Use requestAnimationFrame to defer state update and avoid cascading renders
+      requestAnimationFrame(() => {
+        setShowNewOrderAlert(true);
+        // Auto-hide alert after 3 seconds
+        setTimeout(() => setShowNewOrderAlert(false), 3000);
+      });
+    }
+    
+    previousNewOrdersCount.current = currentNewOrdersCount;
+  }, [orders, playSound]);
 
   // Simulate real-time updates in demo mode
   useEffect(() => {
@@ -125,31 +165,90 @@ export default function CashierDashboard() {
 
   const handleAcceptOrder = useCallback(async (orderId: string) => {
     setActionLoading(orderId + '-accept');
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setOrders(prev => prev.map(o => 
-      o.id === orderId ? { ...o, state: 'ACCEPTED' as OrderState } : o
-    ));
-    setActionLoading(null);
-  }, []);
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      const order = orders.find(o => o.id === orderId);
+      setOrders(prev => prev.map(o => 
+        o.id === orderId ? { ...o, state: 'ACCEPTED' as OrderState } : o
+      ));
+      
+      toast({
+        title: 'Order Accepted',
+        description: `Order from ${order?.tableName || 'Unknown'} has been accepted and is now being prepared.`,
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to accept order. Please try again.',
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  }, [orders, toast]);
 
   const handleCompleteOrder = useCallback(async (orderId: string) => {
     setActionLoading(orderId + '-complete');
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setOrders(prev => prev.filter(o => o.id !== orderId));
-    setSelectedOrder(null);
-    setActionLoading(null);
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      const order = orders.find(o => o.id === orderId);
+      setOrders(prev => prev.filter(o => o.id !== orderId));
+      setSelectedOrder(null);
+      
+      toast({
+        title: 'Order Completed',
+        description: `Order from ${order?.tableName || 'Unknown'} has been marked as paid and completed.`,
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to complete order. Please try again.',
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  }, [orders, toast]);
+
+  const handleCancelOrderClick = useCallback((order: Order) => {
+    setOrderToCancel(order);
+    setShowCancelDialog(true);
   }, []);
 
-  const handleCancelOrder = useCallback(async (orderId: string, reason: string) => {
-    setActionLoading(orderId + '-cancel');
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setOrders(prev => prev.filter(o => o.id !== orderId));
-    setSelectedOrder(null);
-    setActionLoading(null);
-  }, []);
+  const handleConfirmCancelOrder = useCallback(async () => {
+    if (!orderToCancel) return;
+    
+    setActionLoading(orderToCancel.id + '-cancel');
+    setShowCancelDialog(false);
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      setOrders(prev => prev.filter(o => o.id !== orderToCancel.id));
+      setSelectedOrder(null);
+      
+      toast({
+        title: 'Order Cancelled',
+        description: `Order from ${orderToCancel.tableName} has been cancelled.`,
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to cancel order. Please try again.',
+      });
+    } finally {
+      setActionLoading(null);
+      setOrderToCancel(null);
+    }
+  }, [orderToCancel, toast]);
 
   const getStateColor = (state: OrderState) => {
     switch (state) {
@@ -210,26 +309,49 @@ export default function CashierDashboard() {
         }}
       />
       
+      {/* New Order Alert Banner */}
+      {showNewOrderAlert && (
+        <div className="fixed top-4 right-4 z-50 animate-slide-in-right">
+          <div className="bg-secondary text-on-secondary px-6 py-4 rounded-xl shadow-lg flex items-center gap-3">
+            <AlertCircle className="w-6 h-6 animate-pulse" />
+            <span className="font-display text-title-sm">New Order Received!</span>
+          </div>
+        </div>
+      )}
+      
+      {/* Sound Toggle Button */}
+      <button
+        onClick={toggleMute}
+        className="fixed top-4 right-4 z-40 bg-white p-3 rounded-full shadow-card hover:shadow-lg transition-all duration-300 hover:scale-105"
+        title={isMuted ? 'Unmute notifications' : 'Mute notifications'}
+      >
+        {isMuted ? (
+          <VolumeX className="w-5 h-5 text-on-surface-variant" />
+        ) : (
+          <Volume2 className="w-5 h-5 text-secondary" />
+        )}
+      </button>
+      
       <div className="flex-1 flex overflow-hidden">
         {/* Grid Area */}
         <section className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 content-start">
           {/* Stats Summary */}
           <div className="col-span-full grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <div className="bg-white rounded-xl p-4 shadow-card">
+            <div className="bg-white rounded-xl p-4 shadow-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-default">
               <div className="flex items-center gap-2 text-secondary mb-2">
-                <Bell className="w-5 h-5" />
+                <Bell className="w-5 h-5 animate-bounce-subtle" />
                 <span className="font-label-caps text-label-caps">NEW ORDERS</span>
               </div>
               <p className="font-display text-headline-md text-primary">{newOrders.length}</p>
             </div>
-            <div className="bg-white rounded-xl p-4 shadow-card">
+            <div className="bg-white rounded-xl p-4 shadow-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-default">
               <div className="flex items-center gap-2 text-primary mb-2">
                 <Utensils className="w-5 h-5" />
                 <span className="font-label-caps text-label-caps">IN PROGRESS</span>
               </div>
               <p className="font-display text-headline-md text-primary">{acceptedOrders.length}</p>
             </div>
-            <div className="bg-white rounded-xl p-4 shadow-card">
+            <div className="bg-white rounded-xl p-4 shadow-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-default">
               <div className="flex items-center gap-2 text-on-surface-variant mb-2">
                 <Armchair className="w-5 h-5" />
                 <span className="font-label-caps text-label-caps">AVAILABLE</span>
@@ -238,7 +360,7 @@ export default function CashierDashboard() {
                 {tables.filter(t => !activeTableIds.includes(t.id) && t.state !== 'OFFLINE').length}
               </p>
             </div>
-            <div className="bg-white rounded-xl p-4 shadow-card">
+            <div className="bg-white rounded-xl p-4 shadow-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-default">
               <div className="flex items-center gap-2 text-on-surface-variant mb-2">
                 <Clock className="w-5 h-5" />
                 <span className="font-label-caps text-label-caps">CURRENT TIME</span>
@@ -252,16 +374,16 @@ export default function CashierDashboard() {
             <div
               key={order.id}
               onClick={() => setSelectedOrder(order)}
-              className="pulse-border bg-white rounded-3xl p-6 shadow-card active:scale-95 transition-transform cursor-pointer"
+              className="pulse-border bg-white rounded-3xl p-6 shadow-card active:scale-95 transition-all duration-300 cursor-pointer hover:shadow-xl hover:-translate-y-1 group"
             >
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="font-display text-title-sm text-primary">{order.tableName}</h3>
+                  <h3 className="font-display text-title-sm text-primary group-hover:text-secondary transition-colors">{order.tableName}</h3>
                   <p className="text-on-surface-variant font-label-caps text-label-caps">
                     {order.items.length} ITEMS
                   </p>
                 </div>
-                <span className={`px-3 py-1 rounded-full font-label-caps text-label-caps ${getStateColor(order.state)}`}>
+                <span className={`px-3 py-1 rounded-full font-label-caps text-label-caps animate-pulse-subtle ${getStateColor(order.state)}`}>
                   {getStateLabel(order.state)}
                 </span>
               </div>
@@ -282,11 +404,11 @@ export default function CashierDashboard() {
             <div
               key={order.id}
               onClick={() => setSelectedOrder(order)}
-              className="bg-white border border-outline-variant/30 rounded-3xl p-6 shadow-card active:scale-95 transition-transform cursor-pointer ring-2 ring-primary"
+              className="bg-white border border-outline-variant/30 rounded-3xl p-6 shadow-card active:scale-95 transition-all duration-300 cursor-pointer ring-2 ring-primary hover:shadow-xl hover:-translate-y-1 group"
             >
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="font-display text-title-sm text-primary">{order.tableName}</h3>
+                  <h3 className="font-display text-title-sm text-primary group-hover:text-secondary transition-colors">{order.tableName}</h3>
                   <p className="text-on-surface-variant font-label-caps text-label-caps">
                     {order.items.length} ITEMS
                   </p>
@@ -296,7 +418,7 @@ export default function CashierDashboard() {
                 </span>
               </div>
               <div className="flex items-center gap-2 mb-4">
-                <Utensils className="w-4 h-4 text-outline" />
+                <Utensils className="w-4 h-4 text-outline group-hover:text-secondary transition-colors" />
                 <span className="text-on-surface-variant font-medium text-sm">
                   {formatTimeAgo(order.createdAt)}
                 </span>
@@ -313,7 +435,7 @@ export default function CashierDashboard() {
             .map((table) => (
               <div
                 key={table.id}
-                className="bg-surface-container-low border border-dashed border-outline-variant rounded-3xl p-6 opacity-70"
+                className="bg-surface-container-low border border-dashed border-outline-variant rounded-3xl p-6 opacity-70 hover:opacity-90 transition-all duration-300 hover:border-secondary hover:shadow-md"
               >
                 <div className="flex justify-between items-start mb-4">
                   <div>
@@ -390,7 +512,10 @@ export default function CashierDashboard() {
                     className="col-span-2 bg-secondary-container text-on-secondary-container rounded-full py-4 hover:opacity-90"
                   >
                     {actionLoading === selectedOrder.id + '-accept' ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Accepting...
+                      </>
                     ) : (
                       <>
                         <CheckCheck className="w-5 h-5 mr-2" />
@@ -399,13 +524,22 @@ export default function CashierDashboard() {
                     )}
                   </Button>
                   <Button
-                    onClick={() => handleCancelOrder(selectedOrder.id, 'Customer request')}
+                    onClick={() => handleCancelOrderClick(selectedOrder)}
                     disabled={actionLoading === selectedOrder.id + '-cancel'}
                     variant="outline"
                     className="col-span-2 border border-error text-error rounded-full py-4 hover:bg-error-container/20"
                   >
-                    <XCircle className="w-5 h-5 mr-2" />
-                    Cancel Order
+                    {actionLoading === selectedOrder.id + '-cancel' ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Cancelling...
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="w-5 h-5 mr-2" />
+                        Cancel Order
+                      </>
+                    )}
                   </Button>
                 </>
               )}
@@ -418,7 +552,10 @@ export default function CashierDashboard() {
                     className="col-span-2 bg-primary text-on-primary rounded-full py-4 hover:opacity-90"
                   >
                     {actionLoading === selectedOrder.id + '-complete' ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Processing...
+                      </>
                     ) : (
                       <>
                         <CreditCard className="w-5 h-5 mr-2" />
@@ -434,13 +571,19 @@ export default function CashierDashboard() {
                     Close Table
                   </Button>
                   <Button
-                    onClick={() => handleCancelOrder(selectedOrder.id, 'Customer request')}
+                    onClick={() => handleCancelOrderClick(selectedOrder)}
                     disabled={actionLoading === selectedOrder.id + '-cancel'}
                     variant="outline"
                     className="py-4 border border-error text-error rounded-full hover:bg-error-container/20"
                   >
-                    <XCircle className="w-5 h-5 mr-2" />
-                    Cancel
+                    {actionLoading === selectedOrder.id + '-cancel' ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <XCircle className="w-5 h-5 mr-2" />
+                        Cancel
+                      </>
+                    )}
                   </Button>
                 </>
               )}
@@ -448,6 +591,37 @@ export default function CashierDashboard() {
           </aside>
         )}
       </div>
+
+      {/* Cancel Order Confirmation Dialog */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent className="bg-surface rounded-2xl max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-12 h-12 bg-error-container rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-error" />
+              </div>
+              <AlertDialogTitle className="font-display text-title-md text-primary">
+                Cancel Order?
+              </AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-on-surface-variant">
+              Are you sure you want to cancel the order from <strong className="text-primary">{orderToCancel?.tableName}</strong>? 
+              This action cannot be undone and the customer will be notified.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel className="rounded-full border border-outline-variant px-6">
+              Keep Order
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmCancelOrder}
+              className="bg-error text-on-error rounded-full px-6 hover:bg-error/90"
+            >
+              Yes, Cancel Order
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }

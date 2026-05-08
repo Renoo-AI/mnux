@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, Camera, Edit, QrCode, MoreVertical } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { Plus, Camera, Edit, QrCode, MoreVertical, AlertCircle, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DashboardLayout } from '@/components/layout';
 import { TopAppBar } from '@/components/layout';
+import { useFormValidation, validationPatterns } from '@/hooks/use-form-validation';
+import { useToast } from '@/hooks/use-toast';
 
 // Demo staff data
 const demoStaff = [
@@ -13,10 +15,93 @@ const demoStaff = [
   { id: '2', name: 'Marcus Wade', email: 'marcus.w@menuxpro.com', role: 'WAITER', status: 'ACTIVE' },
 ];
 
+interface SettingsFormValues {
+  restaurantName: string;
+  cuisineType: string;
+  address: string;
+  phone: string;
+  email: string;
+}
+
+const initialValues: SettingsFormValues = {
+  restaurantName: 'The Gilded Bean',
+  cuisineType: 'Modern European & Artisan Coffee',
+  address: '124 Savile Row, Mayfair, London, W1S 3PR, United Kingdom',
+  phone: '+44 20 7123 4567',
+  email: 'info@thegildedbean.com',
+};
+
+const formConfig = {
+  restaurantName: {
+    rules: { required: true, minLength: 2, maxLength: 100 },
+    label: 'Restaurant Name',
+  },
+  cuisineType: {
+    rules: { maxLength: 100 },
+    label: 'Cuisine Type',
+  },
+  address: {
+    rules: { required: true, minLength: 10, maxLength: 200 },
+    label: 'Address',
+  },
+  phone: {
+    rules: { pattern: validationPatterns.phone },
+    label: 'Phone Number',
+  },
+  email: {
+    rules: { pattern: validationPatterns.email },
+    label: 'Email Address',
+  },
+};
+
 export default function SettingsPage() {
-  const [restaurantName, setRestaurantName] = useState('The Gilded Bean');
-  const [cuisineType, setCuisineType] = useState('Modern European & Artisan Coffee');
-  const [address, setAddress] = useState('124 Savile Row, Mayfair, London, W1S 3PR, United Kingdom');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const { toast } = useToast();
+  
+  const {
+    values,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    handleSubmit,
+    isDirty,
+    resetForm,
+  } = useFormValidation<SettingsFormValues>(initialValues, formConfig);
+
+  const onSubmit = useCallback(async () => {
+    setIsSaving(true);
+    setSaveSuccess(false);
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    setIsSaving(false);
+    setSaveSuccess(true);
+    
+    toast({
+      title: 'Settings Saved',
+      description: 'Your restaurant profile has been updated successfully.',
+    });
+    
+    // Reset success state after animation
+    setTimeout(() => setSaveSuccess(false), 2000);
+  }, [toast]);
+
+  const getFieldError = (fieldName: keyof SettingsFormValues) => {
+    return touched[fieldName] && errors[fieldName];
+  };
+
+  const getFieldClasses = (fieldName: keyof SettingsFormValues) => {
+    const baseClasses = 'w-full p-4 border rounded-xl bg-surface-container-low transition-all duration-200 outline-none';
+    const hasError = getFieldError(fieldName);
+    
+    if (hasError) {
+      return `${baseClasses} border-error focus:border-error focus:ring-2 focus:ring-error-container`;
+    }
+    return `${baseClasses} border-outline-variant focus:border-secondary focus:ring-2 focus:ring-secondary-fixed/20`;
+  };
 
   return (
     <DashboardLayout>
@@ -26,7 +111,7 @@ export default function SettingsPage() {
         user={{ name: 'Elena Aris', role: 'manager' }}
       />
 
-      <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-10">
+      <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-10 animate-fade-in">
         {/* Restaurant Profile */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
@@ -34,51 +119,115 @@ export default function SettingsPage() {
             <p className="text-on-surface-variant mt-2">Update your public information and branding assets.</p>
           </div>
           
-          <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-card space-y-6">
+          <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-card space-y-6 hover:shadow-lg transition-shadow duration-300">
             <div className="flex flex-col md:flex-row items-center gap-6 border-b border-outline-variant pb-6">
               <div className="relative group">
-                <div className="w-32 h-32 rounded-full object-cover border-4 border-surface-container-high bg-surface-container-low flex items-center justify-center">
+                <div className="w-32 h-32 rounded-full object-cover border-4 border-surface-container-high bg-surface-container-low flex items-center justify-center group-hover:border-secondary transition-colors duration-300">
                   <span className="material-symbols-outlined text-outline text-4xl">restaurant</span>
                 </div>
-                <button className="absolute bottom-0 right-0 bg-primary text-on-primary p-1 rounded-full shadow-lg border-2 border-surface">
+                <button className="absolute bottom-0 right-0 bg-primary text-on-primary p-1 rounded-full shadow-lg border-2 border-surface hover:scale-110 transition-transform duration-200">
                   <Camera className="w-4 h-4" />
                 </button>
               </div>
               
               <div className="flex-1 space-y-4 w-full">
                 <div>
-                  <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">RESTAURANT NAME</label>
+                  <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
+                    RESTAURANT NAME <span className="text-error">*</span>
+                  </label>
                   <Input
-                    value={restaurantName}
-                    onChange={(e) => setRestaurantName(e.target.value)}
-                    className="w-full p-4 border border-outline-variant rounded-full bg-surface-container-low"
+                    value={values.restaurantName}
+                    onChange={(e) => handleChange('restaurantName', e.target.value)}
+                    onBlur={() => handleBlur('restaurantName')}
+                    className={getFieldClasses('restaurantName')}
+                    placeholder="Enter restaurant name"
                   />
+                  {getFieldError('restaurantName') && (
+                    <p className="text-error text-sm mt-1 flex items-center gap-1 animate-slide-in-up">
+                      <AlertCircle className="w-4 h-4" />
+                      {errors.restaurantName}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">CUISINE TYPE</label>
+                  <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
+                    CUISINE TYPE
+                  </label>
                   <Input
-                    value={cuisineType}
-                    onChange={(e) => setCuisineType(e.target.value)}
-                    className="w-full p-4 border border-outline-variant rounded-full bg-surface-container-low"
+                    value={values.cuisineType}
+                    onChange={(e) => handleChange('cuisineType', e.target.value)}
+                    onBlur={() => handleBlur('cuisineType')}
+                    className={getFieldClasses('cuisineType')}
+                    placeholder="e.g., Italian, Asian Fusion"
                   />
                 </div>
               </div>
             </div>
             
             <div>
-              <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">ADDRESS</label>
+              <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
+                ADDRESS <span className="text-error">*</span>
+              </label>
               <textarea
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
+                value={values.address}
+                onChange={(e) => handleChange('address', e.target.value)}
+                onBlur={() => handleBlur('address')}
                 rows={3}
-                className="w-full p-4 border border-outline-variant rounded-xl bg-surface-container-low focus:border-secondary-fixed-dim outline-none"
+                className={`${getFieldClasses('address')} resize-none`}
+                placeholder="Full restaurant address"
               />
+              {getFieldError('address') && (
+                <p className="text-error text-sm mt-1 flex items-center gap-1 animate-slide-in-up">
+                  <AlertCircle className="w-4 h-4" />
+                  {errors.address}
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
+                  PHONE NUMBER
+                </label>
+                <Input
+                  value={values.phone}
+                  onChange={(e) => handleChange('phone', e.target.value)}
+                  onBlur={() => handleBlur('phone')}
+                  className={getFieldClasses('phone')}
+                  placeholder="+44 20 7123 4567"
+                />
+                {getFieldError('phone') && (
+                  <p className="text-error text-sm mt-1 flex items-center gap-1 animate-slide-in-up">
+                    <AlertCircle className="w-4 h-4" />
+                    {errors.phone}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
+                  EMAIL ADDRESS
+                </label>
+                <Input
+                  type="email"
+                  value={values.email}
+                  onChange={(e) => handleChange('email', e.target.value)}
+                  onBlur={() => handleBlur('email')}
+                  className={getFieldClasses('email')}
+                  placeholder="restaurant@example.com"
+                />
+                {getFieldError('email') && (
+                  <p className="text-error text-sm mt-1 flex items-center gap-1 animate-slide-in-up">
+                    <AlertCircle className="w-4 h-4" />
+                    {errors.email}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </section>
 
         {/* Operational Hours */}
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-slide-in-up" style={{ animationDelay: '100ms' }}>
           <div className="lg:col-span-1">
             <h3 className="font-display text-title-sm text-primary">Operational Hours</h3>
             <p className="text-on-surface-variant mt-2">Manage when your kitchen and bar are open for business.</p>
@@ -91,11 +240,16 @@ export default function SettingsPage() {
                 { label: 'Weekends', hours: '10:00 AM — 01:00 AM', highlighted: true },
                 { label: 'Public Holidays', hours: 'Closed', highlighted: false },
               ].map((item, i) => (
-                <div key={i} className={`flex items-center justify-between p-4 bg-surface-container-low rounded-xl ${item.highlighted ? 'border border-secondary-fixed' : ''}`}>
+                <div 
+                  key={i} 
+                  className={`flex items-center justify-between p-4 bg-surface-container-low rounded-xl transition-all duration-300 hover:bg-surface-container ${
+                    item.highlighted ? 'border border-secondary-fixed' : 'border border-transparent hover:border-outline-variant'
+                  }`}
+                >
                   <span className="font-display text-title-sm font-bold">{item.label}</span>
                   <div className="flex items-center gap-4">
                     <span className="font-body">{item.hours}</span>
-                    <button className="text-secondary font-label-caps text-label-caps hover:underline">EDIT</button>
+                    <button className="text-secondary font-label-caps text-label-caps hover:underline hover:text-primary transition-colors">EDIT</button>
                   </div>
                 </div>
               ))}
@@ -104,11 +258,11 @@ export default function SettingsPage() {
         </section>
 
         {/* Table Management */}
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-slide-in-up" style={{ animationDelay: '200ms' }}>
           <div className="lg:col-span-1">
             <h3 className="font-display text-title-sm text-primary">Table Management</h3>
             <p className="text-on-surface-variant mt-2">Organize your floor plan and manage digital menu QR codes.</p>
-            <Button className="mt-4 bg-primary text-on-primary">
+            <Button className="mt-4 bg-primary text-on-primary hover:opacity-90 transition-opacity">
               <Plus className="w-4 h-4 mr-2" />
               New Table
             </Button>
@@ -120,9 +274,12 @@ export default function SettingsPage() {
               { name: 'T-02', label: 'Main Hall', seats: 2 },
               { name: 'B-01', label: 'Bar Stool', seats: 1 },
             ].map((table, i) => (
-              <div key={i} className="bg-white p-4 rounded-xl shadow-card flex items-center justify-between hover:bg-surface-container-low transition-colors">
+              <div 
+                key={i} 
+                className="bg-white p-4 rounded-xl shadow-card flex items-center justify-between hover:bg-surface-container-low hover:shadow-lg transition-all duration-300 group"
+              >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-secondary-container text-on-secondary-container rounded-lg flex items-center justify-center font-bold">
+                  <div className="w-12 h-12 bg-secondary-container text-on-secondary-container rounded-lg flex items-center justify-center font-bold group-hover:scale-105 transition-transform">
                     {table.name}
                   </div>
                   <div>
@@ -130,15 +287,15 @@ export default function SettingsPage() {
                     <p className="font-label-caps text-[10px] text-on-surface-variant">{table.seats} SEATS</p>
                   </div>
                 </div>
-                <button className="p-2 hover:text-secondary">
+                <button className="p-2 hover:text-secondary hover:scale-110 transition-all">
                   <QrCode className="w-5 h-5" />
                 </button>
               </div>
             ))}
             
-            <button className="bg-white p-4 rounded-xl shadow-card flex items-center justify-center border-2 border-dashed border-outline-variant hover:border-secondary transition-all">
-              <div className="flex items-center gap-4 opacity-60">
-                <div className="w-12 h-12 bg-surface-container rounded-lg flex items-center justify-center">
+            <button className="bg-white p-4 rounded-xl shadow-card flex items-center justify-center border-2 border-dashed border-outline-variant hover:border-secondary hover:bg-surface-container-low transition-all duration-300 group">
+              <div className="flex items-center gap-4 opacity-60 group-hover:opacity-100 transition-opacity">
+                <div className="w-12 h-12 bg-surface-container rounded-lg flex items-center justify-center group-hover:bg-secondary-fixed transition-colors">
                   <Plus className="w-6 h-6" />
                 </div>
                 <span className="font-body font-bold">Add Custom Table</span>
@@ -148,7 +305,7 @@ export default function SettingsPage() {
         </section>
 
         {/* Staff Management */}
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-slide-in-up" style={{ animationDelay: '300ms' }}>
           <div className="lg:col-span-1">
             <h3 className="font-display text-title-sm text-primary">Staff Management</h3>
             <p className="text-on-surface-variant mt-2">Manage roles, permissions, and staff login access.</p>
@@ -187,12 +344,12 @@ export default function SettingsPage() {
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-green-500" />
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                         <span className="font-label-caps text-[10px]">{staff.status}</span>
                       </div>
                     </td>
                     <td className="p-4 text-right">
-                      <button className="p-2 text-on-surface-variant hover:text-primary transition-colors">
+                      <button className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-full transition-all">
                         <MoreVertical className="w-5 h-5" />
                       </button>
                     </td>
@@ -201,19 +358,44 @@ export default function SettingsPage() {
               </tbody>
             </table>
             <div className="p-4 text-center bg-surface-container-low">
-              <button className="text-secondary font-label-caps text-label-caps hover:underline">VIEW ALL STAFF</button>
+              <button className="text-secondary font-label-caps text-label-caps hover:underline hover:text-primary transition-colors">VIEW ALL STAFF</button>
             </div>
           </div>
         </section>
       </div>
 
       {/* Footer Actions */}
-      <footer className="p-10 border-t border-outline-variant flex justify-end gap-4">
-        <Button variant="outline" className="px-10 py-4 border border-primary text-primary rounded-full">
+      <footer className="p-10 border-t border-outline-variant flex justify-end gap-4 sticky bottom-0 bg-surface/80 backdrop-blur-md">
+        <Button 
+          variant="outline" 
+          className="px-10 py-4 border border-primary text-primary rounded-full hover:bg-surface-container-low transition-colors"
+          onClick={resetForm}
+          disabled={!isDirty || isSaving}
+        >
           Discard Changes
         </Button>
-        <Button className="px-10 py-4 bg-primary text-on-primary rounded-full shadow-lg">
-          Save Settings
+        <Button 
+          className={`px-10 py-4 rounded-full shadow-lg transition-all duration-300 ${
+            saveSuccess 
+              ? 'bg-green-600 text-white' 
+              : 'bg-primary text-on-primary hover:opacity-90'
+          }`}
+          onClick={() => handleSubmit(onSubmit)}
+          disabled={isSaving || !isDirty}
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : saveSuccess ? (
+            <>
+              <Check className="w-5 h-5 mr-2" />
+              Saved!
+            </>
+          ) : (
+            'Save Settings'
+          )}
         </Button>
       </footer>
     </DashboardLayout>
