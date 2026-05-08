@@ -1,4 +1,4 @@
-import { auth, db } from '@/lib/firebase';
+import { auth, db, SUPERADMIN_UID } from '@/lib/firebase';
 import { 
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
@@ -15,6 +15,7 @@ export interface AuthUser {
   email: string | null;
   staffProfile: Staff | null;
   role: UserRole | null;
+  isSuperadmin: boolean;
 }
 
 // Get staff profile from Firestore
@@ -38,13 +39,15 @@ export async function signIn(email: string, password: string): Promise<AuthUser 
   const userCredential = await signInWithEmailAndPassword(auth, email, password);
   const user = userCredential.user;
   
+  const isSuperadmin = user.uid === SUPERADMIN_UID;
   const staffProfile = await getStaffProfile(user.uid);
   
   return {
     uid: user.uid,
     email: user.email,
     staffProfile,
-    role: staffProfile?.role || null,
+    role: isSuperadmin ? 'admin' : (staffProfile?.role || null),
+    isSuperadmin,
   };
 }
 
@@ -63,13 +66,15 @@ export function subscribeToAuthState(
       return;
     }
     
+    const isSuperadmin = user.uid === SUPERADMIN_UID;
     const staffProfile = await getStaffProfile(user.uid);
     
     callback({
       uid: user.uid,
       email: user.email,
       staffProfile,
-      role: staffProfile?.role || null,
+      role: isSuperadmin ? 'admin' : (staffProfile?.role || null),
+      isSuperadmin,
     });
   });
 }
@@ -81,19 +86,30 @@ export function getCurrentUser(): User | null {
 
 // Check if user has required role
 export function hasRole(user: AuthUser | null, requiredRoles: UserRole[]): boolean {
-  if (!user || !user.role) return false;
+  if (!user) return false;
+  // Superadmin has access to everything
+  if (user.isSuperadmin) return true;
+  if (!user.role) return false;
   return requiredRoles.includes(user.role);
 }
 
-// Check if user is owner
-export function isOwner(user: AuthUser | null): boolean {
-  return user?.role === 'owner';
+// Check if user is superadmin
+export function isSuperadminUser(user: AuthUser | null): boolean {
+  return user?.isSuperadmin ?? false;
+}
+
+// Check if user is owner or superadmin
+export function isOwnerOrAbove(user: AuthUser | null): boolean {
+  if (!user) return false;
+  return user.isSuperadmin || user.role === 'owner' || user.role === 'admin';
 }
 
 // Check if user is manager or above
 export function isManagerOrAbove(user: AuthUser | null): boolean {
-  if (!user || !user.role) return false;
-  return ['owner', 'manager'].includes(user.role);
+  if (!user) return false;
+  if (user.isSuperadmin) return true;
+  if (!user.role) return false;
+  return ['owner', 'admin', 'manager'].includes(user.role);
 }
 
 export const authService = {
@@ -102,6 +118,7 @@ export const authService = {
   subscribeToAuthState,
   getCurrentUser,
   hasRole,
-  isOwner,
+  isSuperadminUser,
+  isOwnerOrAbove,
   isManagerOrAbove,
 };
