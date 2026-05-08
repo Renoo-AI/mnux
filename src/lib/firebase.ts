@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { getFirestore, initializeFirestore, CACHE_SIZE_UNLIMITED, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getFunctions } from 'firebase/functions';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 
@@ -30,8 +30,30 @@ function validateFirebaseConfig() {
 // Initialize Firebase only if it hasn't been initialized
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-// Initialize services
-export const db = getFirestore(app);
+// Initialize Firestore with offline persistence enabled
+// This prevents "client is offline" errors when network temporarily drops
+let dbInstance: ReturnType<typeof getFirestore>;
+
+if (typeof window !== 'undefined') {
+  // Client-side: Enable offline persistence
+  try {
+    dbInstance = initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
+      cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+    });
+  } catch (error) {
+    // If already initialized, get existing instance
+    console.log('Firestore already initialized, using existing instance');
+    dbInstance = getFirestore(app);
+  }
+} else {
+  // Server-side: Use default settings
+  dbInstance = getFirestore(app);
+}
+
+export const db = dbInstance;
 export const auth = getAuth(app);
 export const functions = getFunctions(app);
 

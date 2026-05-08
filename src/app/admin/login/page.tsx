@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   signInWithPopup, 
@@ -11,10 +11,11 @@ import {
 } from 'firebase/auth';
 import { auth, db, SUPERADMIN_UID } from '@/lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
-import { ShieldAlert, Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
+import { ShieldAlert, Mail, Lock, Loader2, AlertCircle, WifiOff, CloudOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { isOfflineError, withRetry } from '@/hooks/useNetworkStatus';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -25,10 +26,18 @@ export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  
+  const authStateProcessed = useRef(false);
 
   // Check if already logged in as superadmin
   useEffect(() => {
+    if (authStateProcessed.current) return;
+    
     const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (authStateProcessed.current) return;
+      authStateProcessed.current = true;
+      
       if (user && user.uid === SUPERADMIN_UID) {
         router.replace('/admin');
       } else {
@@ -39,9 +48,25 @@ export default function AdminLoginPage() {
     return () => unsubscribe();
   }, [router]);
 
+  // Monitor network status
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   const logLoginAttempt = async (type: 'GOOGLE' | 'EMAIL', userId: string, email: string, success: boolean) => {
     try {
-      await addDoc(collection(db, 'system_logs'), {
+      await withRetry(() => addDoc(collection(db, 'system_logs'), {
         type: success ? 'ADMIN_LOGIN_SUCCESS' : 'ADMIN_LOGIN_FAILED',
         message: `${type} login attempt: ${email}`,
         details: { 
@@ -52,13 +77,19 @@ export default function AdminLoginPage() {
           userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
         },
         timestamp: Date.now()
-      });
-    } catch {
-      // Fail silently
+      }));
+    } catch (err) {
+      console.error('Failed to log login attempt:', err);
+      // Fail silently - don't block login for logging failures
     }
   };
 
   const handleGoogleLogin = async () => {
+    if (!isOnline) {
+      setError('You appear to be offline. Please check your connection and try again.');
+      return;
+    }
+    
     try {
       setGoogleLoading(true);
       setError('');
@@ -83,10 +114,14 @@ export default function AdminLoginPage() {
     } catch (err: any) {
       console.error('Google login error:', err);
       
-      if (err.code === 'auth/popup-closed-by-user') {
+      if (isOfflineError(err)) {
+        setError('Connection issue. Please check your internet and try again.');
+      } else if (err.code === 'auth/popup-closed-by-user') {
         setError('Login cancelled. Please try again.');
       } else if (err.code === 'auth/popup-blocked') {
         setError('Popup blocked. Please allow popups or try email login.');
+      } else if (err.code === 'auth/network-request-failed') {
+        setError('Network error. Please check your connection and try again.');
       } else {
         setError(err.message || 'Authentication failed');
       }
@@ -97,6 +132,11 @@ export default function AdminLoginPage() {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isOnline) {
+      setError('You appear to be offline. Please check your connection and try again.');
+      return;
+    }
     
     if (!email || !password) {
       setError('Please fill in all fields.');
@@ -124,20 +164,24 @@ export default function AdminLoginPage() {
     } catch (err: any) {
       console.error('Email login error:', err);
       
-      switch (err.code) {
-        case 'auth/invalid-credential':
-        case 'auth/user-not-found':
-        case 'auth/wrong-password':
-          setError('Invalid email or password.');
-          break;
-        case 'auth/too-many-requests':
-          setError('Too many failed attempts. Account temporarily locked.');
-          break;
-        case 'auth/invalid-email':
-          setError('Invalid email address format.');
-          break;
-        default:
-          setError(err.message || 'Authentication failed');
+      if (isOfflineError(err) || err.code === 'auth/network-request-failed') {
+        setError('Connection issue. Please check your internet and try again.');
+      } else {
+        switch (err.code) {
+          case 'auth/invalid-credential':
+          case 'auth/user-not-found':
+          case 'auth/wrong-password':
+            setError('Invalid email or password.');
+            break;
+          case 'auth/too-many-requests':
+            setError('Too many failed attempts. Account temporarily locked.');
+            break;
+          case 'auth/invalid-email':
+            setError('Invalid email address format.');
+            break;
+          default:
+            setError(err.message || 'Authentication failed');
+        }
       }
       
       setLoading(false);
@@ -158,6 +202,14 @@ export default function AdminLoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden p-4 sm:p-6 bg-[#FAFAFA]">
+      {/* Offline Banner */}
+      {!isOnline && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white py-2 px-4 text-center text-sm font-medium flex items-center justify-center gap-2">
+          <WifiOff className="w-4 h-4" />
+          <span>You&apos;re offline. Please check your internet connection.</span>
+        </div>
+      )}
+      
       {/* Ambient Decor */}
       <div className="absolute filter blur-[100px] -z-10 opacity-30 rounded-full w-[400px] h-[400px] bg-[#C9A07E] top-[-10%] right-[-5%]" />
       <div className="absolute filter blur-[100px] -z-10 opacity-20 rounded-full w-[300px] h-[300px] bg-[#EFE4D8] bottom-[-5%] left-[-5%]" />

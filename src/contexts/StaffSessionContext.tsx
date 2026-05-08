@@ -1,9 +1,10 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { StaffSession, StaffRole } from '@/types';
 import { SUPERADMIN_UID, auth, isSuperadminFromClaims } from '@/lib/firebase';
 import { onAuthStateChanged, User, getIdTokenResult } from 'firebase/auth';
+import { isOfflineError } from '@/hooks/useNetworkStatus';
 
 interface StaffSessionContextType {
   session: StaffSession | null;
@@ -15,6 +16,7 @@ interface StaffSessionContextType {
   logoutStaff: () => void;
   currentStaff: StaffSession | null;
   currentRestaurant: { id: string; slug: string; name: string } | null;
+  isOffline: boolean;
 }
 
 const StaffSessionContext = createContext<StaffSessionContextType | undefined>(undefined);
@@ -35,6 +37,10 @@ export function StaffSessionProvider({ children }: { children: React.ReactNode }
   const [isLoading, setIsLoading] = useState(true);
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [isSuperadminState, setIsSuperadminState] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
+  
+  // Ref to prevent multiple concurrent auth state processing
+  const isProcessingAuthState = useRef(false);
 
   // SECURITY: isSuperadmin is derived from Firebase Auth:
   // 1. Primary: Custom claim 'role: superadmin' in the ID token
@@ -45,49 +51,70 @@ export function StaffSessionProvider({ children }: { children: React.ReactNode }
   // Sync with Firebase Auth state - this is the ONLY source of truth for superadmin
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setFirebaseUser(user);
+      // Prevent race conditions - only process one auth state change at a time
+      if (isProcessingAuthState.current) {
+        return;
+      }
+      isProcessingAuthState.current = true;
       
-      if (user) {
-        try {
-          // Get the ID token result to check custom claims
-          const tokenResult = await getIdTokenResult(user);
-          
-          // Check for superadmin status via custom claim (primary)
-          const hasSuperadminClaim = isSuperadminFromClaims(tokenResult);
-          
-          // Fallback: Check UID during migration period
-          const isFallbackSuperadmin = user.uid === SUPERADMIN_UID;
-          
-          const isActuallySuperadmin = hasSuperadminClaim || isFallbackSuperadmin;
-          
-          setIsSuperadminState(isActuallySuperadmin);
-          
-          // SECURITY: If user is superadmin, create an in-memory session
-          // This session is derived from Firebase Auth, NOT from localStorage
-          if (isActuallySuperadmin) {
-            const superadminSession: StaffSession = {
-              restaurantId: 'all',
-              restaurantSlug: 'admin',
-              restaurantName: 'MenuxPro Admin',
-              staffId: user.uid,
-              staffName: user.displayName || user.email?.split('@')[0] || 'Super Admin',
-              role: 'admin',
-            };
+      try {
+        setFirebaseUser(user);
+        
+        if (user) {
+          try {
+            // Get the ID token result to check custom claims
+            const tokenResult = await getIdTokenResult(user);
             
-            setSession(superadminSession);
-          } else {
-            // Not superadmin - clear session if it was a superadmin session
-            setSession(null);
+            // Check for superadmin status via custom claim (primary)
+            const hasSuperadminClaim = isSuperadminFromClaims(tokenResult);
+            
+            // Fallback: Check UID during migration period
+            const isFallbackSuperadmin = user.uid === SUPERADMIN_UID;
+            
+            const isActuallySuperadmin = hasSuperadminClaim || isFallbackSuperadmin;
+            
+            setIsSuperadminState(isActuallySuperadmin);
+            setIsOffline(false);
+            
+            // SECURITY: If user is superadmin, create an in-memory session
+            // This session is derived from Firebase Auth, NOT from localStorage
+            if (isActuallySuperadmin) {
+              const superadminSession: StaffSession = {
+                restaurantId: 'all',
+                restaurantSlug: 'admin',
+                restaurantName: 'MenuxPro Admin',
+                staffId: user.uid,
+                staffName: user.displayName || user.email?.split('@')[0] || 'Super Admin',
+                role: 'admin',
+              };
+              
+              setSession(superadminSession);
+            } else {
+              // Not superadmin - clear session if it was a superadmin session
+              setSession(null);
+            }
+          } catch (error) {
+            console.error('Error checking superadmin status:', error);
+            
+            // Check if it's an offline error
+            if (isOfflineError(error)) {
+              setIsOffline(true);
+              // Keep existing session if offline
+              console.warn('Offline - maintaining existing session state');
+            } else {
+              setIsSuperadminState(false);
+              setSession(null);
+            }
           }
-        } catch (error) {
-          console.error('Error checking superadmin status:', error);
+        } else {
+          // User signed out - clear session
           setIsSuperadminState(false);
           setSession(null);
+          setIsOffline(false);
         }
-      } else {
-        // User signed out - clear session
-        setIsSuperadminState(false);
-        setSession(null);
+      } finally {
+        isProcessingAuthState.current = false;
+        setIsLoading(false);
       }
     });
     
@@ -102,7 +129,6 @@ export function StaffSessionProvider({ children }: { children: React.ReactNode }
         // Check if we have a Firebase user first
         if (firebaseUser) {
           // Firebase Auth already initialized the session
-          setIsLoading(false);
           return;
         }
 
@@ -119,8 +145,6 @@ export function StaffSessionProvider({ children }: { children: React.ReactNode }
       } catch (error) {
         console.error('Failed to load UI hint:', error);
         localStorage.removeItem(UI_HINT_KEY);
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -254,6 +278,7 @@ export function StaffSessionProvider({ children }: { children: React.ReactNode }
       slug: session.restaurantSlug,
       name: session.restaurantName,
     } : null,
+    isOffline,
   };
 
   return (

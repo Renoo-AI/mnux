@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   Loader2, Eye, EyeOff, Coffee, UtensilsCrossed, Clock, Users, 
-  ArrowRight, Chrome, UserPlus, Building2
+  ArrowRight, Chrome, UserPlus, Building2, WifiOff, CloudOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,7 @@ import {
 import { auth, db } from '@/lib/firebase';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { withRetry, isOfflineError } from '@/hooks/useNetworkStatus';
 
 function LoginForm() {
   const router = useRouter();
@@ -36,8 +37,11 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [mode, setMode] = useState<'login' | 'signup'>(isSignup ? 'signup' : 'login');
+  const [isOnline, setIsOnline] = useState(true);
+  const [isFirestoreReady, setIsFirestoreReady] = useState(true);
   
   const { setUser, isAuthenticated } = useAuthStore();
+  const authStateProcessed = useRef(false);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -46,13 +50,50 @@ function LoginForm() {
     }
   }, [isAuthenticated, router]);
 
-  // Subscribe to auth state
+  // Subscribe to auth state (with deduplication to prevent race conditions)
   useEffect(() => {
+    if (authStateProcessed.current) return;
+    
     const unsubscribe = authService.subscribeToAuthState((user) => {
-      setUser(user);
+      if (!authStateProcessed.current) {
+        authStateProcessed.current = true;
+        setUser(user);
+      }
     });
     return () => unsubscribe();
   }, [setUser]);
+
+  // Monitor network status
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast({
+        title: 'Back online',
+        description: 'Your connection has been restored.',
+      });
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast({
+        title: 'You\'re offline',
+        description: 'Please check your internet connection.',
+        variant: 'destructive',
+      });
+    };
+
+    setIsOnline(navigator.onLine);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [toast]);
 
   // Generate random slug for free plan
   const generateFreeSlug = () => {
@@ -66,6 +107,11 @@ function LoginForm() {
 
   // Handle Google Sign In / Sign Up
   const handleGoogleAuth = async () => {
+    if (!isOnline) {
+      setError('You appear to be offline. Please check your connection and try again.');
+      return;
+    }
+    
     setGoogleLoading(true);
     setError(null);
 
@@ -74,16 +120,16 @@ function LoginForm() {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // Check if user document exists
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      // Check if user document exists with retry logic
+      const userDoc = await withRetry(() => getDoc(doc(db, 'users', user.uid)));
       
       if (!userDoc.exists()) {
         // New user - create restaurant and user profile
         const restaurantId = doc(db, 'restaurants').id;
         const slug = generateFreeSlug();
         
-        // Create restaurant
-        await setDoc(doc(db, 'restaurants', restaurantId), {
+        // Create restaurant with retry logic
+        await withRetry(() => setDoc(doc(db, 'restaurants', restaurantId), {
           name: `${user.displayName || 'My Restaurant'} Menu`,
           slug,
           ownerId: user.uid,
@@ -96,17 +142,17 @@ function LoginForm() {
           watermarkEnabled: true,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
-        });
+        }));
 
-        // Create user profile
-        await setDoc(doc(db, 'users', user.uid), {
+        // Create user profile with retry logic
+        await withRetry(() => setDoc(doc(db, 'users', user.uid), {
           email: user.email,
           displayName: user.displayName,
           photoURL: user.photoURL,
           restaurantId,
           role: 'owner',
           createdAt: serverTimestamp(),
-        });
+        }));
 
         toast({
           title: 'Welcome to MenuxPro!',
@@ -116,9 +162,16 @@ function LoginForm() {
 
       router.push('/dashboard');
     } catch (err: unknown) {
-      const firebaseError = err as { code?: string };
-      if (firebaseError.code === 'auth/popup-closed-by-user') {
+      console.error('Google auth error:', err);
+      const firebaseError = err as { code?: string; message?: string };
+      
+      if (isOfflineError(err)) {
+        setError('Connection issue. Please check your internet and try again.');
+        setIsFirestoreReady(false);
+      } else if (firebaseError.code === 'auth/popup-closed-by-user') {
         setError('Sign in cancelled. Please try again.');
+      } else if (firebaseError.code === 'auth/popup-blocked') {
+        setError('Popup blocked. Please allow popups or try email login.');
       } else {
         setError('Failed to sign in with Google. Please try again.');
       }
@@ -130,6 +183,12 @@ function LoginForm() {
   // Handle Email Sign Up
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isOnline) {
+      setError('You appear to be offline. Please check your connection and try again.');
+      return;
+    }
+    
     setError(null);
     setLoading(true);
 
@@ -141,7 +200,8 @@ function LoginForm() {
       const restaurantId = doc(db, 'restaurants').id;
       const slug = generateFreeSlug();
 
-      await setDoc(doc(db, 'restaurants', restaurantId), {
+      // Use retry logic for Firestore operations
+      await withRetry(() => setDoc(doc(db, 'restaurants', restaurantId), {
         name: `${name || 'My Restaurant'} Menu`,
         slug,
         ownerId: user.uid,
@@ -154,16 +214,16 @@ function LoginForm() {
         watermarkEnabled: true,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-      });
+      }));
 
-      // Create user profile
-      await setDoc(doc(db, 'users', user.uid), {
+      // Create user profile with retry logic
+      await withRetry(() => setDoc(doc(db, 'users', user.uid), {
         email: user.email,
         displayName: name,
         restaurantId,
         role: 'owner',
         createdAt: serverTimestamp(),
-      });
+      }));
 
       toast({
         title: 'Account created!',
@@ -172,11 +232,17 @@ function LoginForm() {
 
       router.push('/dashboard');
     } catch (err: unknown) {
-      const firebaseError = err as { code?: string };
-      if (firebaseError.code === 'auth/email-already-in-use') {
+      console.error('Sign up error:', err);
+      const firebaseError = err as { code?: string; message?: string };
+      
+      if (isOfflineError(err)) {
+        setError('Connection issue. Please check your internet and try again.');
+      } else if (firebaseError.code === 'auth/email-already-in-use') {
         setError('This email is already registered. Please sign in instead.');
       } else if (firebaseError.code === 'auth/weak-password') {
         setError('Password should be at least 6 characters.');
+      } else if (firebaseError.code === 'auth/network-request-failed') {
+        setError('Network error. Please check your connection and try again.');
       } else {
         setError('Failed to create account. Please try again.');
       }
@@ -188,6 +254,12 @@ function LoginForm() {
   // Handle Email Sign In
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isOnline) {
+      setError('You appear to be offline. Please check your connection and try again.');
+      return;
+    }
+    
     setError(null);
     setLoading(true);
 
@@ -195,11 +267,17 @@ function LoginForm() {
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/dashboard');
     } catch (err: unknown) {
-      const firebaseError = err as { code?: string };
-      if (firebaseError.code === 'auth/invalid-credential' || firebaseError.code === 'auth/wrong-password') {
+      console.error('Sign in error:', err);
+      const firebaseError = err as { code?: string; message?: string };
+      
+      if (isOfflineError(err) || firebaseError.code === 'auth/network-request-failed') {
+        setError('Connection issue. Please check your internet and try again.');
+      } else if (firebaseError.code === 'auth/invalid-credential' || firebaseError.code === 'auth/wrong-password') {
         setError('Invalid email or password.');
       } else if (firebaseError.code === 'auth/user-not-found') {
         setError('No account found with this email.');
+      } else if (firebaseError.code === 'auth/too-many-requests') {
+        setError('Too many failed attempts. Please try again later.');
       } else {
         setError('Failed to sign in. Please try again.');
       }
@@ -216,6 +294,22 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col lg:flex-row">
+      {/* Offline Banner */}
+      {!isOnline && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white py-2 px-4 text-center text-sm font-medium flex items-center justify-center gap-2">
+          <WifiOff className="w-4 h-4" />
+          <span>You&apos;re offline. Please check your internet connection.</span>
+        </div>
+      )}
+      
+      {/* Firestore Connection Issue Banner */}
+      {!isFirestoreReady && isOnline && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-orange-500 text-white py-2 px-4 text-center text-sm font-medium flex items-center justify-center gap-2">
+          <CloudOff className="w-4 h-4" />
+          <span>Connection issue. Retrying automatically...</span>
+        </div>
+      )}
+      
       {/* Left Side - Branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-primary to-espresso relative overflow-hidden">
         {/* Decorative elements */}

@@ -57,3 +57,50 @@ Vulnerabilities Remaining (require manual testing):
 - VULN-009: Demo mode fallback (low risk)
 - VULN-010: Predictable device ID (low risk)
 - Potential vulnerabilities VULN-011-014 require manual verification
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix Firebase Authentication Bugs - "Client is Offline" Error
+
+Work Log:
+- Updated /src/lib/firebase.ts to enable Firestore offline persistence
+  - Added persistentLocalCache with persistentMultipleTabManager
+  - This prevents "Failed to get document because the client is offline" errors
+- Created /src/hooks/useNetworkStatus.ts for network monitoring
+  - Added useNetworkStatus hook for tracking online/offline state
+  - Added withRetry helper for automatic retry with exponential backoff
+  - Added isOfflineError helper to detect offline/network errors
+- Updated /src/services/authService.ts with retry logic
+  - getStaffProfile now uses withRetry for Firestore operations
+  - Added offline error handling
+- Updated /src/contexts/StaffSessionContext.tsx to prevent race conditions
+  - Added isProcessingAuthState ref to prevent concurrent auth state processing
+  - Added isOffline state tracking
+  - Added proper error handling for offline scenarios
+- Updated /src/app/login/page.tsx with comprehensive offline handling
+  - Added network status monitoring with visual indicators
+  - Added offline check before auth operations
+  - Added retry logic for Firestore operations
+  - Added better error messages for network issues
+- Updated /src/app/admin/login/page.tsx with same improvements
+  - Added network status monitoring
+  - Added offline error handling
+  - Added visual offline banner
+- Created /src/components/network-status-indicator.tsx
+  - Visual indicator for offline status
+  - Shows reconnection notification
+  - Firestore-specific connection indicator
+
+Stage Summary:
+- Fixed the "client is offline" Firebase error by enabling persistent local cache
+- Added robust retry logic for network operations
+- Prevented race conditions in auth state management
+- Added visual feedback for network issues
+- All linting errors fixed
+
+Key Changes:
+1. Firestore offline persistence enabled - allows app to work during temporary network drops
+2. Automatic retry with exponential backoff for transient network failures
+3. Race condition prevention in auth state listeners
+4. Visual indicators for network status

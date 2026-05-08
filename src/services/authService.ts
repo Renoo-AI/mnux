@@ -7,6 +7,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import type { Staff, UserRole } from '@/types';
+import { withRetry, isOfflineError } from '@/hooks/useNetworkStatus';
 
 const STAFF_COLLECTION = 'staff';
 
@@ -18,20 +19,34 @@ export interface AuthUser {
   isSuperadmin: boolean;
 }
 
-// Get staff profile from Firestore
+// Get staff profile from Firestore with retry logic
 async function getStaffProfile(userId: string): Promise<Staff | null> {
-  const docRef = doc(db, STAFF_COLLECTION, userId);
-  const snapshot = await getDoc(docRef);
-  
-  if (!snapshot.exists()) return null;
-  
-  const data = snapshot.data();
-  return {
-    id: snapshot.id,
-    ...data,
-    createdAt: new Date(data.createdAt.seconds * 1000),
-    updatedAt: new Date(data.updatedAt.seconds * 1000),
-  } as Staff;
+  try {
+    return await withRetry(async () => {
+      const docRef = doc(db, STAFF_COLLECTION, userId);
+      const snapshot = await getDoc(docRef);
+      
+      if (!snapshot.exists()) return null;
+      
+      const data = snapshot.data();
+      return {
+        id: snapshot.id,
+        ...data,
+        createdAt: new Date(data.createdAt.seconds * 1000),
+        updatedAt: new Date(data.updatedAt.seconds * 1000),
+      } as Staff;
+    });
+  } catch (error) {
+    console.error('Error fetching staff profile:', error);
+    
+    // If offline, return null but don't throw
+    if (isOfflineError(error)) {
+      console.warn('Offline - staff profile temporarily unavailable');
+      return null;
+    }
+    
+    throw error;
+  }
 }
 
 // Sign in with email and password
