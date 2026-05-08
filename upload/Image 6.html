@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Menux - Premium Digital Menu &amp; Table Ordering</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-container": "#ffd1ad",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-fixed-dim": "#eabe9a",
+                    "primary-fixed-dim": "#d1c4bd",
+                    "tertiary-fixed": "#ece1d5",
+                    "on-secondary-container": "#79583b",
+                    "on-background": "#1a1c1b",
+                    "surface-container-low": "#f4f3f1",
+                    "secondary": "#79573a",
+                    "primary-container": "#3a322d",
+                    "background": "#faf9f7",
+                    "surface-variant": "#e3e2e0",
+                    "on-tertiary": "#ffffff",
+                    "outline": "#7f756f",
+                    "inverse-on-surface": "#f1f1ef",
+                    "on-surface-variant": "#4d4540",
+                    "tertiary-fixed-dim": "#cfc5b9",
+                    "on-primary-fixed-variant": "#4e4540",
+                    "primary": "#241d19",
+                    "on-error-container": "#93000a",
+                    "error-container": "#ffdad6",
+                    "primary-fixed": "#eee0d8",
+                    "on-tertiary-container": "#a49b90",
+                    "secondary-fixed": "#ffdcc1",
+                    "on-secondary": "#ffffff",
+                    "on-primary-container": "#a69a93",
+                    "tertiary": "#231e17",
+                    "surface-bright": "#faf9f7",
+                    "on-surface": "#1a1c1b",
+                    "on-error": "#ffffff",
+                    "surface-container-highest": "#e3e2e0",
+                    "surface-dim": "#dadad8",
+                    "on-tertiary-fixed": "#201b14",
+                    "inverse-primary": "#d1c4bd",
+                    "on-primary-fixed": "#211a16",
+                    "outline-variant": "#d1c4bd",
+                    "on-secondary-fixed": "#2d1601",
+                    "on-tertiary-fixed-variant": "#4c463d",
+                    "error": "#ba1a1a",
+                    "on-primary": "#ffffff",
+                    "surface-tint": "#665c57",
+                    "surface-container-high": "#e9e8e6",
+                    "inverse-surface": "#2f3130",
+                    "surface": "#faf9f7",
+                    "tertiary-container": "#39332b",
+                    "on-secondary-fixed-variant": "#5e4025",
+                    "surface-container": "#efeeec"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "container-max": "1280px",
+                    "margin-page": "64px",
+                    "section-padding": "120px",
+                    "gutter": "32px",
+                    "unit": "8px"
+            },
+            "fontFamily": {
+                    "h3": ["Plus Jakarta Sans"],
+                    "h1": ["Playfair Display"],
+                    "label-sm": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "h2": ["Playfair Display"],
+                    "display-xl": ["Playfair Display"],
+                    "body-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "h3": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                    "h1": ["48px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                    "label-sm": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "h2": ["36px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "display-xl": ["72px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .dotted-divider {
+            background-image: radial-gradient(#d1c4bd 1px, transparent 1px);
+            background-size: 8px 1px;
+            background-repeat: repeat-x;
+            height: 1px;
+            width: 100%;
+        }
+        .luxury-shadow {
+            box-shadow: 0 10px 40px -10px rgba(58, 50, 45, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- TopNavBar -->
+<nav class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-page py-6 max-w-container-max mx-auto bg-background/80 backdrop-blur-md dark:bg-background/80">
+<div class="flex items-center gap-2">
+<span class="text-h3 font-h1 text-primary dark:text-primary-fixed">Menux</span>
+</div>
+<div class="hidden md:flex items-center gap-10">
+<a class="text-primary font-semibold border-b-2 border-primary pb-1 font-body-md text-body-md" href="#">Découvrir</a>
+</div>
+<button class="bg-primary text-on-primary px-6 py-3 rounded-full font-label-sm hover:opacity-80 transition-opacity scale-95 active:scale-90 transition-transform duration-200">
+            Voir une démo
+        </button>
+</nav>
+<!-- Hero Section -->
+<section class="relative pt-[160px] pb-section-padding px-margin-page max-w-container-max mx-auto overflow-hidden">
+<div class="flex flex-col md:flex-row items-center gap-gutter">
+<div class="w-full md:w-1/2 flex flex-col gap-8">
+<h1 class="font-display-xl text-display-xl text-primary leading-tight">
+                    Le menu digital <br/><span class="italic font-normal">nouvelle génération.</span>
+</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-[480px]">
+                    QR menus and table ordering designed for modern cafés and restaurants. L'élégance du papier, la puissance du digital.
+                </p>
+<div class="flex flex-wrap gap-4">
+<button class="bg-primary text-on-primary px-8 py-4 rounded-full font-label-sm hover:opacity-90 transition-all luxury-shadow">
+                        Découvrir Menux
+                    </button>
+<button class="border border-outline px-8 py-4 rounded-full font-label-sm hover:bg-surface-container-low transition-all">
+                        Voir une démo
+                    </button>
+</div>
+</div>
+<div class="w-full md:w-1/2 relative mt-12 md:mt-0">
+<div class="rounded-xl overflow-hidden luxury-shadow relative aspect-square bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A sun-drenched minimalist luxury café interior with marble counters, warm wood accents, and soft morning light. In the foreground, a modern smartphone displays a beautifully designed digital menu with high-resolution food photography, positioned next to a designer ceramic coffee cup. The overall aesthetic is clean, premium, and sophisticated with a color palette of soft beige, cream, and espresso brown." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAnzfyNrCSvvS-8HP4qSzFltYgmVaQwO7x2vbgnMMWqoCstZdvsImmLrWGglmxihqHm8HGe8LLec1S-mlu_LDywabwHd9UySy2So9_JifINEEPsyoW0ueLcSpPSRAZy2xkGdiwoPOJOmjYd3NKQKPzMtJ4KlI3N-hk2PNubbO4anX2iLFDPg_xGcgGIC9WwauBbvF3ezmyPSbr4Cw5EENaQoZsCFMRE6K7MsOnvqAKLzA9t1wbv8wM5rTh9ZbfW26xj45A8z8noRhUz"/>
+<!-- Mobile Mockup Floating Overlay -->
+<div class="absolute bottom-[-40px] right-8 w-48 h-96 bg-primary rounded-[2.5rem] border-[6px] border-primary-container luxury-shadow hidden lg:block overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Close up of a premium smartphone interface showing a minimalist restaurant menu app. The UI features a clean grid of high-end pastry images, elegant serif typography for prices, and a sleek gold 'Order Now' button. The background of the phone screen is a soft cream color matching the brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdQYmIBvTxjAGtHwahb86qOSgJh4MzdWCPI40pEsnR7v7YP1M9ikPbWDZ7w2nk-Zd_QbzAlxeik22ck3_8IL9ZLBpwD8O-ExzR5WQ6y5_8DQAjEGW-8eA06uxw5JR9nSebIYvh7r0G8VqKcU-m7iCzna9_P5UFy3MqtrhRjQLsteYqsmVKW1X7-NZHwm5LZ2LnV0Htnl5cnYh8Siu-JoPJNVky6ak55KaLW4sE4Q_DaWFNbJIbw9jsC2MKXgos6-E_uc36zNkJt_cs"/>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Pain Points Comparison -->
+<section class="bg-surface-container-low py-section-padding px-margin-page">
+<div class="max-w-container-max mx-auto">
+<div class="text-center mb-20">
+<h2 class="font-h2 text-h2 text-primary mb-4">Redéfinissez l'expérience client</h2>
+<p class="font-body-md text-on-surface-variant">L'efficacité opérationnelle sans compromis sur le prestige.</p>
+</div>
+<div class="grid md:grid-cols-2 gap-gutter">
+<!-- Before -->
+<div class="bg-white p-12 rounded-lg border border-outline-variant flex flex-col gap-6">
+<span class="font-label-sm text-error uppercase tracking-widest">Avant Menux</span>
+<h3 class="font-h3 text-h3 text-primary">Le chaos invisible</h3>
+<ul class="flex flex-col gap-4">
+<li class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-error">close</span>
+                            Temps d'attente prolongé pour la carte
+                        </li>
+<li class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-error">close</span>
+                            Menus papier usés ou obsolètes
+                        </li>
+<li class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-error">close</span>
+                            Erreurs de saisie et oublis de commande
+                        </li>
+</ul>
+</div>
+<!-- After -->
+<div class="bg-primary text-on-primary p-12 rounded-lg luxury-shadow flex flex-col gap-6">
+<span class="font-label-sm text-secondary-fixed uppercase tracking-widest">Avec Menux</span>
+<h3 class="font-h3 text-h3 text-surface-container-lowest">La fluidité absolue</h3>
+<ul class="flex flex-col gap-4">
+<li class="flex items-center gap-3 text-primary-fixed">
+<span class="material-symbols-outlined text-secondary-fixed">check_circle</span>
+                            Accès instantané via QR Code élégant
+                        </li>
+<li class="flex items-center gap-3 text-primary-fixed">
+<span class="material-symbols-outlined text-secondary-fixed">check_circle</span>
+                            Mise à jour des stocks en temps réel
+                        </li>
+<li class="flex items-center gap-3 text-primary-fixed">
+<span class="material-symbols-outlined text-secondary-fixed">check_circle</span>
+                            Augmentation du panier moyen de 25%
+                        </li>
+</ul>
+</div>
+</div>
+</div>
+</section>
+<!-- How it Works: Bento Grid -->
+<section class="py-section-padding px-margin-page max-w-container-max mx-auto">
+<h2 class="font-h2 text-h2 text-primary mb-16">Simplicité. Rapidité. Prestige.</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Step 1 -->
+<div class="group bg-white p-10 rounded-lg border border-surface-container-high luxury-shadow flex flex-col gap-8 hover:-translate-y-2 transition-transform duration-300">
+<div class="w-16 h-16 bg-secondary-container rounded-full flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined text-[32px]">qr_code_scanner</span>
+</div>
+<div>
+<h3 class="font-h3 text-h3 mb-4">1. Scan QR</h3>
+<p class="text-on-surface-variant">Un scan discret avec le smartphone. Pas d'application à télécharger, juste une immersion immédiate.</p>
+</div>
+</div>
+<!-- Step 2 -->
+<div class="group bg-white p-10 rounded-lg border border-surface-container-high luxury-shadow flex flex-col gap-8 hover:-translate-y-2 transition-transform duration-300">
+<div class="w-16 h-16 bg-secondary-container rounded-full flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined text-[32px]">restaurant_menu</span>
+</div>
+<div>
+<h3 class="font-h3 text-h3 mb-4">2. Choix fluide</h3>
+<p class="text-on-surface-variant">Naviguez à travers un menu interactif haute définition, magnifiant chaque ingrédient et boisson.</p>
+</div>
+</div>
+<!-- Step 3 -->
+<div class="group bg-white p-10 rounded-lg border border-surface-container-high luxury-shadow flex flex-col gap-8 hover:-translate-y-2 transition-transform duration-300">
+<div class="w-16 h-16 bg-secondary-container rounded-full flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined text-[32px]">shopping_cart_checkout</span>
+</div>
+<div>
+<h3 class="font-h3 text-h3 mb-4">3. Commande</h3>
+<p class="text-on-surface-variant">Envoyez la commande directement en cuisine. Payez à table ou au comptoir en un instant.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Dashboard Preview -->
+<section class="bg-primary py-section-padding px-margin-page overflow-hidden">
+<div class="max-w-container-max mx-auto flex flex-col items-center gap-16">
+<div class="text-center text-on-primary max-w-2xl">
+<h2 class="font-h2 text-h2 mb-6">Un pilotage en toute sérénité.</h2>
+<p class="font-body-md text-primary-fixed opacity-80">Le tableau de bord Menux Pro offre une vue cristalline de votre salle. Gérez vos tables d'un simple geste.</p>
+</div>
+<div class="w-full bg-surface-container-lowest rounded-xl p-8 luxury-shadow flex flex-col gap-8">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-6">
+<span class="font-h3 text-h3 text-primary">Caisse / Dashboard</span>
+<div class="flex gap-2">
+<span class="px-4 py-1 bg-secondary-container text-on-secondary-container text-label-sm rounded-full">En direct</span>
+<span class="px-4 py-1 bg-surface-container text-on-surface-variant text-label-sm rounded-full">Historique</span>
+</div>
+</div>
+<div class="text-primary font-h3">14:32</div>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+<!-- Table Card Active -->
+<div class="aspect-square bg-white border-2 border-secondary-fixed-dim rounded-lg p-4 flex flex-col justify-between luxury-shadow">
+<div class="flex justify-between items-start">
+<span class="font-bold text-lg text-primary">T-01</span>
+<span class="w-3 h-3 bg-secondary rounded-full"></span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-label-sm text-on-surface-variant">3 Articles</span>
+<span class="font-bold text-primary">42,50 €</span>
+</div>
+</div>
+<!-- Table Card Idle -->
+<div class="aspect-square bg-surface-container-low border border-outline-variant rounded-lg p-4 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<span class="font-bold text-lg text-on-surface-variant">T-02</span>
+</div>
+<span class="text-label-sm text-outline italic">Libre</span>
+</div>
+<!-- Table Card Active -->
+<div class="aspect-square bg-white border-2 border-secondary-fixed-dim rounded-lg p-4 flex flex-col justify-between luxury-shadow">
+<div class="flex justify-between items-start">
+<span class="font-bold text-lg text-primary">T-03</span>
+<span class="w-3 h-3 bg-secondary rounded-full"></span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-label-sm text-on-surface-variant">1 Article</span>
+<span class="font-bold text-primary">8,00 €</span>
+</div>
+</div>
+<!-- More Tables -->
+<div class="aspect-square bg-surface-container-low border border-outline-variant rounded-lg p-4 flex flex-col justify-between">
+<span class="font-bold text-lg text-on-surface-variant">T-04</span>
+<span class="text-label-sm text-outline italic">Libre</span>
+</div>
+<div class="aspect-square bg-surface-container-low border border-outline-variant rounded-lg p-4 flex flex-col justify-between">
+<span class="font-bold text-lg text-on-surface-variant">T-05</span>
+<span class="text-label-sm text-outline italic">Libre</span>
+</div>
+<div class="aspect-square bg-white border-2 border-secondary-fixed-dim rounded-lg p-4 flex flex-col justify-between luxury-shadow">
+<div class="flex justify-between items-start">
+<span class="font-bold text-lg text-primary">T-06</span>
+<span class="w-3 h-3 bg-secondary rounded-full"></span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-label-sm text-on-surface-variant">5 Articles</span>
+<span class="font-bold text-primary">112,00 €</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Plans -->
+<section class="py-section-padding px-margin-page max-w-container-max mx-auto">
+<div class="text-center mb-16">
+<h2 class="font-h2 text-h2 text-primary mb-4">Une solution sur mesure</h2>
+<p class="font-body-md text-on-surface-variant">S'intègre parfaitement avec votre caisse existante.</p>
+</div>
+<div class="grid md:grid-cols-2 gap-gutter max-w-4xl mx-auto">
+<!-- Menux Lite -->
+<div class="bg-white p-10 rounded-lg border border-surface-container-high luxury-shadow flex flex-col h-full">
+<div class="flex justify-between items-start mb-8">
+<div>
+<h3 class="font-h3 text-h3 text-primary">Menux Lite</h3>
+<p class="text-on-surface-variant font-body-md">L'excellence visuelle.</p>
+</div>
+<span class="text-primary font-bold text-2xl">49€<span class="text-label-sm text-outline">/mois</span></span>
+</div>
+<ul class="flex flex-col gap-4 mb-10 flex-grow">
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">check</span>
+                        Menu Digital haute fidélité
+                    </li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">check</span>
+                        Accès QR Code illimité
+                    </li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">check</span>
+                        Branding Premium Personnalisé
+                    </li>
+</ul>
+<button class="w-full border border-primary text-primary py-4 rounded-full font-label-sm hover:bg-primary hover:text-on-primary transition-all">Choisir Lite</button>
+</div>
+<!-- Menux Pro -->
+<div class="bg-primary text-on-primary p-10 rounded-lg luxury-shadow flex flex-col h-full relative overflow-hidden">
+<div class="absolute top-4 right-4 bg-secondary text-on-secondary text-[10px] px-3 py-1 rounded-full uppercase font-bold tracking-widest">Populaire</div>
+<div class="flex justify-between items-start mb-8">
+<div>
+<h3 class="font-h3 text-h3 text-surface-container-lowest">Menux Pro</h3>
+<p class="text-primary-fixed opacity-70 font-body-md">Opérationnel complet.</p>
+</div>
+<span class="text-secondary-fixed font-bold text-2xl">99€<span class="text-primary-fixed text-label-sm opacity-60">/mois</span></span>
+</div>
+<ul class="flex flex-col gap-4 mb-10 flex-grow">
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary-fixed">check</span>
+                        Commande directe à table
+                    </li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary-fixed">check</span>
+                        Dashboard encaissement temps réel
+                    </li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary-fixed">check</span>
+                        Gestion des stocks en direct
+                    </li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary-fixed">check</span>
+                        Support prioritaire 7j/7
+                    </li>
+</ul>
+<button class="w-full bg-secondary text-white py-4 rounded-full font-label-sm hover:opacity-90 transition-all">Choisir Pro</button>
+</div>
+</div>
+<p class="text-center mt-8 text-on-surface-variant italic text-body-md">Note: Works with your existing caisse.</p>
+</section>
+<!-- QR Lifestyle -->
+<section class="relative py-section-padding px-margin-page bg-surface-container-low overflow-hidden">
+<div class="max-w-container-max mx-auto flex flex-col md:flex-row items-center gap-gutter">
+<div class="w-full md:w-1/2 rounded-xl overflow-hidden luxury-shadow">
+<img class="w-full h-96 object-cover" data-alt="Close-up of a high-end, minimal QR code stand made of brushed brass and dark oak wood, resting on a white Carrara marble table. The background is a soft-focus luxury cafe terrace with green plants and warm ambient lighting. A crystal glass of sparkling water sits next to the stand, reflecting the golden hour light. The image captures a mood of quiet luxury and effortless technology integration." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAltn-SQ90XJfjdoHShBRzx4LBdRYmD6P9PREmHKO8VqTbE6cQficrrsBRjk6Eh0sd5Ah9KnA_1qICDkfnjHuC6CXvZ3ikA_bJai2-1dhvDb8orLJsXU6D8z7zLHjaryTJ3ZOFaacbAY-8SXGpesi1Geuinx5ViAnoZ0o_AGh2UU-kJLAkYSahMzC0OLLgWF9UmdE5Sx4QzW97tSiHa6SJ43lSNOXQ85UIatiELVlQzcr2TRl7PTt12lUa8vri9jq1M8nsFXdR5dCg"/>
+</div>
+<div class="w-full md:w-1/2 flex flex-col gap-6">
+<h2 class="font-h2 text-h2 text-primary">Chaque table devient interactive.</h2>
+<p class="font-body-lg text-on-surface-variant">
+                    Nos supports QR sont conçus comme des objets de design. Ils ne dénaturent pas votre décoration, ils l'enrichissent tout en facilitant le travail de vos équipes.
+                </p>
+<div class="dotted-divider"></div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-secondary">star_rate</span>
+<p class="font-body-md italic text-primary">"Menux a transformé le temps d'attente en un moment de plaisir." — Chef de La Brasserie</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Final CTA -->
+<section class="py-section-padding px-margin-page max-w-container-max mx-auto text-center">
+<div class="bg-surface-container-lowest p-16 rounded-xl luxury-shadow flex flex-col items-center gap-8">
+<h2 class="font-display-xl text-h1 text-primary">Transformez votre service avec Menux.</h2>
+<p class="font-body-lg text-on-surface-variant max-w-xl mx-auto">
+                Rejoignez les établissements les plus prestigieux qui font confiance à Menux pour leur expérience digitale.
+            </p>
+<div class="flex flex-wrap justify-center gap-4">
+<button class="bg-primary text-on-primary px-10 py-5 rounded-full font-label-sm hover:opacity-90 transition-all scale-105">
+                    Commencer
+                </button>
+<button class="border border-outline px-10 py-5 rounded-full font-label-sm hover:bg-surface-container-low transition-all">
+                    Voir une démo
+                </button>
+</div>
+</div>
+</section>
+<!-- Footer -->
+<footer class="w-full px-margin-page py-section-padding flex flex-col md:flex-row justify-between items-start gap-gutter max-w-container-max mx-auto bg-surface-container dark:bg-tertiary-container rounded-t-lg">
+<div class="flex flex-col gap-6 max-w-xs">
+<span class="text-h3 font-h1 text-primary dark:text-primary-fixed">Menux</span>
+<p class="font-body-md text-on-surface-variant">© 2024 Menux. L'excellence opérationnelle pour la restauration.</p>
+</div>
+<div class="grid grid-cols-2 gap-16">
+<div class="flex flex-col gap-4">
+<h4 class="font-label-sm text-primary uppercase tracking-widest mb-2">Navigation</h4>
+<a class="text-on-surface-variant hover:text-secondary transition-colors font-body-md" href="#">Produit</a>
+<a class="text-on-surface-variant hover:text-secondary transition-colors font-body-md" href="#">Tarifs</a>
+<a class="text-on-surface-variant hover:text-secondary transition-colors font-body-md" href="#">Contact</a>
+</div>
+<div class="flex flex-col gap-4">
+<h4 class="font-label-sm text-primary uppercase tracking-widest mb-2">Légal</h4>
+<a class="text-on-surface-variant hover:text-secondary transition-colors font-body-md" href="#">Mentions Légales</a>
+<a class="text-on-surface-variant hover:text-secondary transition-colors font-body-md" href="#">Confidentialité</a>
+</div>
+</div>
+</footer>
+</body></html>

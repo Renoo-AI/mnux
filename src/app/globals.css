@@ -1,0 +1,239 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Menux Design System - Premium Café Theme */
+/* Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+/* Material Symbols */
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+    /* Menux Color Variables */
+    --background: #FCFBF9;
+    --foreground: #1d1b1b;
+    
+    --primary: #241d19;
+    --primary-foreground: #ffffff;
+    
+    --secondary: #79573a;
+    --secondary-foreground: #ffffff;
+    
+    --accent: #C9A07E;
+    --accent-foreground: #241d19;
+    
+    --muted: #f2edeb;
+    --muted-foreground: #4d4540;
+    
+    --card: #ffffff;
+    --card-foreground: #1d1b1b;
+    
+    --popover: #ffffff;
+    --popover-foreground: #1d1b1b;
+    
+    --border: #d1c4bd;
+    --input: #d1c4bd;
+    --ring: #C9A07E;
+    
+    --destructive: #ba1a1a;
+    --destructive-foreground: #ffffff;
+    
+    --radius: 0.5rem;
+    
+    /* Additional Menux Variables */
+    --espresso: #3A322D;
+    --soft-beige: #EFE4D8;
+    --surface: #fef8f7;
+    --surface-dim: #ded9d8;
+    --outline: #7f756f;
+    --outline-variant: #d1c4bd;
+}
+
+.dark {
+    --background: #1d1b1b;
+    --foreground: #f5f0ee;
+    
+    --primary: #d1c4bd;
+    --primary-foreground: #241d19;
+    
+    --secondary: #eabe9a;
+    --secondary-foreground: #241d19;
+    
+    --accent: #C9A07E;
+    --accent-foreground: #241d19;
+    
+    --muted: #32302f;
+    --muted-foreground: #d1c4bd;
+    
+    --card: #241d19;
+    --card-foreground: #f5f0ee;
+    
+    --popover: #241d19;
+    --popover-foreground: #f5f0ee;
+    
+    --border: #3a322d;
+    --input: #3a322d;
+    --ring: #C9A07E;
+    
+    --destructive: #ffdad6;
+    --destructive-foreground: #ba1a1a;
+    
+    --surface: #1d1b1b;
+    --surface-dim: #241d19;
+    --outline: #7f756f;
+    --outline-variant: #3a322d;
+}
+
+/* Base Styles */
+* {
+    border-color: var(--border);
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Material Symbols Configuration */
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    font-size: 24px;
+    line-height: 1;
+}
+
+.material-symbols-outlined.filled {
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #e6e1e0;
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #d1c4bd;
+}
+
+/* Hide Scrollbar */
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Luxury Shadow Utility */
+.luxury-shadow {
+    box-shadow: 0 10px 40px -10px rgba(58, 50, 45, 0.15);
+}
+
+/* Card Shadow Utility */
+.card-shadow {
+    box-shadow: 0px 10px 30px rgba(58, 50, 45, 0.05);
+}
+
+/* Dotted Divider */
+.dotted-divider {
+    background-image: radial-gradient(#d1c4bd 1px, transparent 1px);
+    background-size: 8px 1px;
+    background-repeat: repeat-x;
+    height: 1px;
+    width: 100%;
+}
+
+/* Animation for new orders */
+@keyframes pulse-border {
+    0% {
+        box-shadow: 0 0 0 0 rgba(201, 160, 126, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(201, 160, 126, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(201, 160, 126, 0);
+    }
+}
+
+.pulse-border {
+    border: 2px solid #C9A07E;
+    animation: pulse-border 2s infinite;
+}
+
+/* Selection styling */
+::selection {
+    background-color: #ffd1ad;
+    color: #79583b;
+}
+
+/* Focus ring styling */
+:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+}
+
+/* Button base styles */
+.btn-primary {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    border-radius: 9999px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn-primary:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.btn-secondary {
+    background-color: var(--secondary);
+    color: var(--secondary-foreground);
+    border-radius: 9999px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+    opacity: 0.9;
+}
+
+/* Sticky footer implementation */
+.sticky-footer-wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.sticky-footer-wrapper main {
+    flex: 1 0 auto;
+}
+
+.sticky-footer-wrapper footer {
+    flex-shrink: 0;
+    margin-top: auto;
+}

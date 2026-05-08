@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Settings | Menux Pro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&amp;family=Plus+Jakarta+Sans:wght@400;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-fixed-variant": "#4c463d",
+                    "surface-dim": "#ded9d8",
+                    "surface-container-lowest": "#ffffff",
+                    "tertiary-fixed": "#ece1d5",
+                    "tertiary-container": "#39332b",
+                    "outline": "#7f756f",
+                    "on-tertiary-container": "#a49b90",
+                    "on-tertiary-fixed": "#201b14",
+                    "on-surface-variant": "#4d4540",
+                    "inverse-primary": "#d1c4bd",
+                    "secondary-fixed-dim": "#eabe9a",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-fixed": "#2d1601",
+                    "on-primary": "#ffffff",
+                    "primary-container": "#3a322d",
+                    "tertiary": "#231e17",
+                    "background": "#fef8f7",
+                    "surface": "#fef8f7",
+                    "secondary-fixed": "#ffdcc1",
+                    "surface-variant": "#e6e1e0",
+                    "secondary": "#79573a",
+                    "on-error-container": "#93000a",
+                    "tertiary-fixed-dim": "#cfc5b9",
+                    "primary": "#241d19",
+                    "on-primary-fixed-variant": "#4e4540",
+                    "error-container": "#ffdad6",
+                    "on-tertiary": "#ffffff",
+                    "outline-variant": "#d1c4bd",
+                    "inverse-on-surface": "#f5f0ee",
+                    "on-secondary-container": "#79583b",
+                    "inverse-surface": "#32302f",
+                    "surface-container-low": "#f8f2f1",
+                    "surface-container-high": "#ece7e6",
+                    "on-primary-fixed": "#211a16",
+                    "on-secondary-fixed-variant": "#5e4025",
+                    "error": "#ba1a1a",
+                    "surface-container-highest": "#e6e1e0",
+                    "secondary-container": "#ffd1ad",
+                    "surface-tint": "#665c57",
+                    "on-surface": "#1d1b1b",
+                    "on-error": "#ffffff",
+                    "on-background": "#1d1b1b",
+                    "primary-fixed": "#eee0d8",
+                    "primary-fixed-dim": "#d1c4bd",
+                    "surface-bright": "#fef8f7",
+                    "surface-container": "#f2edeb",
+                    "on-primary-container": "#a69a93"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sm": "8px",
+                    "md": "16px",
+                    "container-margin": "32px",
+                    "unit": "4px",
+                    "lg": "24px",
+                    "gutter": "20px",
+                    "xl": "40px",
+                    "xs": "4px"
+            },
+            "fontFamily": {
+                    "label-caps": ["Plus Jakarta Sans"],
+                    "display-lg": ["Playfair Display"],
+                    "title-sm": ["Plus Jakarta Sans"],
+                    "headline-md": ["Playfair Display"],
+                    "body-md": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "label-caps": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                    "display-lg": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "title-sm": ["20px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                    "headline-md": ["32px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #fef8f7;
+        }
+        .settings-card {
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0px 10px 30px rgba(58, 50, 45, 0.05);
+        }
+    </style>
+</head>
+<body class="flex min-h-screen text-on-surface">
+<!-- SideNavBar Component -->
+<aside class="hidden md:flex flex-col w-64 h-screen py-lg gap-sm border-r border-outline-variant bg-surface-container-lowest sticky top-0">
+<div class="px-md mb-xl">
+<h1 class="font-display-lg text-title-sm font-bold text-primary">Menux Pro</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant">Premium Management</p>
+</div>
+<nav class="flex-1 flex flex-col gap-xs">
+<a class="text-on-surface-variant font-medium mx-md p-md hover:bg-surface-container-high transition-all flex items-center gap-md rounded-xl" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-title-sm text-label-caps">Dashboard</span>
+</a>
+<a class="text-on-surface-variant font-medium mx-md p-md hover:bg-surface-container-high transition-all flex items-center gap-md rounded-xl" href="#">
+<span class="material-symbols-outlined">restaurant_menu</span>
+<span class="font-title-sm text-label-caps">Orders</span>
+</a>
+<a class="text-on-surface-variant font-medium mx-md p-md hover:bg-surface-container-high transition-all flex items-center gap-md rounded-xl" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-title-sm text-label-caps">Menu</span>
+</a>
+<a class="text-on-surface-variant font-medium mx-md p-md hover:bg-surface-container-high transition-all flex items-center gap-md rounded-xl" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-title-sm text-label-caps">Activity</span>
+</a>
+<!-- Active State -->
+<a class="bg-secondary-fixed text-on-secondary-fixed-variant font-bold rounded-full mx-md p-md flex items-center gap-md" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-title-sm text-label-caps">Settings</span>
+</a>
+</nav>
+<div class="mt-auto flex flex-col gap-xs border-t border-outline-variant pt-md">
+<a class="text-on-surface-variant font-medium mx-md p-md hover:bg-surface-container-high transition-all flex items-center gap-md" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-title-sm text-label-caps">Support</span>
+</a>
+<a class="text-on-surface-variant font-medium mx-md p-md hover:bg-surface-container-high transition-all flex items-center gap-md" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-title-sm text-label-caps">Logout</span>
+</a>
+</div>
+</aside>
+<main class="flex-1 min-w-0">
+<!-- TopAppBar Component -->
+<header class="flex justify-between items-center px-lg py-md w-full sticky top-0 z-50 bg-surface shadow-[0px_10px_30px_rgba(58,50,45,0.05)]">
+<div class="flex items-center gap-md">
+<h2 class="font-headline-md text-headline-md text-primary">Settings</h2>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="pl-xl pr-md py-sm rounded-full border border-outline-variant bg-surface-container-low focus:ring-secondary focus:border-secondary w-64 text-body-md font-body-md" placeholder="Search settings..." type="text"/>
+</div>
+<button class="p-sm text-primary hover:bg-surface-container-low transition-colors duration-200 rounded-full">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-sm text-primary hover:bg-surface-container-low transition-colors duration-200 rounded-full">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<div class="p-lg md:p-xl max-w-7xl mx-auto space-y-xl">
+<!-- Restaurant Profile Section -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+<div class="lg:col-span-1">
+<h3 class="font-headline-md text-title-sm text-primary">Restaurant Profile</h3>
+<p class="font-body-md text-on-surface-variant mt-sm">Update your public information and branding assets.</p>
+</div>
+<div class="lg:col-span-2 settings-card p-lg space-y-lg">
+<div class="flex flex-col md:flex-row items-center gap-lg border-b border-outline-variant pb-lg">
+<div class="relative group">
+<img class="w-32 h-32 rounded-full object-cover border-4 border-surface-container-high" data-alt="A sophisticated close-up of a high-end restaurant logo displayed on a textured linen background. The lighting is warm and cinematic, suggesting an atmosphere of quiet luxury and artisanal craftsmanship. The color palette features deep espresso tones and soft golden highlights, creating a sense of premium hospitality and elegant brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDD3lkIK851qIOLMqjq-ckquOhir5sjjIr1MgXe8-W1gtsefoqKmBeYoxSoKO9PpYy9ur4DOsmsLerN6Vfpd5NVq2XEW6bLKzLafuFZeQ3QCrfs1Eq91as21mZ0NlZxPPHppkAYcmyaswZpWNC6sodcS1v-a5zGAM_NClmp9HerfxLs4JHYXSaAMDwPGPqLyPjGiW17oDkCCTmlYLUSFjAE1eLkPcRtGbjYhx4Mjdr0E8GJoYQ42EZ3EsTa94O4BqLPWSvVvu62OlWB"/>
+<button class="absolute bottom-0 right-0 bg-primary text-on-primary p-xs rounded-full shadow-lg border-2 border-surface">
+<span class="material-symbols-outlined text-[18px]">photo_camera</span>
+</button>
+</div>
+<div class="flex-1 space-y-md w-full">
+<div class="flex flex-col gap-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant">RESTAURANT NAME</label>
+<input class="w-full p-md border border-outline-variant rounded-full font-body-md bg-surface-container-low focus:border-secondary-fixed-dim outline-none" type="text" value="The Gilded Bean"/>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant">CUISINE TYPE</label>
+<input class="w-full p-md border border-outline-variant rounded-full font-body-md bg-surface-container-low focus:border-secondary-fixed-dim outline-none" type="text" value="Modern European &amp; Artisan Coffee"/>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant">ADDRESS</label>
+<textarea class="w-full p-md border border-outline-variant rounded-xl font-body-md bg-surface-container-low focus:border-secondary-fixed-dim outline-none" rows="3">124 Savile Row, Mayfair, London, W1S 3PR, United Kingdom</textarea>
+</div>
+</div>
+</section>
+<!-- Operational Hours Section -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+<div class="lg:col-span-1">
+<h3 class="font-headline-md text-title-sm text-primary">Operational Hours</h3>
+<p class="font-body-md text-on-surface-variant mt-sm">Manage when your kitchen and bar are open for business.</p>
+</div>
+<div class="lg:col-span-2 settings-card p-lg">
+<div class="space-y-md">
+<div class="flex items-center justify-between p-md bg-surface-container-low rounded-xl">
+<span class="font-title-sm text-body-md font-bold">Weekdays</span>
+<div class="flex items-center gap-md">
+<span class="font-body-md">08:00 AM — 11:00 PM</span>
+<button class="text-secondary font-label-caps text-label-caps hover:underline transition-all">EDIT</button>
+</div>
+</div>
+<div class="flex items-center justify-between p-md bg-surface-container-low rounded-xl border border-secondary-fixed">
+<span class="font-title-sm text-body-md font-bold">Weekends</span>
+<div class="flex items-center gap-md">
+<span class="font-body-md">10:00 AM — 01:00 AM</span>
+<button class="text-secondary font-label-caps text-label-caps hover:underline transition-all">EDIT</button>
+</div>
+</div>
+<div class="flex items-center justify-between p-md bg-surface-container-low rounded-xl">
+<span class="font-title-sm text-body-md font-bold">Public Holidays</span>
+<div class="flex items-center gap-md text-on-surface-variant">
+<span class="font-body-md">Closed</span>
+<button class="text-secondary font-label-caps text-label-caps hover:underline transition-all">EDIT</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Table Management Section -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+<div class="lg:col-span-1">
+<h3 class="font-headline-md text-title-sm text-primary">Table Management</h3>
+<p class="font-body-md text-on-surface-variant mt-sm">Organize your floor plan and manage digital menu QR codes.</p>
+<button class="mt-md bg-primary text-on-primary px-lg py-md rounded-full font-label-caps text-label-caps hover:bg-primary-container transition-all active:scale-95 flex items-center gap-sm">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        New Table
+                    </button>
+</div>
+<div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-md">
+<div class="settings-card p-md flex items-center justify-between hover:bg-surface-container-low transition-colors">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 bg-secondary-container text-on-secondary-container rounded-lg flex items-center justify-center font-bold">T-01</div>
+<div>
+<h4 class="font-title-sm text-body-md font-bold">Window Side</h4>
+<p class="font-label-caps text-[10px] text-on-surface-variant">4 SEATS</p>
+</div>
+</div>
+<button class="p-sm hover:text-secondary">
+<span class="material-symbols-outlined">qr_code_2</span>
+</button>
+</div>
+<div class="settings-card p-md flex items-center justify-between hover:bg-surface-container-low transition-colors">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 bg-secondary-container text-on-secondary-container rounded-lg flex items-center justify-center font-bold">T-02</div>
+<div>
+<h4 class="font-title-sm text-body-md font-bold">Main Hall</h4>
+<p class="font-label-caps text-[10px] text-on-surface-variant">2 SEATS</p>
+</div>
+</div>
+<button class="p-sm hover:text-secondary">
+<span class="material-symbols-outlined">qr_code_2</span>
+</button>
+</div>
+<div class="settings-card p-md flex items-center justify-between hover:bg-surface-container-low transition-colors">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 bg-secondary-container text-on-secondary-container rounded-lg flex items-center justify-center font-bold">B-01</div>
+<div>
+<h4 class="font-title-sm text-body-md font-bold">Bar Stool</h4>
+<p class="font-label-caps text-[10px] text-on-surface-variant">1 SEAT</p>
+</div>
+</div>
+<button class="p-sm hover:text-secondary">
+<span class="material-symbols-outlined">qr_code_2</span>
+</button>
+</div>
+<div class="settings-card p-md flex items-center justify-between border-2 border-dashed border-outline-variant bg-transparent cursor-pointer hover:border-secondary transition-all">
+<div class="flex items-center gap-md opacity-60">
+<div class="w-12 h-12 bg-surface-container rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined">add_circle</span>
+</div>
+<span class="font-body-md font-bold">Add Custom Table</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Staff Management Section -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+<div class="lg:col-span-1">
+<h3 class="font-headline-md text-title-sm text-primary">Staff Management</h3>
+<p class="font-body-md text-on-surface-variant mt-sm">Manage roles, permissions, and staff login access.</p>
+</div>
+<div class="lg:col-span-2 settings-card overflow-hidden">
+<table class="w-full text-left">
+<thead class="bg-surface-container-low border-b border-outline-variant">
+<tr>
+<th class="p-md font-label-caps text-label-caps text-on-surface-variant">STAFF MEMBER</th>
+<th class="p-md font-label-caps text-label-caps text-on-surface-variant">ROLE</th>
+<th class="p-md font-label-caps text-label-caps text-on-surface-variant">STATUS</th>
+<th class="p-md"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="p-md">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-secondary-fixed flex items-center justify-center font-bold text-on-secondary-fixed">EA</div>
+<div>
+<p class="font-body-md font-bold">Elena Aris</p>
+<p class="text-[12px] text-on-surface-variant">elena.a@menuxpro.com</p>
+</div>
+</div>
+</td>
+<td class="p-md">
+<span class="bg-tertiary-fixed text-on-tertiary-fixed font-label-caps text-[10px] px-sm py-xs rounded-full">MANAGER</span>
+</td>
+<td class="p-md">
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-green-500"></div>
+<span class="font-label-caps text-[10px]">ACTIVE</span>
+</div>
+</td>
+<td class="p-md text-right">
+<button class="p-sm text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="p-md">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center font-bold text-on-primary-fixed">MW</div>
+<div>
+<p class="font-body-md font-bold">Marcus Wade</p>
+<p class="text-[12px] text-on-surface-variant">marcus.w@menuxpro.com</p>
+</div>
+</div>
+</td>
+<td class="p-md">
+<span class="bg-surface-container-highest text-on-surface-variant font-label-caps text-[10px] px-sm py-xs rounded-full">WAITER</span>
+</td>
+<td class="p-md">
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-green-500"></div>
+<span class="font-label-caps text-[10px]">ACTIVE</span>
+</div>
+</td>
+<td class="p-md text-right">
+<button class="p-sm text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="p-md text-center bg-surface-container-low">
+<button class="text-secondary font-label-caps text-label-caps hover:underline">VIEW ALL STAFF</button>
+</div>
+</div>
+</section>
+</div>
+<footer class="p-xl border-t border-outline-variant flex justify-end gap-md">
+<button class="px-xl py-md border border-primary text-primary rounded-full font-label-caps text-label-caps hover:bg-surface-container-low transition-all">
+                Discard Changes
+            </button>
+<button class="px-xl py-md bg-primary text-on-primary rounded-full font-label-caps text-label-caps shadow-lg hover:shadow-none transition-all">
+                Save Settings
+            </button>
+</footer>
+</main>
+<!-- BottomNavBar Component for Mobile -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter py-sm md:hidden bg-surface dark:bg-surface-container shadow-[0px_-4px_20px_rgba(58,50,45,0.03)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-caps text-label-caps">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary" href="#">
+<span class="material-symbols-outlined">shopping_bag</span>
+<span class="font-label-caps text-label-caps">Cart</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-caps text-label-caps">Status</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-lg py-sm" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-label-caps text-label-caps">Profile</span>
+</a>
+</nav>
+</body></html>

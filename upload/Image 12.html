@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Menux Pro | Owner Activity Log</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-container": "#ffd1ad",
+                        "outline-variant": "#d1c4bd",
+                        "surface-container-high": "#ece7e6",
+                        "on-tertiary-fixed-variant": "#4c463d",
+                        "surface-dim": "#ded9d8",
+                        "tertiary-container": "#39332b",
+                        "on-secondary": "#ffffff",
+                        "surface-container-highest": "#e6e1e0",
+                        "surface-bright": "#fef8f7",
+                        "on-tertiary-container": "#a49b90",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed-variant": "#5e4025",
+                        "surface-container-low": "#f8f2f1",
+                        "primary-fixed": "#eee0d8",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#cfc5b9",
+                        "primary-container": "#3a322d",
+                        "on-secondary-container": "#79583b",
+                        "tertiary": "#231e17",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#f5f0ee",
+                        "inverse-surface": "#32302f",
+                        "on-surface": "#1d1b1b",
+                        "surface-tint": "#665c57",
+                        "on-primary-fixed-variant": "#4e4540",
+                        "on-tertiary-fixed": "#201b14",
+                        "secondary-fixed-dim": "#eabe9a",
+                        "secondary": "#79573a",
+                        "background": "#fef8f7",
+                        "surface": "#fef8f7",
+                        "error": "#ba1a1a",
+                        "primary-fixed-dim": "#d1c4bd",
+                        "primary": "#241d19",
+                        "on-error": "#ffffff",
+                        "surface-container": "#f2edeb",
+                        "on-surface-variant": "#4d4540",
+                        "secondary-fixed": "#ffdcc1",
+                        "error-container": "#ffdad6",
+                        "outline": "#7f756f",
+                        "on-tertiary": "#ffffff",
+                        "inverse-primary": "#d1c4bd",
+                        "tertiary-fixed": "#ece1d5",
+                        "on-background": "#1d1b1b",
+                        "surface-variant": "#e6e1e0",
+                        "on-primary-fixed": "#211a16",
+                        "on-primary-container": "#a69a93",
+                        "on-secondary-fixed": "#2d1601"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "40px",
+                        "gutter": "20px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "container-margin": "32px",
+                        "unit": "4px",
+                        "xs": "4px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Playfair Display"],
+                        "title-sm": ["Plus Jakarta Sans"],
+                        "headline-md": ["Playfair Display"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "label-caps": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "title-sm": ["20px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                        "headline-md": ["32px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.1em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #FCFBF9; /* Quiet Luxury Brand Background */
+            color: #3A322D; /* Primary Text Color */
+        }
+        .divider-beige {
+            border-color: #EFE4D8;
+        }
+    </style>
+</head>
+<body class="flex min-h-screen overflow-x-hidden">
+<!-- SideNavBar Component -->
+<aside class="hidden md:flex flex-col w-64 h-screen py-lg gap-sm border-r border-outline-variant sticky top-0 bg-surface-container-lowest dark:bg-surface-container-low">
+<div class="px-lg mb-xl">
+<h1 class="font-display-lg text-title-sm font-bold text-primary">Menux Pro</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant opacity-70">Premium Management</p>
+</div>
+<nav class="flex-1 flex flex-col gap-sm">
+<a class="flex items-center gap-md text-on-surface-variant font-medium mx-md p-md hover:bg-surface-container-high transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-title-sm text-label-caps">Dashboard</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant font-medium mx-md p-md hover:bg-surface-container-high transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="restaurant_menu">restaurant_menu</span>
+<span class="font-title-sm text-label-caps">Orders</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant font-medium mx-md p-md hover:bg-surface-container-high transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="font-title-sm text-label-caps">Menu</span>
+</a>
+<!-- Active State: Activity -->
+<a class="flex items-center gap-md bg-secondary-fixed text-on-secondary-fixed-variant font-bold rounded-full mx-md p-md active:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span class="font-title-sm text-label-caps">Activity</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant font-medium mx-md p-md hover:bg-surface-container-high transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-title-sm text-label-caps">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-md">
+<button class="w-full py-md mb-lg bg-primary text-on-primary rounded-full font-title-sm text-label-caps flex items-center justify-center gap-sm active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                New Table
+            </button>
+<div class="flex flex-col gap-sm">
+<a class="flex items-center gap-md text-on-surface-variant font-medium p-md hover:bg-surface-container-high transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-title-sm text-label-caps">Support</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant font-medium p-md hover:bg-surface-container-high transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-title-sm text-label-caps">Logout</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 min-w-0 bg-[#FCFBF9]">
+<!-- TopAppBar Component (Web Version in Canvas) -->
+<header class="flex justify-between items-center px-lg py-md w-full sticky top-0 z-50 bg-surface dark:bg-surface shadow-[0px_10px_30px_rgba(58,50,45,0.05)]">
+<div>
+<h2 class="font-display-lg text-headline-md font-bold text-primary">Activity Log</h2>
+</div>
+<div class="flex items-center gap-lg">
+<div class="relative hidden sm:block">
+<span class="absolute left-md top-1/2 -translate-y-1/2 material-symbols-outlined text-outline" data-icon="search">search</span>
+<input class="pl-xl pr-lg py-sm rounded-full border border-secondary-container bg-surface-container-lowest text-body-md w-64 focus:ring-1 focus:ring-secondary-fixed outline-none transition-all" placeholder="Search logs..." type="text"/>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-sm rounded-full hover:bg-surface-container-low transition-colors"><span class="material-symbols-outlined" data-icon="notifications">notifications</span></button>
+<button class="p-sm rounded-full hover:bg-surface-container-low transition-colors"><span class="material-symbols-outlined" data-icon="account_circle">account_circle</span></button>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<div class="p-container-margin max-w-6xl mx-auto space-y-xl">
+<!-- Summary Header (Bento Style) -->
+<section>
+<h3 class="font-title-sm text-title-sm mb-lg">Daily Summary</h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+<!-- Total Orders Card -->
+<div class="bg-white p-lg rounded-xl shadow-[0px_10px_30px_rgba(58,50,45,0.05)] border border-outline-variant/20">
+<div class="flex justify-between items-start mb-md">
+<span class="material-symbols-outlined text-primary bg-secondary-fixed p-sm rounded-lg" data-icon="shopping_cart">shopping_cart</span>
+<span class="text-label-caps font-label-caps text-secondary">+12% vs yesterday</span>
+</div>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Total Orders</p>
+<h4 class="font-display-lg text-display-lg mt-sm">48</h4>
+</div>
+<!-- Paid Orders Card -->
+<div class="bg-white p-lg rounded-xl shadow-[0px_10px_30px_rgba(58,50,45,0.05)] border border-outline-variant/20">
+<div class="flex justify-between items-start mb-md">
+<span class="material-symbols-outlined text-on-secondary bg-primary p-sm rounded-lg" data-icon="payments">payments</span>
+<span class="text-label-caps font-label-caps text-on-surface-variant">42 / 48 Completed</span>
+</div>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Paid Orders</p>
+<h4 class="font-display-lg text-display-lg mt-sm">42</h4>
+</div>
+<!-- Cancelled Orders Card -->
+<div class="bg-white p-lg rounded-xl shadow-[0px_10px_30px_rgba(58,50,45,0.05)] border border-outline-variant/20">
+<div class="flex justify-between items-start mb-md">
+<span class="material-symbols-outlined text-error bg-error-container p-sm rounded-lg" data-icon="cancel">cancel</span>
+<span class="text-label-caps font-label-caps text-error">Critical Action</span>
+</div>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Cancelled Orders</p>
+<h4 class="font-display-lg text-display-lg mt-sm">6</h4>
+</div>
+</div>
+</section>
+<!-- Main Timeline Section -->
+<section class="bg-white rounded-xl shadow-[0px_10px_30px_rgba(58,50,45,0.05)] overflow-hidden">
+<div class="px-lg py-md bg-surface-container-low border-b border-outline-variant/30 flex justify-between items-center">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary" data-icon="history">history</span>
+<h3 class="font-title-sm text-title-sm">Operational Timeline</h3>
+</div>
+<button class="font-label-caps text-label-caps text-primary flex items-center gap-xs hover:opacity-70">
+                        Today <span class="material-symbols-outlined text-sm" data-icon="expand_more">expand_more</span>
+</button>
+</div>
+<div class="p-lg">
+<div class="relative">
+<!-- Vertical Line -->
+<div class="absolute left-[11px] top-4 bottom-4 w-[2px] bg-[#EFE4D8]"></div>
+<!-- Timeline Item 1 -->
+<div class="relative flex gap-xl pb-lg last:pb-0">
+<div class="z-10 w-6 h-6 bg-secondary rounded-full border-4 border-white flex-shrink-0 mt-1"></div>
+<div class="flex-1 pb-md border-b divider-beige">
+<div class="flex justify-between items-center mb-xs">
+<h5 class="font-title-sm text-body-md font-bold">14:35 — Cancelled by Ahmed, reason: client left</h5>
+<span class="font-label-caps text-label-caps px-md py-xs bg-error-container text-on-error-container rounded-full">Cancellation</span>
+</div>
+<p class="font-body-md text-on-surface-variant text-sm">Table 12 session terminated prematurely. Staff Ahmed updated status from 'In Progress'.</p>
+</div>
+</div>
+<!-- Timeline Item 2 -->
+<div class="relative flex gap-xl pb-lg last:pb-0">
+<div class="z-10 w-6 h-6 bg-primary-container rounded-full border-4 border-white flex-shrink-0 mt-1"></div>
+<div class="flex-1 pb-md border-b divider-beige">
+<div class="flex justify-between items-center mb-xs">
+<h5 class="font-title-sm text-body-md font-bold">14:29 — Marked paid by Sami</h5>
+<span class="font-label-caps text-label-caps px-md py-xs bg-surface-container-high text-primary rounded-full">Payment</span>
+</div>
+<p class="font-body-md text-on-surface-variant text-sm">Checkout process completed for Table 4. Transaction verified by system.</p>
+</div>
+</div>
+<!-- Timeline Item 3 -->
+<div class="relative flex gap-xl pb-lg last:pb-0">
+<div class="z-10 w-6 h-6 bg-secondary-container rounded-full border-4 border-white flex-shrink-0 mt-1"></div>
+<div class="flex-1 pb-md border-b divider-beige">
+<div class="flex justify-between items-center mb-xs">
+<h5 class="font-title-sm text-body-md font-bold">14:23 — Accepted by Ahmed</h5>
+<span class="font-label-caps text-label-caps px-md py-xs bg-surface-container-high text-primary rounded-full">Staff Action</span>
+</div>
+<p class="font-body-md text-on-surface-variant text-sm">Order #8834 linked to Table 7 was officially acknowledged by waiter Ahmed.</p>
+</div>
+</div>
+<!-- Timeline Item 4 -->
+<div class="relative flex gap-xl pb-lg last:pb-0">
+<div class="z-10 w-6 h-6 bg-outline-variant rounded-full border-4 border-white flex-shrink-0 mt-1"></div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-xs">
+<h5 class="font-title-sm text-body-md font-bold">14:22 — T7 order created</h5>
+<span class="font-label-caps text-label-caps px-md py-xs bg-surface-container-high text-primary rounded-full">System Init</span>
+</div>
+<p class="font-body-md text-on-surface-variant text-sm">New digital order entry initiated at Table 7. Primary contact: Guest #2.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="px-lg py-md bg-surface-container-low/50 flex justify-center">
+<button class="font-label-caps text-label-caps text-primary-container font-bold hover:underline transition-all">View Full History</button>
+</div>
+</section>
+</div>
+<!-- Spacer for BottomNavBar on Mobile -->
+<div class="h-24 md:hidden"></div>
+</main>
+<!-- BottomNavBar Component (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter py-sm md:hidden bg-surface dark:bg-surface-container shadow-[0px_-4px_20px_rgba(58,50,45,0.03)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-caps text-label-caps uppercase">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="shopping_bag">shopping_bag</span>
+<span class="font-label-caps text-label-caps uppercase">Cart</span>
+</a>
+<!-- Active State: Status/Activity -->
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-lg py-sm active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="analytics" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="font-label-caps text-label-caps uppercase">Status</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary active:scale-90 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-caps text-label-caps uppercase">Profile</span>
+</a>
+</nav>
+</body></html>

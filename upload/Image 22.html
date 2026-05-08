@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&amp;family=Plus+Jakarta+Sans:wght@400;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-container": "#ffd1ad",
+                        "outline-variant": "#d1c4bd",
+                        "surface-container-high": "#ece7e6",
+                        "on-tertiary-fixed-variant": "#4c463d",
+                        "surface-dim": "#ded9d8",
+                        "tertiary-container": "#39332b",
+                        "on-secondary": "#ffffff",
+                        "surface-container-highest": "#e6e1e0",
+                        "surface-container-low": "#f8f2f1",
+                        "primary-fixed": "#eee0d8",
+                        "on-error-container": "#93000a",
+                        "tertiary-fixed-dim": "#cfc5b9",
+                        "primary-container": "#3a322d",
+                        "on-secondary-container": "#79583b",
+                        "tertiary": "#231e17",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#f5f0ee",
+                        "inverse-surface": "#32302f",
+                        "on-surface": "#1d1b1b",
+                        "surface-tint": "#665c57",
+                        "on-primary-fixed-variant": "#4e4540",
+                        "on-tertiary-fixed": "#201b14",
+                        "secondary-fixed-dim": "#eabe9a",
+                        "secondary": "#79573a",
+                        "background": "#fef8f7",
+                        "surface": "#fef8f7",
+                        "error": "#ba1a1a",
+                        "primary-fixed-dim": "#d1c4bd",
+                        "primary": "#241d19",
+                        "on-error": "#ffffff",
+                        "surface-container": "#f2edeb",
+                        "on-surface-variant": "#4d4540",
+                        "secondary-fixed": "#ffdcc1",
+                        "error-container": "#ffdad6",
+                        "outline": "#7f756f",
+                        "on-tertiary": "#ffffff",
+                        "inverse-primary": "#d1c4bd",
+                        "tertiary-fixed": "#ece1d5",
+                        "on-background": "#1d1b1b",
+                        "surface-variant": "#e6e1e0",
+                        "on-primary-fixed": "#211a16",
+                        "on-primary-container": "#a69a93",
+                        "on-secondary-fixed": "#2d1601"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "40px",
+                        "gutter": "20px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "container-margin": "32px",
+                        "unit": "4px",
+                        "xs": "4px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Playfair Display"],
+                        "title-sm": ["Plus Jakarta Sans"],
+                        "headline-md": ["Playfair Display"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "label-caps": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "title-sm": ["20px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                        "headline-md": ["32px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.1em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #FCFBF9;
+            color: #3A322D;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-body-md antialiased pb-32">
+<!-- Top AppBar (from JSON guidance) -->
+<header class="flex justify-between items-center px-lg py-md w-full sticky top-0 z-50 bg-surface shadow-[0px_10px_30px_rgba(58,50,45,0.05)]">
+<div class="flex items-center gap-sm">
+<span class="font-display-lg text-headline-md font-bold text-primary">Menux Pro</span>
+<div class="ml-md bg-secondary-fixed text-on-secondary-fixed-variant px-md py-xs rounded-full font-label-caps text-label-caps">
+                Table 7
+            </div>
+</div>
+<div class="flex items-center gap-md">
+<button class="material-symbols-outlined text-primary text-2xl active:scale-95 transition-transform" data-icon="notifications">notifications</button>
+<button class="material-symbols-outlined text-primary text-2xl active:scale-95 transition-transform" data-icon="account_circle">account_circle</button>
+</div>
+</header>
+<!-- Hero Section -->
+<section class="px-gutter pt-lg pb-md">
+<h1 class="font-display-lg text-display-lg text-primary mb-xs">Morning Rituals</h1>
+<p class="text-on-surface-variant max-w-[80%]">Curated artisanal roasts and handmade pastries delivered to your table.</p>
+</section>
+<!-- Category Tabs -->
+<nav class="sticky top-[72px] z-40 bg-surface/90 backdrop-blur-md overflow-x-auto hide-scrollbar flex items-center gap-md px-gutter py-md">
+<button class="whitespace-nowrap px-lg py-sm rounded-full bg-primary text-on-primary font-bold text-label-caps transition-all">Coffee</button>
+<button class="whitespace-nowrap px-lg py-sm rounded-full bg-surface-container-low text-on-surface-variant font-medium text-label-caps hover:bg-surface-container-high transition-all">Pastries</button>
+<button class="whitespace-nowrap px-lg py-sm rounded-full bg-surface-container-low text-on-surface-variant font-medium text-label-caps hover:bg-surface-container-high transition-all">Drinks</button>
+<button class="whitespace-nowrap px-lg py-sm rounded-full bg-surface-container-low text-on-surface-variant font-medium text-label-caps hover:bg-surface-container-high transition-all">Brunch</button>
+<button class="whitespace-nowrap px-lg py-sm rounded-full bg-surface-container-low text-on-surface-variant font-medium text-label-caps hover:bg-surface-container-high transition-all">Specials</button>
+</nav>
+<!-- Menu Grid (Asymmetric layout) -->
+<main class="px-gutter mt-md grid grid-cols-1 md:grid-cols-2 gap-lg">
+<!-- Item 1 -->
+<div class="bg-white rounded-[20px] overflow-hidden shadow-[0px_10px_30px_rgba(58,50,45,0.05)] border border-surface-container transition-all hover:translate-y-[-4px]">
+<div class="relative h-48 w-full">
+<img alt="Artisanal Latte Art" class="w-full h-full object-cover" data-alt="A top-down view of a creamy caffe latte served in a minimal ceramic cup, featuring intricate heart-shaped latte art. The setting is a warm, sunlit wooden café table with soft shadows. The overall aesthetic is clean, minimalist, and luxurious with a palette of warm beiges, soft whites, and deep espresso tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrPgC3qG4mellMUwAuTKD9sPcEkHG2k1qfA7dvz_jVvAhhd_ie28fvRjfr71T4CH4u9uua0sYu4BDAu8ong4xStwKX1mbg8ZGSJ4Yg3OOj219WbysrcMmS0ikL1xY764ym1IRweaVdHxWCyzn0WIx840YwkjkeVJFYr9U8f6TcDgftdEZScvWjIxoA2CJ8ZnOiob_9B2v69tHe_ilMBAJZttqHKs-nYHK0qcvmsPWLEMOxGeovZkQEUAScKSmNOBb2qorDrl5jb3AR"/>
+<div class="absolute top-sm right-sm bg-white/90 backdrop-blur-md px-sm py-xs rounded-full text-label-caps flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px] text-secondary" data-icon="star" data-weight="fill" style="font-variation-settings: 'FILL' 1;">star</span>
+<span>Best Seller</span>
+</div>
+</div>
+<div class="p-lg flex flex-col gap-sm">
+<div class="flex justify-between items-start">
+<h3 class="font-title-sm text-title-sm text-primary">Velvet Flat White</h3>
+<span class="text-secondary font-bold text-title-sm">$5.50</span>
+</div>
+<p class="text-on-surface-variant text-sm line-clamp-2">Double shot of single-origin espresso blended with micro-foamed milk for a silky finish.</p>
+<div class="flex justify-between items-center mt-sm">
+<div class="flex gap-xs">
+<span class="bg-surface-container-low text-on-tertiary-fixed-variant px-sm py-xs rounded-full text-label-caps">Oat Option</span>
+</div>
+<button class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center active:scale-90 transition-all shadow-md">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="bg-white rounded-[20px] overflow-hidden shadow-[0px_10px_30px_rgba(58,50,45,0.05)] border border-surface-container transition-all hover:translate-y-[-4px]">
+<div class="relative h-48 w-full">
+<img alt="Golden Croissant" class="w-full h-full object-cover" data-alt="A macro photograph of a perfectly flaky, golden-brown butter croissant resting on a textured linen napkin. The lighting is soft morning side-light that highlights the delicate layers of pastry. The color palette emphasizes warm golds, creamy whites, and organic textures typical of a premium high-end patisserie." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWcpaj2Nm1doy6P20QvpbUEyOcVovisWLafJgfUdqfEdt-oltyB5ipj0bBbbDWnGmf8iTZM7-h4HuaNLtYu3bhUv84Ec1bt9DH8VRcOQ5_7DsQRN0tBQqIcW-3wexihnLujoQG-MdDgr5L-1knwewMevM1GrbvKQzrsEWRl1fYsAIVhR4emEth3H6R2dVsRp32C9Bbdv1NcJR7Jf172R7gVO9lFW_LI0m-iLHZjTQbYPa2Vy0JEFp9bOoJHfSge15JH21koDUsNsqt"/>
+</div>
+<div class="p-lg flex flex-col gap-sm">
+<div class="flex justify-between items-start">
+<h3 class="font-title-sm text-title-sm text-primary">Signature Croissant</h3>
+<span class="text-secondary font-bold text-title-sm">$4.25</span>
+</div>
+<p class="text-on-surface-variant text-sm line-clamp-2">Hand-rolled over 72 hours using cultured French butter for unparalleled flakiness.</p>
+<div class="flex justify-between items-center mt-sm">
+<div class="flex gap-xs">
+<span class="bg-surface-container-low text-on-tertiary-fixed-variant px-sm py-xs rounded-full text-label-caps">Organic</span>
+</div>
+<button class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center active:scale-90 transition-all shadow-md">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="bg-white rounded-[20px] overflow-hidden shadow-[0px_10px_30px_rgba(58,50,45,0.05)] border border-surface-container transition-all hover:translate-y-[-4px]">
+<div class="relative h-48 w-full">
+<img alt="Pour Over Coffee" class="w-full h-full object-cover" data-alt="A minimalist overhead shot of a clean glass pour-over dripper being filled with hot water, releasing steam into a bright, airy kitchen space. The scene features high-key lighting, emphasizing the clarity of the coffee and the elegant design of the equipment. The mood is sophisticated and focused on the ritual of artisanal coffee making." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6VgfqsElFYM2u1MltCEcNdz8zmT72PysMWBRptbR6a1a8C_MiUytVP-XUiN91Zn_m4NKtLSwaxiidG0b1bwSLtB7Eupe5trdeAdHG-L1xvyRVmdVfUyckM7nTSfSQ5keMPu1EOyBPYvD5zh5lE1beqDkpVwt61CF-XMncG3kHHcV5Krj_Mp6oX1b6qlLbziEP29yjy-RMmZht9aFkTd3KxpmF3Hv_siQHxeUawG-Q8YkuqBy3LLvuayHn52QwCMU9lcHRmrn6YRyp"/>
+</div>
+<div class="p-lg flex flex-col gap-sm">
+<div class="flex justify-between items-start">
+<h3 class="font-title-sm text-title-sm text-primary">Ethiopian Pour Over</h3>
+<span class="text-secondary font-bold text-title-sm">$6.50</span>
+</div>
+<p class="text-on-surface-variant text-sm line-clamp-2">Bright and floral with notes of jasmine and wild honey. Clean, crisp finish.</p>
+<div class="flex justify-between items-center mt-sm">
+<div class="flex gap-xs">
+<span class="bg-surface-container-low text-on-tertiary-fixed-variant px-sm py-xs rounded-full text-label-caps">Single Origin</span>
+</div>
+<button class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center active:scale-90 transition-all shadow-md">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="bg-white rounded-[20px] overflow-hidden shadow-[0px_10px_30px_rgba(58,50,45,0.05)] border border-surface-container transition-all hover:translate-y-[-4px]">
+<div class="relative h-48 w-full">
+<img alt="Fresh Berry Bowl" class="w-full h-full object-cover" data-alt="An aesthetic presentation of a vibrant breakfast bowl filled with seasonal berries, house-made granola, and edible flowers on a white porcelain plate. The lighting is diffused and natural, highlighting the freshness of the ingredients. The background is a clean, white marble surface, creating a sophisticated and healthy brunch vibe." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYmyo3r1RMfE49OunIvI4OKIO_mhmFcBlJUTRyuZMvacLoHOyYgOEYxHUnwwX3PEoSwK3m7hQ_Y_taTf50Z2KZNkgeMuZdpgmJdNFJPq6AKfm9VcoXIz-93GFB-wnt1rL_igMWKwkiU4jdtnKAhMlGeU_AV5l1-0c23__-bQ16ip1whbuVlpeyD7uy3PfCb1KjHNbTfjR_pzAP38j97kEABGEY4TPgd3yEFvjyq1D2YIsBAjmb46j1u2Y_XGt8SEMv7if1HXjtP_1q"/>
+</div>
+<div class="p-lg flex flex-col gap-sm">
+<div class="flex justify-between items-start">
+<h3 class="font-title-sm text-title-sm text-primary">Garden Parfait</h3>
+<span class="text-secondary font-bold text-title-sm">$9.00</span>
+</div>
+<p class="text-on-surface-variant text-sm line-clamp-2">Greek yogurt topped with seasonal local berries, almond granola, and organic honey.</p>
+<div class="flex justify-between items-center mt-sm">
+<div class="flex gap-xs">
+<span class="bg-surface-container-low text-on-tertiary-fixed-variant px-sm py-xs rounded-full text-label-caps">Vegetarian</span>
+</div>
+<button class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center active:scale-90 transition-all shadow-md">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Sticky Bottom Bar -->
+<div class="fixed bottom-0 left-0 w-full z-[60] p-md flex justify-center pointer-events-none">
+<div class="bg-primary text-on-primary w-full max-w-md h-16 rounded-full shadow-2xl flex items-center justify-between px-lg pointer-events-auto active:scale-[0.98] transition-transform">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-sm">1</div>
+<span class="font-bold text-label-caps tracking-widest uppercase">Order Active</span>
+</div>
+<button class="flex items-center gap-xs font-bold text-label-caps">
+                VIEW CART
+                <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Confirmation Modal (Hidden by default, shown for UI demonstration) -->
+<!-- Remove 'hidden' class to see modal -->
+<div class="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-gutter hidden">
+<div class="absolute inset-0 bg-primary/20 backdrop-blur-sm"></div>
+<div class="bg-white w-full max-w-sm rounded-[32px] p-xl relative shadow-2xl overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-2 bg-secondary-fixed"></div>
+<div class="flex flex-col items-center text-center gap-md">
+<div class="w-16 h-16 bg-surface-container-low rounded-full flex items-center justify-center mb-md">
+<span class="material-symbols-outlined text-secondary text-4xl" data-icon="receipt_long">receipt_long</span>
+</div>
+<h2 class="font-display-lg text-title-sm text-primary">Confirm Your Order</h2>
+<p class="text-on-surface-variant mb-lg">Your selection of 1x Velvet Flat White will be sent directly to the kitchen for Table 7.</p>
+<div class="w-full space-y-md">
+<button class="w-full py-md bg-primary text-on-primary rounded-full font-bold text-label-caps tracking-widest active:scale-95 transition-all shadow-lg">CONFIRM ORDER</button>
+<button class="w-full py-md bg-surface-container-low text-on-surface-variant rounded-full font-bold text-label-caps tracking-widest active:scale-95 transition-all">GO BACK</button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

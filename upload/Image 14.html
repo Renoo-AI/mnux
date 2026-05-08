@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Menux Pro | Menu Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&amp;family=Plus+Jakarta+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'wght' 300, 'opsz' 24;
+        }
+        body {
+            background-color: #fef8f7;
+            color: #1d1b1b;
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-fixed-variant": "#4c463d",
+                      "surface-dim": "#ded9d8",
+                      "surface-container-lowest": "#ffffff",
+                      "tertiary-fixed": "#ece1d5",
+                      "tertiary-container": "#39332b",
+                      "outline": "#7f756f",
+                      "on-tertiary-container": "#a49b90",
+                      "on-tertiary-fixed": "#201b14",
+                      "on-surface-variant": "#4d4540",
+                      "inverse-primary": "#d1c4bd",
+                      "secondary-fixed-dim": "#eabe9a",
+                      "on-secondary": "#ffffff",
+                      "on-secondary-fixed": "#2d1601",
+                      "on-primary": "#ffffff",
+                      "primary-container": "#3a322d",
+                      "tertiary": "#231e17",
+                      "background": "#fef8f7",
+                      "surface": "#fef8f7",
+                      "secondary-fixed": "#ffdcc1",
+                      "surface-variant": "#e6e1e0",
+                      "secondary": "#79573a",
+                      "on-error-container": "#93000a",
+                      "tertiary-fixed-dim": "#cfc5b9",
+                      "primary": "#241d19",
+                      "on-primary-fixed-variant": "#4e4540",
+                      "error-container": "#ffdad6",
+                      "on-tertiary": "#ffffff",
+                      "outline-variant": "#d1c4bd",
+                      "inverse-on-surface": "#f5f0ee",
+                      "on-secondary-container": "#79583b",
+                      "inverse-surface": "#32302f",
+                      "surface-container-low": "#f8f2f1",
+                      "surface-container-high": "#ece7e6",
+                      "on-primary-fixed": "#211a16",
+                      "on-secondary-fixed-variant": "#5e4025",
+                      "error": "#ba1a1a",
+                      "surface-container-highest": "#e6e1e0",
+                      "secondary-container": "#ffd1ad",
+                      "surface-tint": "#665c57",
+                      "on-surface": "#1d1b1b",
+                      "on-error": "#ffffff",
+                      "on-background": "#1d1b1b",
+                      "primary-fixed": "#eee0d8",
+                      "primary-fixed-dim": "#d1c4bd",
+                      "surface-bright": "#fef8f7",
+                      "surface-container": "#f2edeb",
+                      "on-primary-container": "#a69a93"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "sm": "8px",
+                      "md": "16px",
+                      "container-margin": "32px",
+                      "unit": "4px",
+                      "lg": "24px",
+                      "gutter": "20px",
+                      "xl": "40px",
+                      "xs": "4px"
+              },
+              "fontFamily": {
+                      "label-caps": ["Plus Jakarta Sans"],
+                      "display-lg": ["Playfair Display"],
+                      "title-sm": ["Plus Jakarta Sans"],
+                      "headline-md": ["Playfair Display"],
+                      "body-md": ["Plus Jakarta Sans"]
+              },
+              "fontSize": {
+                      "label-caps": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                      "display-lg": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "title-sm": ["20px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                      "headline-md": ["32px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="flex min-h-screen">
+<!-- SideNavBar (Desktop Shell) -->
+<aside class="hidden md:flex flex-col w-64 h-screen py-lg gap-sm border-r border-outline-variant bg-surface-container-lowest sticky top-0">
+<div class="px-lg mb-xl">
+<h1 class="font-display-lg text-title-sm font-bold text-primary">Menux Pro</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant opacity-70">Premium Management</p>
+</div>
+<nav class="flex-grow flex flex-col gap-xs">
+<a class="text-on-surface-variant font-medium mx-md p-md hover:bg-surface-container-high transition-all flex items-center gap-md rounded-full" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-title-sm text-label-caps">Dashboard</span>
+</a>
+<a class="text-on-surface-variant font-medium mx-md p-md hover:bg-surface-container-high transition-all flex items-center gap-md rounded-full" href="#">
+<span class="material-symbols-outlined" data-icon="restaurant_menu">restaurant_menu</span>
+<span class="font-title-sm text-label-caps">Orders</span>
+</a>
+<!-- Active Navigation for Menu Management -->
+<a class="bg-secondary-fixed text-on-secondary-fixed-variant font-bold rounded-full mx-md p-md flex items-center gap-md" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="font-title-sm text-label-caps">Menu</span>
+</a>
+<a class="text-on-surface-variant font-medium mx-md p-md hover:bg-surface-container-high transition-all flex items-center gap-md rounded-full" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span class="font-title-sm text-label-caps">Activity</span>
+</a>
+<a class="text-on-surface-variant font-medium mx-md p-md hover:bg-surface-container-high transition-all flex items-center gap-md rounded-full" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-title-sm text-label-caps">Settings</span>
+</a>
+</nav>
+<div class="mt-auto flex flex-col gap-xs">
+<a class="text-on-surface-variant font-medium mx-md p-md hover:bg-surface-container-high transition-all flex items-center gap-md rounded-full" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-title-sm text-label-caps">Support</span>
+</a>
+<a class="text-on-surface-variant font-medium mx-md p-md hover:bg-surface-container-high transition-all flex items-center gap-md rounded-full" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-title-sm text-label-caps">Logout</span>
+</a>
+</div>
+</aside>
+<main class="flex-grow flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-lg py-md w-full sticky top-0 z-50 bg-surface shadow-[0px_10px_30px_rgba(58,50,45,0.05)] md:shadow-none">
+<div class="flex items-center gap-md">
+<span class="md:hidden material-symbols-outlined text-primary" data-icon="menu">menu</span>
+<h2 class="font-headline-md text-headline-md text-primary">Menu Management</h2>
+</div>
+<div class="flex items-center gap-lg">
+<div class="hidden lg:flex items-center bg-surface-container-low px-md py-sm rounded-full border border-outline-variant/30">
+<span class="material-symbols-outlined text-on-surface-variant mr-sm" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-md text-on-surface w-64 placeholder:text-on-surface-variant/50" placeholder="Search menu items..." type="text"/>
+</div>
+<div class="flex items-center gap-md">
+<button class="material-symbols-outlined text-on-surface-variant p-sm rounded-full hover:bg-surface-container-low transition-colors" data-icon="notifications">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant p-sm rounded-full hover:bg-surface-container-low transition-colors" data-icon="account_circle">account_circle</button>
+</div>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="p-lg md:p-xl max-w-7xl w-full mx-auto space-y-xl">
+<!-- Category Tabs & Primary CTA -->
+<section class="flex flex-col md:flex-row justify-between items-start md:items-center gap-lg">
+<div class="flex gap-sm overflow-x-auto pb-sm w-full md:w-auto no-scrollbar">
+<button class="bg-primary text-on-primary px-lg py-md rounded-full font-label-caps text-label-caps whitespace-nowrap active:scale-95 transition-transform">All Items</button>
+<button class="bg-surface-container-high text-on-surface px-lg py-md rounded-full font-label-caps text-label-caps whitespace-nowrap active:scale-95 transition-transform">Coffee</button>
+<button class="bg-surface-container-high text-on-surface px-lg py-md rounded-full font-label-caps text-label-caps whitespace-nowrap active:scale-95 transition-transform">Pastries</button>
+<button class="bg-surface-container-high text-on-surface px-lg py-md rounded-full font-label-caps text-label-caps whitespace-nowrap active:scale-95 transition-transform">Teas</button>
+<button class="bg-surface-container-high text-on-surface px-lg py-md rounded-full font-label-caps text-label-caps whitespace-nowrap active:scale-95 transition-transform">Merch</button>
+</div>
+<button class="bg-primary text-on-primary flex items-center gap-sm px-xl py-md rounded-full font-title-sm text-label-caps hover:bg-primary-container transition-colors shadow-lg active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                    Add New Item
+                </button>
+</section>
+<!-- Menu Grid (Bento Style) -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
+<!-- Menu Item Card 1 -->
+<article class="bg-surface-container-lowest p-md rounded-[20px] shadow-[0px_10px_30px_rgba(58,50,45,0.05)] border border-outline-variant/10 group">
+<div class="relative h-48 w-full rounded-xl overflow-hidden mb-md">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="A macro photograph of a perfectly poured artisanal latte with intricate leaf latte art on the surface. The background features a warm, minimalist espresso bar with soft morning sunlight creating a quiet luxury atmosphere. The color palette is composed of rich espresso browns, creamy whites, and warm wood tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBADjW3cbbYuy15ggkYlNiWaxwjYKTEwO9N1CZcdGWB7B1P_cVCe00He8YCuUBN14sAMHpywhomuuQ7cKEGkcv8vTP3KG2az5A4wKlT2br16iV9_7bsD4ck3n5JeJg1aLXfsTAQ5UFZcuZfrGs4rv6LQq0zSwXacLFrOIeqUEgogaQ8I5K2h9nFJPzaeJrLySl9AI3nhvTWsLLoJLGCFU4wxPGh4MG43tKgiJc5-QXkCPZE7o9zK7Jebyrr4we4CyHMKqMHO4ChBq_q"/>
+<div class="absolute top-sm right-sm bg-white/90 backdrop-blur-md px-md py-xs rounded-full shadow-sm">
+<p class="font-label-caps text-[10px] text-primary">BESTSELLER</p>
+</div>
+</div>
+<div class="px-xs">
+<div class="flex justify-between items-start mb-xs">
+<h3 class="font-title-sm text-title-sm text-primary">Classic Flat White</h3>
+<span class="font-title-sm text-secondary">$5.50</span>
+</div>
+<p class="font-body-md text-on-surface-variant text-sm mb-md line-clamp-2">Double shot of reserve espresso with silky micro-foam texture.</p>
+<div class="flex items-center justify-between pt-md border-t border-outline-variant/30">
+<div class="flex items-center gap-sm">
+<button class="w-10 h-6 bg-secondary-fixed rounded-full relative transition-colors flex items-center px-1">
+<div class="w-4 h-4 bg-white rounded-full shadow-sm translate-x-4"></div>
+</button>
+<span class="font-label-caps text-xs text-on-surface-variant">Active</span>
+</div>
+<div class="flex gap-sm">
+<button class="p-sm rounded-full bg-surface-container-low text-primary hover:bg-secondary-fixed transition-colors active:scale-90 transition-all">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+<button class="p-sm rounded-full bg-surface-container-low text-error hover:bg-error-container transition-colors active:scale-90 transition-all">
+<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span>
+</button>
+</div>
+</div>
+</div>
+</article>
+<!-- Menu Item Card 2 -->
+<article class="bg-surface-container-lowest p-md rounded-[20px] shadow-[0px_10px_30px_rgba(58,50,45,0.05)] border border-outline-variant/10 group">
+<div class="relative h-48 w-full rounded-xl overflow-hidden mb-md">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="A close-up shot of a golden, flaky almond croissant resting on a minimalist ceramic plate. The lighting is soft and directional, highlighting the buttery layers and dusting of powdered sugar. The aesthetic is clean and high-end, using a neutral palette of beige, cream, and deep golden browns." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqO2x3KqkP_gBTxdznVCG_yilCD0rvrGKjP1TBxvk6vbmr5r2yG0iy6Z_4CQRPXi3ZFR0yMADu7dHdO__HtosswVT3iTLWIPv5es5x-l6XSg8hARqV62qr4OkH3MUzwDy1U0CpZ4GsrOhBXQuiptRzCqUO1FaBPDBuMh8LPW4jSXM7n2NQT4BQR2wiGeaCzoCpEGxTJmgzD3C8sgaXb59CxuDsNffCNF8SOm-Cb8kP9vpg_JH4C2ewWQdlGHoMFA7PiMAnh7-7WPKS"/>
+<div class="absolute top-sm left-sm bg-tertiary-fixed/90 backdrop-blur-md px-md py-xs rounded-full shadow-sm">
+<p class="font-label-caps text-[10px] text-on-tertiary-fixed">VEGAN</p>
+</div>
+</div>
+<div class="px-xs">
+<div class="flex justify-between items-start mb-xs">
+<h3 class="font-title-sm text-title-sm text-primary">Almond Croissant</h3>
+<span class="font-title-sm text-secondary">$6.25</span>
+</div>
+<p class="font-body-md text-on-surface-variant text-sm mb-md line-clamp-2">Hand-rolled sourdough pastry with organic almond frangipane.</p>
+<div class="flex items-center justify-between pt-md border-t border-outline-variant/30">
+<div class="flex items-center gap-sm">
+<button class="w-10 h-6 bg-secondary-fixed rounded-full relative transition-colors flex items-center px-1">
+<div class="w-4 h-4 bg-white rounded-full shadow-sm translate-x-4"></div>
+</button>
+<span class="font-label-caps text-xs text-on-surface-variant">Active</span>
+</div>
+<div class="flex gap-sm">
+<button class="p-sm rounded-full bg-surface-container-low text-primary hover:bg-secondary-fixed transition-colors active:scale-90 transition-all">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+<button class="p-sm rounded-full bg-surface-container-low text-error hover:bg-error-container transition-colors active:scale-90 transition-all">
+<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span>
+</button>
+</div>
+</div>
+</div>
+</article>
+<!-- Menu Item Card 3 (Inactive State) -->
+<article class="bg-surface-container-low/50 p-md rounded-[20px] shadow-[0px_10px_30px_rgba(58,50,45,0.05)] border border-outline-variant/10 group opacity-80">
+<div class="relative h-48 w-full rounded-xl overflow-hidden mb-md grayscale">
+<img class="w-full h-full object-cover" data-alt="A tall glass of shimmering iced hibiscus tea with a sprig of fresh mint and a lemon wedge. The glass is sweating with condensation in a bright, sun-drenched outdoor cafe setting. Vibrant ruby red colors dominate the tea, contrasted by the bright greens of the mint and the pale white table surface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4YTECqPaAziuWGi2TcqvQ1qZhdSgfCa-UnXaLFm4Cl7xm98TDCdvIe0GEfTGCLB2pu4zMEaVOtFbth1i00IPBs9jGbXJM6lur1PaeY0cqSy0RmAiib2EXv6KXkQ41Is438rPp4ur7UjWK9cuBDwqQyKhqlm8p0nvWJLby4oJIC97yv3ET-m4kwU112hjHtcpdW2bZ0Y5RQMUYBG6xB-VQRybGNzTshtj4qWAYW_R2G5aw8idDkwn7vCXbpA_pv-R6LkOkt4bRw9uU"/>
+<div class="absolute inset-0 bg-black/20 flex items-center justify-center">
+<p class="bg-white/90 text-primary font-label-caps px-lg py-sm rounded-full text-xs">OUT OF STOCK</p>
+</div>
+</div>
+<div class="px-xs">
+<div class="flex justify-between items-start mb-xs">
+<h3 class="font-title-sm text-title-sm text-on-surface-variant">Iced Hibiscus Tea</h3>
+<span class="font-title-sm text-on-surface-variant/50">$4.75</span>
+</div>
+<p class="font-body-md text-on-surface-variant/60 text-sm mb-md line-clamp-2">Cold-brewed Egyptian hibiscus with citrus and raw honey.</p>
+<div class="flex items-center justify-between pt-md border-t border-outline-variant/30">
+<div class="flex items-center gap-sm">
+<button class="w-10 h-6 bg-surface-container-highest rounded-full relative transition-colors flex items-center px-1">
+<div class="w-4 h-4 bg-white rounded-full shadow-sm translate-x-0"></div>
+</button>
+<span class="font-label-caps text-xs text-on-surface-variant/50">Inactive</span>
+</div>
+<div class="flex gap-sm">
+<button class="p-sm rounded-full bg-surface-container-low text-primary hover:bg-secondary-fixed transition-colors active:scale-90 transition-all">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+<button class="p-sm rounded-full bg-surface-container-low text-error hover:bg-error-container transition-colors active:scale-90 transition-all">
+<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span>
+</button>
+</div>
+</div>
+</div>
+</article>
+<!-- Menu Item Card 4 -->
+<article class="bg-surface-container-lowest p-md rounded-[20px] shadow-[0px_10px_30px_rgba(58,50,45,0.05)] border border-outline-variant/10 group">
+<div class="relative h-48 w-full rounded-xl overflow-hidden mb-md">
+<img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" data-alt="A minimalist presentation of avocado toast on thick-cut sourdough bread, topped with vibrant microgreens and a sprinkle of chili flakes. The scene is captured in a high-key, modern aesthetic with bright natural light and a clean stone surface. Subtle tones of sage green and earthy browns create a sophisticated culinary mood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAE7wXgpTeQEgjiHVv-hrTCQqv7CpRoiy_Lcy2q5lAwQLJDiT-D8tnKNDvMXO0IgLrV8Sux92kKtdBimgbp7wGnxczoUckKo7ubOTIdsWZ8CuIrygZ1o0PHsjXiZ0mTB6lvqyfH55JHLU31xBvQMOb5Kys6wL3ODJNBCHjlOVDkqzLi2oVKCkU2GQ_Y9BtEFKk5DwZS_OVhZl0MJR3YvOMcFeekrSeU5tV5uxRgyzx37cv5dNgcaz2ZqhHxzlmT7FXETKl90-eTNznO"/>
+</div>
+<div class="px-xs">
+<div class="flex justify-between items-start mb-xs">
+<h3 class="font-title-sm text-title-sm text-primary">Heirloom Avo Toast</h3>
+<span class="font-title-sm text-secondary">$14.00</span>
+</div>
+<p class="font-body-md text-on-surface-variant text-sm mb-md line-clamp-2">Whipped avocado, pickled radish, and volcanic salt on local rye.</p>
+<div class="flex items-center justify-between pt-md border-t border-outline-variant/30">
+<div class="flex items-center gap-sm">
+<button class="w-10 h-6 bg-secondary-fixed rounded-full relative transition-colors flex items-center px-1">
+<div class="w-4 h-4 bg-white rounded-full shadow-sm translate-x-4"></div>
+</button>
+<span class="font-label-caps text-xs text-on-surface-variant">Active</span>
+</div>
+<div class="flex gap-sm">
+<button class="p-sm rounded-full bg-surface-container-low text-primary hover:bg-secondary-fixed transition-colors active:scale-90 transition-all">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+<button class="p-sm rounded-full bg-surface-container-low text-error hover:bg-error-container transition-colors active:scale-90 transition-all">
+<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span>
+</button>
+</div>
+</div>
+</div>
+</article>
+<!-- Add New Item Placeholder Card -->
+<button class="border-2 border-dashed border-outline-variant/40 p-md rounded-[20px] flex flex-col items-center justify-center gap-md group hover:bg-surface-container-low transition-all min-h-[400px]">
+<div class="w-16 h-16 bg-surface-container-high rounded-full flex items-center justify-center text-on-surface-variant group-hover:bg-secondary-fixed group-hover:text-on-secondary-fixed-variant transition-colors">
+<span class="material-symbols-outlined text-3xl" data-icon="add_circle">add_circle</span>
+</div>
+<div class="text-center">
+<h3 class="font-title-sm text-title-sm text-primary">Add New Item</h3>
+<p class="font-body-md text-on-surface-variant text-sm">Create a new dish or beverage</p>
+</div>
+</button>
+</section>
+</div>
+<!-- FAB for Mobile -->
+<button class="md:hidden fixed right-md bottom-24 w-16 h-16 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center z-50 active:scale-90 transition-all">
+<span class="material-symbols-outlined text-3xl" data-icon="add">add</span>
+</button>
+<!-- BottomNavBar (Mobile Shell) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter py-sm md:hidden bg-surface shadow-[0px_-4px_20px_rgba(58,50,45,0.03)] rounded-t-xl">
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-sm">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-caps text-[10px] mt-xs">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-sm">
+<span class="material-symbols-outlined" data-icon="shopping_bag">shopping_bag</span>
+<span class="font-label-caps text-[10px] mt-xs">Cart</span>
+</div>
+<!-- Active Navigation -->
+<div class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-lg py-sm">
+<span class="material-symbols-outlined" data-icon="menu_book" data-weight="fill" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+<span class="font-label-caps text-[10px] mt-xs">Menu</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-sm">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-caps text-[10px] mt-xs">Status</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-sm">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-caps text-[10px] mt-xs">Profile</span>
+</div>
+</nav>
+</main>
+</body></html>

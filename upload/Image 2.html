@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Table T-07 Ordering</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&amp;family=Plus+Jakarta+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-secondary-fixed": "#2d1601",
+                      "on-error": "#ffffff",
+                      "primary-container": "#3a322d",
+                      "on-surface": "#1d1b1b",
+                      "inverse-on-surface": "#f5f0ee",
+                      "on-primary": "#ffffff",
+                      "on-background": "#1d1b1b",
+                      "on-primary-fixed": "#211a16",
+                      "tertiary-fixed-dim": "#cfc5b9",
+                      "outline-variant": "#d1c4bd",
+                      "inverse-surface": "#32302f",
+                      "primary": "#241d19",
+                      "surface-container-highest": "#e6e1e0",
+                      "tertiary-fixed": "#ece1d5",
+                      "surface-container-low": "#f8f2f1",
+                      "surface-variant": "#e6e1e0",
+                      "primary-fixed": "#eee0d8",
+                      "outline": "#7f756f",
+                      "error-container": "#ffdad6",
+                      "secondary-fixed-dim": "#eabe9a",
+                      "secondary-container": "#ffd1ad",
+                      "error": "#ba1a1a",
+                      "background": "#fef8f7",
+                      "secondary": "#79573a",
+                      "primary-fixed-dim": "#d1c4bd",
+                      "on-primary-fixed-variant": "#4e4540",
+                      "on-secondary-fixed-variant": "#5e4025",
+                      "surface-dim": "#ded9d8",
+                      "surface": "#fef8f7",
+                      "on-tertiary": "#ffffff",
+                      "tertiary-container": "#39332b",
+                      "on-tertiary-container": "#a49b90",
+                      "secondary-fixed": "#ffdcc1",
+                      "on-tertiary-fixed": "#201b14",
+                      "on-secondary-container": "#79583b",
+                      "surface-tint": "#665c57",
+                      "tertiary": "#231e17",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-bright": "#fef8f7",
+                      "on-surface-variant": "#4d4540",
+                      "on-error-container": "#93000a",
+                      "on-tertiary-fixed-variant": "#4c463d",
+                      "inverse-primary": "#d1c4bd",
+                      "surface-container-high": "#ece7e6",
+                      "surface-container": "#f2edeb",
+                      "on-secondary": "#ffffff",
+                      "on-primary-container": "#a69a93"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xs": "4px",
+                      "container-margin": "32px",
+                      "gutter": "20px",
+                      "md": "16px",
+                      "xl": "40px",
+                      "unit": "4px",
+                      "lg": "24px",
+                      "sm": "8px"
+              },
+              "fontFamily": {
+                      "display-lg": [
+                              "Playfair Display"
+                      ],
+                      "label-caps": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-md": [
+                              "Playfair Display"
+                      ],
+                      "body-md": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "title-sm": [
+                              "Plus Jakarta Sans"
+                      ]
+              },
+              "fontSize": {
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "0.1em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "title-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+            },
+          }
+        }
+    </script>
+<style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md antialiased pb-32">
+<!-- Header Section -->
+<header class="px-lg pt-xl pb-md flex justify-between items-end sticky top-0 bg-background/90 backdrop-blur-md z-30">
+<div>
+<p class="font-label-caps text-label-caps text-outline mb-xs">ZCOFFEE</p>
+<h1 class="font-display-lg text-display-lg text-primary">T-07</h1>
+</div>
+<div class="flex items-center gap-sm bg-surface-container-high px-md py-sm rounded-full">
+<span class="material-symbols-outlined text-outline">room_service</span>
+<span class="font-label-caps text-label-caps text-on-surface">Service</span>
+</div>
+</header>
+<!-- Categories -->
+<nav class="overflow-x-auto hide-scrollbar px-lg py-md flex gap-sm sticky top-[100px] bg-background/90 backdrop-blur-md z-20 shadow-[0px_10px_30px_rgba(58,50,45,0.02)]">
+<button class="bg-primary text-on-primary font-label-caps text-label-caps px-md py-sm rounded-full whitespace-nowrap transition-colors">Signatures</button>
+<button class="bg-surface-container-low text-on-surface-variant font-label-caps text-label-caps px-md py-sm rounded-full whitespace-nowrap hover:bg-surface-container-high transition-colors">Classics</button>
+<button class="bg-surface-container-low text-on-surface-variant font-label-caps text-label-caps px-md py-sm rounded-full whitespace-nowrap hover:bg-surface-container-high transition-colors">Pastries</button>
+<button class="bg-surface-container-low text-on-surface-variant font-label-caps text-label-caps px-md py-sm rounded-full whitespace-nowrap hover:bg-surface-container-high transition-colors">Brunch</button>
+</nav>
+<!-- Menu Grid -->
+<main class="px-lg py-md flex flex-col gap-lg">
+<!-- Featured Item (Bento Style) -->
+<article class="bg-surface-container-lowest rounded-xl shadow-[0px_10px_30px_rgba(58,50,45,0.05)] overflow-hidden">
+<div class="h-48 w-full bg-surface-variant relative">
+<img alt="Featured Item" class="w-full h-full object-cover" data-alt="A stunning top-down food photography shot of a perfectly poured latte art in a minimalist ceramic cup, placed on a clean white organic surface. The scene is bathed in bright, soft natural light creating a luxurious light-mode aesthetic. Delicate shadows hint at an early morning premium cafe experience, with a subtle warm color palette dominating the composition." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUzYt6lsCX7qZUONLXTV4iNxLpfaap2__8GY_48V6Z-D58-X7FDDNI2Dz1OSQorVb1_5-B9l8sDUi2nWbfXE6flCyrxXmWPuMEbK6z0RUvX8ftVYXy4j0N7ZFShSjP75_ujogYCNXOQtkbVMpcVgeie0btexx0_esklGfnh_-zavW6tAQBmLgfL8fyeD37oEETvWpzEJKQuzIhMkmKKTtyBiU9Gq0pEw2LNATYG80x-hh4bwExPTgKUnaNQF2430ekKlE1g6FX3lpl"/>
+<div class="absolute top-md left-md bg-surface-container-lowest/90 backdrop-blur-sm px-sm py-xs rounded-full flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-label-caps text-label-caps text-primary">Popular</span>
+</div>
+</div>
+<div class="p-lg flex justify-between items-start gap-md">
+<div class="flex-1">
+<h2 class="font-title-sm text-title-sm text-primary mb-xs">Velvet Reserve Espresso</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md line-clamp-2">Our signature single-origin bean, extracted to perfection with tasting notes of dark cocoa and wild berry.</p>
+<p class="font-title-sm text-title-sm text-primary">$4.50</p>
+</div>
+<button class="w-10 h-10 rounded-full bg-secondary text-on-secondary flex items-center justify-center shrink-0 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</article>
+<!-- Standard Items -->
+<article class="bg-surface-container-lowest rounded-xl shadow-[0px_10px_30px_rgba(58,50,45,0.05)] p-md flex gap-md items-center">
+<img alt="Menu Item" class="w-24 h-24 rounded-lg object-cover shrink-0" data-alt="A close-up shot of a flaky, golden-brown artisanal croissant resting on a minimalist white plate. The lighting is soft and flattering, highlighting the delicate layers and buttery texture of the pastry. The background is a soft, blurred beige tone, perfectly aligning with a premium, quiet luxury light-mode design aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGgCWqVfBGh4-hEDNKiK5FSikloN2Fx620ZG--zp2Xy458NMhHwRGWKUua5SlZqB4G-3yqq9kPoXen4sr3hypm-7jwVoAVZdvgUj3BI7UWbUFoEkLqIEXZR9KKjp3P-3Ua3LoN8lfp7aSThdeCyxBSHUcR5Bn3hljXf-_W_7YEmSDfqvm0CjWTh-NqOLMJV1MUcme3n8viRGyapAwTObYDXWbWYccURrj0tblBUKmwhMKstQexyMEebmXH3Kh6Gulq4WRGcpX5l12H"/>
+<div class="flex-1">
+<h3 class="font-title-sm text-title-sm text-primary mb-xs">Almond Croissant</h3>
+<p class="font-body-md text-body-md text-outline mb-sm truncate">Twice-baked with almond frangipane.</p>
+<div class="flex items-center justify-between">
+<span class="font-title-sm text-title-sm text-primary">$5.50</span>
+<button class="w-8 h-8 rounded-full bg-surface-container-high text-primary flex items-center justify-center hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined" style="font-size: 20px;">add</span>
+</button>
+</div>
+</div>
+</article>
+<article class="bg-surface-container-lowest rounded-xl shadow-[0px_10px_30px_rgba(58,50,45,0.05)] p-md flex gap-md items-center">
+<img alt="Menu Item" class="w-24 h-24 rounded-lg object-cover shrink-0" data-alt="A pristine glass of iced matcha latte showcasing a beautiful gradient from vibrant green at the bottom to creamy white at the top. Condensation drips slightly down the glass, conveying refreshing coolness. It sits on a light-colored, textured stone counter under bright, airy lighting, embodying a refined and calming visual style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-ZV2RgWKy28KHk3hIwCe1j6X53xYqgcjB7N36aDFg9zDOZsVSZNag31-OkBkVuEH89gSSVMITgVgYvO5HHIg_9GevT-jkZV1sBM4VEe54VSKNlBSQwYKSJHKkbVLPpQJsBOJchp0A5-LWR_FxieHB4n495Xy1kBeqsrbzCERgsAx8E_orcC6_tDlaiNA2vHsydTgAhZE_WbHIodlZZF52uTItbYhp-4xHzTMEVxVw-NZUbUY508NAH1fzlKxIDmor0TeZZzDJbFOv"/>
+<div class="flex-1 flex flex-col h-full justify-between">
+<div>
+<h3 class="font-title-sm text-title-sm text-primary mb-xs">Ceremonial Iced Matcha</h3>
+<p class="font-body-md text-body-md text-outline mb-sm truncate">First-harvest matcha with oat milk.</p>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-title-sm text-title-sm text-primary">$6.00</span>
+<div class="flex items-center gap-sm bg-surface-container-high rounded-full px-xs py-xs">
+<button class="w-6 h-6 rounded-full bg-surface text-primary flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-size: 16px;">remove</span>
+</button>
+<span class="font-label-caps text-label-caps text-primary w-4 text-center">1</span>
+<button class="w-6 h-6 rounded-full bg-surface text-primary flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-size: 16px;">add</span>
+</button>
+</div>
+</div>
+</div>
+</article>
+</main>
+<!-- Sticky Bottom Cart Bar -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-container-lowest shadow-[0px_-10px_30px_rgba(58,50,45,0.05)] rounded-t-xl z-50 px-lg py-md pb-xl">
+<div class="flex items-center justify-between mb-md">
+<div>
+<p class="font-body-md text-body-md text-on-surface-variant">2 Items</p>
+<p class="font-title-sm text-title-sm text-primary">$10.50</p>
+</div>
+<button class="bg-secondary text-on-secondary px-xl py-md rounded-full font-label-caps text-label-caps flex items-center gap-sm hover:opacity-90 transition-opacity">
+<span>View Order</span>
+<span class="material-symbols-outlined" style="font-size: 18px;">shopping_bag</span>
+</button>
+</div>
+<!-- Decorative indicator for slide-up motion -->
+<div class="w-12 h-1 bg-surface-container-highest rounded-full mx-auto absolute top-sm left-1/2 -translate-x-1/2"></div>
+</div>
+</body></html>

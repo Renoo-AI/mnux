@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Menux Pro | Cashier Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&amp;family=Plus+Jakarta+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-container": "#ffd1ad",
+                      "outline-variant": "#d1c4bd",
+                      "surface-container-high": "#ece7e6",
+                      "on-tertiary-fixed-variant": "#4c463d",
+                      "surface-dim": "#ded9d8",
+                      "tertiary-container": "#39332b",
+                      "on-secondary": "#ffffff",
+                      "surface-container-highest": "#e6e1e0",
+                      "surface-bright": "#fef8f7",
+                      "on-tertiary-container": "#a49b90",
+                      "surface-container-lowest": "#ffffff",
+                      "on-secondary-fixed-variant": "#5e4025",
+                      "surface-container-low": "#f8f2f1",
+                      "primary-fixed": "#eee0d8",
+                      "on-error-container": "#93000a",
+                      "tertiary-fixed-dim": "#cfc5b9",
+                      "primary-container": "#3a322d",
+                      "on-secondary-container": "#79583b",
+                      "tertiary": "#231e17",
+                      "on-primary": "#ffffff",
+                      "inverse-on-surface": "#f5f0ee",
+                      "inverse-surface": "#32302f",
+                      "on-surface": "#1d1b1b",
+                      "surface-tint": "#665c57",
+                      "on-primary-fixed-variant": "#4e4540",
+                      "on-tertiary-fixed": "#201b14",
+                      "secondary-fixed-dim": "#eabe9a",
+                      "secondary": "#79573a",
+                      "background": "#fef8f7",
+                      "surface": "#fef8f7",
+                      "error": "#ba1a1a",
+                      "primary-fixed-dim": "#d1c4bd",
+                      "primary": "#241d19",
+                      "on-error": "#ffffff",
+                      "surface-container": "#f2edeb",
+                      "on-surface-variant": "#4d4540",
+                      "secondary-fixed": "#ffdcc1",
+                      "error-container": "#ffdad6",
+                      "outline": "#7f756f",
+                      "on-tertiary": "#ffffff",
+                      "inverse-primary": "#d1c4bd",
+                      "tertiary-fixed": "#ece1d5",
+                      "on-background": "#1d1b1b",
+                      "surface-variant": "#e6e1e0",
+                      "on-primary-fixed": "#211a16",
+                      "on-primary-container": "#a69a93",
+                      "on-secondary-fixed": "#2d1601"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xl": "40px",
+                      "gutter": "20px",
+                      "md": "16px",
+                      "sm": "8px",
+                      "container-margin": "32px",
+                      "unit": "4px",
+                      "xs": "4px",
+                      "lg": "24px"
+              },
+              "fontFamily": {
+                      "display-lg": ["Playfair Display"],
+                      "title-sm": ["Plus Jakarta Sans"],
+                      "headline-md": ["Playfair Display"],
+                      "body-md": ["Plus Jakarta Sans"],
+                      "label-caps": ["Plus Jakarta Sans"]
+              },
+              "fontSize": {
+                      "display-lg": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "title-sm": ["20px", {"lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                      "headline-md": ["32px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "label-caps": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.1em", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .pulsing-border {
+            border: 2px solid #C9A07E;
+            box-shadow: 0 0 0 0 rgba(201, 160, 126, 0.4);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(201, 160, 126, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(201, 160, 126, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(201, 160, 126, 0); }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md overflow-hidden">
+<div class="flex h-screen w-full">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col w-64 h-screen py-lg gap-sm border-r border-outline-variant bg-surface-container-lowest dark:bg-surface-container-low">
+<div class="px-lg mb-xl">
+<h1 class="font-display-lg text-title-sm font-bold text-primary">Menux Pro</h1>
+<p class="text-on-surface-variant font-label-caps text-label-caps">Premium Management</p>
+</div>
+<nav class="flex-1 flex flex-col gap-xs">
+<a class="bg-secondary-fixed text-on-secondary-fixed-variant font-bold rounded-full mx-md p-md flex items-center gap-md active:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-title-sm text-label-caps">Dashboard</span>
+</a>
+<a class="text-on-surface-variant font-medium mx-md p-md flex items-center gap-md hover:bg-surface-container-high active:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="restaurant_menu">restaurant_menu</span>
+<span class="font-title-sm text-label-caps">Orders</span>
+</a>
+<a class="text-on-surface-variant font-medium mx-md p-md flex items-center gap-md hover:bg-surface-container-high active:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="font-title-sm text-label-caps">Menu</span>
+</a>
+<a class="text-on-surface-variant font-medium mx-md p-md flex items-center gap-md hover:bg-surface-container-high active:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span class="font-title-sm text-label-caps">Activity</span>
+</a>
+<a class="text-on-surface-variant font-medium mx-md p-md flex items-center gap-md hover:bg-surface-container-high active:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-title-sm text-label-caps">Settings</span>
+</a>
+</nav>
+<div class="mt-auto flex flex-col gap-xs border-t border-outline-variant pt-md">
+<a class="text-on-surface-variant font-medium mx-md p-md flex items-center gap-md hover:bg-surface-container-high active:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-title-sm text-label-caps">Support</span>
+</a>
+<a class="text-on-surface-variant font-medium mx-md p-md flex items-center gap-md hover:bg-surface-container-high active:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-title-sm text-label-caps">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col min-w-0">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-lg py-md w-full sticky top-0 z-50 bg-surface dark:bg-surface shadow-[0px_10px_30px_rgba(58,50,45,0.05)]">
+<div class="flex items-center gap-md">
+<span class="font-display-lg text-headline-md font-bold text-primary dark:text-on-surface">Active Tables</span>
+<span class="px-md py-xs bg-secondary-container text-on-secondary-container rounded-full font-label-caps text-label-caps">12 BUSY</span>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative">
+<span class="material-symbols-outlined p-sm hover:bg-surface-container-low transition-colors duration-200 cursor-pointer text-primary" data-icon="notifications">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-error rounded-full"></span>
+</div>
+<span class="material-symbols-outlined p-sm hover:bg-surface-container-low transition-colors duration-200 cursor-pointer text-primary" data-icon="account_circle">account_circle</span>
+</div>
+</header>
+<div class="flex-1 flex overflow-hidden">
+<!-- Grid Area -->
+<section class="flex-1 overflow-y-auto p-lg grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-lg content-start">
+<!-- Table Card: New Order -->
+<div class="pulsing-border bg-white rounded-[20px] p-lg shadow-[0px_10px_30px_rgba(58,50,45,0.05)] active:scale-95 transition-transform cursor-pointer">
+<div class="flex justify-between items-start mb-md">
+<div>
+<h3 class="font-display-lg text-title-sm text-primary">Table 04</h3>
+<p class="text-on-surface-variant font-label-caps text-label-caps">4 PERS</p>
+</div>
+<span class="px-sm py-xs bg-secondary-fixed text-on-secondary-fixed-variant rounded-full font-label-caps text-label-caps">NEW ORDER</span>
+</div>
+<div class="flex items-center gap-sm mb-lg">
+<span class="material-symbols-outlined text-secondary" data-icon="schedule">schedule</span>
+<span class="text-on-surface-variant font-medium">2m ago</span>
+</div>
+<div class="border-t border-surface-container pt-md">
+<p class="text-primary font-bold text-lg">$84.50</p>
+</div>
+</div>
+<!-- Table Card: Accepted -->
+<div class="bg-white border border-outline-variant/30 rounded-[20px] p-lg shadow-[0px_10px_30px_rgba(58,50,45,0.05)] active:scale-95 transition-transform cursor-pointer ring-2 ring-primary">
+<div class="flex justify-between items-start mb-md">
+<div>
+<h3 class="font-display-lg text-title-sm text-primary">Table 12</h3>
+<p class="text-on-surface-variant font-label-caps text-label-caps">2 PERS</p>
+</div>
+<span class="px-sm py-xs bg-surface-container-high text-on-surface-variant rounded-full font-label-caps text-label-caps">ACCEPTED</span>
+</div>
+<div class="flex items-center gap-sm mb-lg">
+<span class="material-symbols-outlined text-outline" data-icon="restaurant">restaurant</span>
+<span class="text-on-surface-variant font-medium">18m ago</span>
+</div>
+<div class="border-t border-surface-container pt-md">
+<p class="text-primary font-bold text-lg">$42.00</p>
+</div>
+</div>
+<!-- Table Card: Empty -->
+<div class="bg-surface-container-low border border-dashed border-outline-variant rounded-[20px] p-lg active:scale-95 transition-transform cursor-pointer opacity-70">
+<div class="flex justify-between items-start mb-md">
+<div>
+<h3 class="font-display-lg text-title-sm text-on-surface-variant">Table 01</h3>
+<p class="text-on-surface-variant font-label-caps text-label-caps">6 PERS</p>
+</div>
+<span class="px-sm py-xs bg-surface-dim text-on-surface-variant rounded-full font-label-caps text-label-caps">EMPTY</span>
+</div>
+<div class="flex items-center gap-sm mb-lg">
+<span class="material-symbols-outlined text-outline-variant" data-icon="event_seat">event_seat</span>
+<span class="text-on-surface-variant font-medium">Available</span>
+</div>
+</div>
+<!-- Table Card: Paid -->
+<div class="bg-white border border-outline-variant/30 rounded-[20px] p-lg shadow-[0px_10px_30px_rgba(58,50,45,0.05)] active:scale-95 transition-transform cursor-pointer">
+<div class="flex justify-between items-start mb-md">
+<div>
+<h3 class="font-display-lg text-title-sm text-primary">Table 08</h3>
+<p class="text-on-surface-variant font-label-caps text-label-caps">3 PERS</p>
+</div>
+<span class="px-sm py-xs bg-primary-fixed text-on-primary-fixed-variant rounded-full font-label-caps text-label-caps">PAID</span>
+</div>
+<div class="flex items-center gap-sm mb-lg">
+<span class="material-symbols-outlined text-primary" data-icon="check_circle">check_circle</span>
+<span class="text-on-surface-variant font-medium">Ready to Clear</span>
+</div>
+<div class="border-t border-surface-container pt-md">
+<p class="text-primary font-bold text-lg">$112.25</p>
+</div>
+</div>
+<!-- More tables for visual rhythm -->
+<div class="bg-white border border-outline-variant/30 rounded-[20px] p-lg shadow-[0px_10px_30px_rgba(58,50,45,0.05)] active:scale-95 transition-transform cursor-pointer">
+<div class="flex justify-between items-start mb-md">
+<div>
+<h3 class="font-display-lg text-title-sm text-primary">Table 15</h3>
+<p class="text-on-surface-variant font-label-caps text-label-caps">2 PERS</p>
+</div>
+<span class="px-sm py-xs bg-surface-container-high text-on-surface-variant rounded-full font-label-caps text-label-caps">ACCEPTED</span>
+</div>
+<div class="flex items-center gap-sm mb-lg">
+<span class="material-symbols-outlined text-outline" data-icon="restaurant">restaurant</span>
+<span class="text-on-surface-variant font-medium">45m ago</span>
+</div>
+<div class="border-t border-surface-container pt-md">
+<p class="text-primary font-bold text-lg">$56.00</p>
+</div>
+</div>
+<div class="bg-white border border-outline-variant/30 rounded-[20px] p-lg shadow-[0px_10px_30px_rgba(58,50,45,0.05)] active:scale-95 transition-transform cursor-pointer">
+<div class="flex justify-between items-start mb-md">
+<div>
+<h3 class="font-display-lg text-title-sm text-primary">Table 03</h3>
+<p class="text-on-surface-variant font-label-caps text-label-caps">4 PERS</p>
+</div>
+<span class="px-sm py-xs bg-surface-container-high text-on-surface-variant rounded-full font-label-caps text-label-caps">ACCEPTED</span>
+</div>
+<div class="flex items-center gap-sm mb-lg">
+<span class="material-symbols-outlined text-outline" data-icon="restaurant">restaurant</span>
+<span class="text-on-surface-variant font-medium">12m ago</span>
+</div>
+<div class="border-t border-surface-container pt-md">
+<p class="text-primary font-bold text-lg">$92.10</p>
+</div>
+</div>
+</section>
+<!-- Right Side Detail Panel -->
+<aside class="w-[400px] bg-white border-l border-outline-variant flex flex-col h-full shadow-2xl z-40">
+<div class="p-lg border-b border-surface-container">
+<div class="flex justify-between items-center mb-xs">
+<h2 class="font-display-lg text-title-sm text-primary">Table 12 Details</h2>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-low rounded-full p-xs transition-colors" data-icon="close">close</button>
+</div>
+<p class="text-on-surface-variant font-label-caps text-label-caps">Server: Marc A. • Guests: 2</p>
+</div>
+<div class="flex-1 overflow-y-auto p-lg flex flex-col gap-md">
+<!-- Order Items -->
+<div class="flex justify-between items-start">
+<div class="flex gap-md">
+<span class="font-bold text-primary">1x</span>
+<div>
+<p class="text-primary font-semibold">Truffle Tagliatelle</p>
+<p class="text-on-surface-variant text-sm">Extra Parmesan</p>
+</div>
+</div>
+<p class="text-primary">$28.00</p>
+</div>
+<div class="flex justify-between items-start">
+<div class="flex gap-md">
+<span class="font-bold text-primary">1x</span>
+<div>
+<p class="text-primary font-semibold">Burrata Salad</p>
+</div>
+</div>
+<p class="text-primary">$14.00</p>
+</div>
+<div class="flex justify-between items-start">
+<div class="flex gap-md">
+<span class="font-bold text-on-surface-variant">2x</span>
+<div>
+<p class="text-primary font-semibold">Sparkling Water</p>
+</div>
+</div>
+<p class="text-primary">$0.00</p>
+</div>
+<div class="mt-lg pt-lg border-t border-surface-container">
+<div class="flex justify-between items-center mb-sm">
+<p class="text-on-surface-variant">Subtotal</p>
+<p class="text-on-surface-variant">$42.00</p>
+</div>
+<div class="flex justify-between items-center mb-sm">
+<p class="text-on-surface-variant">Tax (8%)</p>
+<p class="text-on-surface-variant">$3.36</p>
+</div>
+<div class="flex justify-between items-center mt-md">
+<p class="font-display-lg text-title-sm text-primary">Total</p>
+<p class="font-display-lg text-title-sm text-primary">$45.36</p>
+</div>
+</div>
+</div>
+<!-- Action Area -->
+<div class="p-lg bg-surface-container-lowest grid grid-cols-2 gap-md border-t border-outline-variant">
+<button class="col-span-2 py-md bg-primary text-on-primary rounded-full font-bold text-lg hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+                            Mark Paid
+                        </button>
+<button class="py-md bg-secondary-container text-on-secondary-container rounded-full font-semibold hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined" data-icon="done_all">done_all</span>
+                            Accept
+                        </button>
+<button class="py-md bg-surface-container-high text-primary rounded-full font-semibold hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined" data-icon="cleaning_services">cleaning_services</span>
+                            Close Table
+                        </button>
+<button class="col-span-2 py-md border border-error text-error rounded-full font-semibold hover:bg-error-container/20 active:scale-95 transition-all flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined" data-icon="cancel">cancel</span>
+                            Cancel Order
+                        </button>
+</div>
+</aside>
+</div>
+</main>
+</div>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter py-sm md:hidden bg-surface dark:bg-surface-container rounded-t-xl shadow-[0px_-4px_20px_rgba(58,50,45,0.03)]">
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-lg py-sm transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-caps text-label-caps">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="shopping_bag">shopping_bag</span>
+<span class="font-label-caps text-label-caps">Cart</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-caps text-label-caps">Status</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-caps text-label-caps">Profile</span>
+</a>
+</nav>
+</body></html>
