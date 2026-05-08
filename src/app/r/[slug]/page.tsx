@@ -4,12 +4,140 @@ import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
-import { Plus, Star, ShoppingCart, ChevronRight } from 'lucide-react';
+import { Plus, Star, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { restaurantService } from '@/services/restaurantService';
 import { menuService } from '@/services/menuService';
 import { useCartStore } from '@/stores/cartStore';
+import { MenuSkeleton } from '@/components/ui/menu-skeleton';
 import type { Restaurant, MenuItem, MenuCategory } from '@/types';
+
+// Demo data for when Firebase is not connected
+const DEMO_RESTAURANT: Restaurant = {
+  id: 'demo-restaurant-id',
+  slug: 'demo',
+  name: 'Café Élégance',
+  cuisineType: 'French Café',
+  address: '123 Rue de la Paix, Paris',
+  phone: '+33 1 23 45 67 89',
+  email: 'hello@cafe-elegance.fr',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+
+const DEMO_CATEGORIES: MenuCategory[] = [
+  { id: 'cat-1', restaurantId: 'demo-restaurant-id', name: 'Signature Coffee', slug: 'signature-coffee', sortOrder: 1, isActive: true, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'cat-2', restaurantId: 'demo-restaurant-id', name: 'Artisan Pastries', slug: 'artisan-pastries', sortOrder: 2, isActive: true, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'cat-3', restaurantId: 'demo-restaurant-id', name: 'Light Meals', slug: 'light-meals', sortOrder: 3, isActive: true, createdAt: new Date(), updatedAt: new Date() },
+];
+
+const DEMO_MENU_ITEMS: MenuItem[] = [
+  {
+    id: 'item-1',
+    restaurantId: 'demo-restaurant-id',
+    categoryId: 'cat-1',
+    name: 'Ethiopian Yirgacheffe',
+    description: 'Single-origin pour-over with bright citrus notes and a floral finish. Sourced from smallholder farms in the Sidamo region.',
+    price: 5.50,
+    imageUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=300&fit=crop',
+    isAvailable: true,
+    isFeatured: true,
+    tags: ['BESTSELLER'],
+    sortOrder: 1,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'item-2',
+    restaurantId: 'demo-restaurant-id',
+    categoryId: 'cat-1',
+    name: 'Colombian Supremo',
+    description: 'Rich and full-bodied with caramel sweetness and a hint of dark chocolate. A classic espresso blend.',
+    price: 4.50,
+    imageUrl: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400&h=300&fit=crop',
+    isAvailable: true,
+    isFeatured: false,
+    tags: [],
+    sortOrder: 2,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'item-3',
+    restaurantId: 'demo-restaurant-id',
+    categoryId: 'cat-1',
+    name: 'Lavender Oat Latte',
+    description: 'House-made lavender syrup swirled into velvety oat milk and double-shot espresso.',
+    price: 6.50,
+    imageUrl: 'https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?w=400&h=300&fit=crop',
+    isAvailable: true,
+    isFeatured: true,
+    tags: ['VEGAN', 'POPULAR'],
+    sortOrder: 3,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'item-4',
+    restaurantId: 'demo-restaurant-id',
+    categoryId: 'cat-2',
+    name: 'Croissant aux Amandes',
+    description: 'Buttery croissant filled with frangipane and topped with sliced almonds and powdered sugar.',
+    price: 4.80,
+    imageUrl: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400&h=300&fit=crop',
+    isAvailable: true,
+    isFeatured: false,
+    tags: [],
+    sortOrder: 1,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'item-5',
+    restaurantId: 'demo-restaurant-id',
+    categoryId: 'cat-2',
+    name: 'Pain au Chocolat',
+    description: 'Classic French pastry with dark chocolate batons, baked to golden perfection.',
+    price: 4.20,
+    imageUrl: 'https://images.unsplash.com/photo-1530610476181-d83430b64dcd?w=400&h=300&fit=crop',
+    isAvailable: true,
+    isFeatured: true,
+    tags: ['BESTSELLER'],
+    sortOrder: 2,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'item-6',
+    restaurantId: 'demo-restaurant-id',
+    categoryId: 'cat-3',
+    name: 'Avocado Toast',
+    description: 'Sourdough topped with smashed avocado, cherry tomatoes, microgreens, and a sprinkle of everything seasoning.',
+    price: 12.50,
+    imageUrl: 'https://images.unsplash.com/photo-1541519227354-08fa5d50c44d?w=400&h=300&fit=crop',
+    isAvailable: true,
+    isFeatured: false,
+    tags: ['VEGAN'],
+    sortOrder: 1,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'item-7',
+    restaurantId: 'demo-restaurant-id',
+    categoryId: 'cat-3',
+    name: 'Smoked Salmon Tartine',
+    description: 'House-cured salmon on rye bread with cream cheese, capers, red onion, and fresh dill.',
+    price: 15.00,
+    imageUrl: 'https://images.unsplash.com/photo-1514326640560-7d063ef2b88f?w=400&h=300&fit=crop',
+    isAvailable: true,
+    isFeatured: true,
+    tags: ['POPULAR'],
+    sortOrder: 2,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+];
 
 export default function PublicMenuPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = use(params);
@@ -19,6 +147,7 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   
   const { items, addItem, getTotalItems, getTotalPrice } = useCartStore();
   const cartItemCount = getTotalItems();
@@ -29,7 +158,20 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
       try {
         setLoading(true);
         
-        // Get restaurant by slug
+        // Check if this is the demo restaurant
+        if (resolvedParams.slug === 'demo') {
+          setRestaurant(DEMO_RESTAURANT);
+          setCategories(DEMO_CATEGORIES);
+          setMenuItems(DEMO_MENU_ITEMS);
+          setIsDemoMode(true);
+          if (DEMO_CATEGORIES.length > 0) {
+            setSelectedCategory(DEMO_CATEGORIES[0].id);
+          }
+          setLoading(false);
+          return;
+        }
+        
+        // Try to get restaurant from Firebase
         const restaurantData = await restaurantService.getBySlug(resolvedParams.slug);
         if (!restaurantData) {
           setError('Restaurant not found');
@@ -51,7 +193,18 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
         }
       } catch (err) {
         console.error('Error loading menu:', err);
-        setError('Failed to load menu');
+        // If there's an error and it might be Firebase connection, show demo data
+        if (resolvedParams.slug === 'demo' || !restaurant) {
+          setRestaurant(DEMO_RESTAURANT);
+          setCategories(DEMO_CATEGORIES);
+          setMenuItems(DEMO_MENU_ITEMS);
+          setIsDemoMode(true);
+          if (DEMO_CATEGORIES.length > 0) {
+            setSelectedCategory(DEMO_CATEGORIES[0].id);
+          }
+        } else {
+          setError('Failed to load menu');
+        }
       } finally {
         setLoading(false);
       }
@@ -75,11 +228,7 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse text-on-surface-variant">Loading menu...</div>
-      </div>
-    );
+    return <MenuSkeleton />;
   }
 
   if (error || !restaurant) {
@@ -98,6 +247,13 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
 
   return (
     <div className="min-h-screen bg-background font-body pb-24">
+      {/* Demo Mode Banner */}
+      {isDemoMode && (
+        <div className="bg-secondary-container text-on-secondary-container px-4 py-2 text-center text-label-sm">
+          <span className="font-semibold">Demo Mode</span> — This is a preview of Menux with sample menu items
+        </div>
+      )}
+      
       {/* Header */}
       <header className="flex justify-between items-center px-6 py-4 sticky top-0 bg-surface shadow-card z-40">
         <div className="flex items-center gap-2">
@@ -150,6 +306,7 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
                   alt={item.name}
                   fill
                   className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-surface-container-low">

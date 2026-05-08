@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ShoppingBag, Payments, Cancel, History, ExpandMore, TrendingUp } from 'lucide-react';
+import { ShoppingBag, CreditCard, XCircle, History, ChevronDown, TrendingUp } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout';
 import { TopAppBar } from '@/components/layout';
 import type { ActivityLog } from '@/types';
@@ -85,7 +85,7 @@ export default function ActivityLogPage() {
             </div>
             <button className="font-label-caps text-label-caps text-primary flex items-center gap-1 hover:opacity-70">
               Today
-              <ExpandMore className="w-4 h-4" />
+              <ChevronDown className="w-4 h-4" />
             </button>
           </div>
 

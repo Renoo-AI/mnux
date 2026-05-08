@@ -5,9 +5,9 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { 
   LayoutDashboard, 
-  Restaurant, 
-  MenuBook, 
-  ReceiptLong, 
+  UtensilsCrossed, 
+  BookOpen, 
+  ClipboardList, 
   Settings,
   HelpCircle,
   LogOut,
@@ -22,10 +22,10 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
-  { href: '/dashboard/orders', label: 'Orders', icon: <ReceiptLong className="w-5 h-5" /> },
-  { href: '/dashboard/menu', label: 'Menu', icon: <MenuBook className="w-5 h-5" /> },
-  { href: '/dashboard/tables', label: 'Tables', icon: <Restaurant className="w-5 h-5" /> },
-  { href: '/dashboard/logs', label: 'Activity', icon: <ReceiptLong className="w-5 h-5" /> },
+  { href: '/dashboard/orders', label: 'Orders', icon: <ClipboardList className="w-5 h-5" /> },
+  { href: '/dashboard/menu', label: 'Menu', icon: <BookOpen className="w-5 h-5" /> },
+  { href: '/dashboard/tables', label: 'Tables', icon: <UtensilsCrossed className="w-5 h-5" /> },
+  { href: '/dashboard/logs', label: 'Activity', icon: <ClipboardList className="w-5 h-5" /> },
   { href: '/dashboard/settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
 ];
 

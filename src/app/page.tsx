@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* TopNavBar */}
       <nav className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-8 md:px-16 py-4 bg-background/80 backdrop-blur-md">
         <div className="flex items-center gap-2">
@@ -332,7 +332,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="w-full px-8 md:px-16 py-16 flex flex-col md:flex-row justify-between items-start gap-8 max-w-7xl mx-auto bg-surface-container rounded-t-lg">
+      <footer className="mt-auto w-full px-8 md:px-16 py-16 flex flex-col md:flex-row justify-between items-start gap-8 max-w-7xl mx-auto bg-surface-container rounded-t-lg">
         <div className="flex flex-col gap-6 max-w-xs">
           <span className="font-display text-title-sm font-bold text-primary">Menux</span>
           <p className="font-body-md text-on-surface-variant">

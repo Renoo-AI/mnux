@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, PhotoCamera, Edit, QrCode, MoreVert } from 'lucide-react';
+import { Plus, Camera, Edit, QrCode, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DashboardLayout } from '@/components/layout';
@@ -41,7 +41,7 @@ export default function SettingsPage() {
                   <span className="material-symbols-outlined text-outline text-4xl">restaurant</span>
                 </div>
                 <button className="absolute bottom-0 right-0 bg-primary text-on-primary p-1 rounded-full shadow-lg border-2 border-surface">
-                  <PhotoCamera className="w-4 h-4" />
+                  <Camera className="w-4 h-4" />
                 </button>
               </div>
               
@@ -193,7 +193,7 @@ export default function SettingsPage() {
                     </td>
                     <td className="p-4 text-right">
                       <button className="p-2 text-on-surface-variant hover:text-primary transition-colors">
-                        <MoreVert className="w-5 h-5" />
+                        <MoreVertical className="w-5 h-5" />
                       </button>
                     </td>
                   </tr>

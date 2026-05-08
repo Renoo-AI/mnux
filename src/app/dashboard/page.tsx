@@ -7,11 +7,11 @@ import {
   Clock, 
   CheckCircle, 
   XCircle, 
-  Payments, 
-  CleaningServices, 
-  DoneAll,
-  Restaurant,
-  EventSeat,
+  CreditCard, 
+  Sparkles, 
+  CheckCheck,
+  Utensils,
+  Armchair,
   Loader2,
   Bell,
   Volume2
@@ -224,14 +224,14 @@ export default function CashierDashboard() {
             </div>
             <div className="bg-white rounded-xl p-4 shadow-card">
               <div className="flex items-center gap-2 text-primary mb-2">
-                <Restaurant className="w-5 h-5" />
+                <Utensils className="w-5 h-5" />
                 <span className="font-label-caps text-label-caps">IN PROGRESS</span>
               </div>
               <p className="font-display text-headline-md text-primary">{acceptedOrders.length}</p>
             </div>
             <div className="bg-white rounded-xl p-4 shadow-card">
               <div className="flex items-center gap-2 text-on-surface-variant mb-2">
-                <EventSeat className="w-5 h-5" />
+                <Armchair className="w-5 h-5" />
                 <span className="font-label-caps text-label-caps">AVAILABLE</span>
               </div>
               <p className="font-display text-headline-md text-primary">
@@ -296,7 +296,7 @@ export default function CashierDashboard() {
                 </span>
               </div>
               <div className="flex items-center gap-2 mb-4">
-                <Restaurant className="w-4 h-4 text-outline" />
+                <Utensils className="w-4 h-4 text-outline" />
                 <span className="text-on-surface-variant font-medium text-sm">
                   {formatTimeAgo(order.createdAt)}
                 </span>
@@ -327,7 +327,7 @@ export default function CashierDashboard() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <EventSeat className="w-4 h-4 text-outline-variant" />
+                  <Armchair className="w-4 h-4 text-outline-variant" />
                   <span className="text-on-surface-variant font-medium text-sm">Available</span>
                 </div>
               </div>
@@ -393,7 +393,7 @@ export default function CashierDashboard() {
                       <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
                       <>
-                        <DoneAll className="w-5 h-5 mr-2" />
+                        <CheckCheck className="w-5 h-5 mr-2" />
                         Accept Order
                       </>
                     )}
@@ -421,7 +421,7 @@ export default function CashierDashboard() {
                       <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
                       <>
-                        <Payments className="w-5 h-5 mr-2" />
+                        <CreditCard className="w-5 h-5 mr-2" />
                         Mark Paid
                       </>
                     )}
@@ -430,7 +430,7 @@ export default function CashierDashboard() {
                     variant="outline"
                     className="py-4 bg-surface-container-high text-primary rounded-full hover:opacity-90"
                   >
-                    <CleaningServices className="w-5 h-5 mr-2" />
+                    <Sparkles className="w-5 h-5 mr-2" />
                     Close Table
                   </Button>
                   <Button
