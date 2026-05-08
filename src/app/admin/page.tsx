@@ -169,7 +169,7 @@ export default function SuperAdminDashboard() {
             description: 'Please login again',
             variant: 'destructive',
           });
-          router.push('/staff/login');
+          router.push('/admin/login');
           return;
         }
         throw new Error('Failed to fetch data');
@@ -373,7 +373,7 @@ export default function SuperAdminDashboard() {
   const handleSignOut = async () => {
     try {
       await signOut(auth);
-      router.push('/staff/login');
+      router.push('/admin/login');
     } catch (error) {
       console.error('Sign out error:', error);
     }
@@ -404,7 +404,7 @@ export default function SuperAdminDashboard() {
             <p className="text-[#3A322D]/60 mb-6">
               You do not have permission to access MenuxSEC. Only the SuperAdmin can access this panel.
             </p>
-            <Button onClick={() => router.push('/staff/login')} className="bg-[#3A322D] hover:bg-[#5A4A3D]">
+            <Button onClick={() => router.push('/admin/login')} className="bg-[#3A322D] hover:bg-[#5A4A3D]">
               Return to Login
             </Button>
           </CardContent>
