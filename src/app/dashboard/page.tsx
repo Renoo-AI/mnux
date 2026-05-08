@@ -17,7 +17,14 @@ import {
   Volume2,
   VolumeX,
   AlertCircle,
-  AlertTriangle
+  AlertTriangle,
+  TrendingUp,
+  DollarSign,
+  Coffee,
+  Users,
+  BarChart3,
+  ArrowUpRight,
+  ArrowDownRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DashboardLayout } from '@/components/layout';
@@ -108,6 +115,18 @@ const demoTables: Table[] = [
   { id: 't7', restaurantId: 'demo', name: 'Table 05', label: 'Bar Area', seats: 2, state: 'AVAILABLE', qrCodeUrl: '/r/demo/t/T-05', createdAt: new Date(), updatedAt: new Date() },
   { id: 't8', restaurantId: 'demo', name: 'B-01', label: 'Bar Stool', seats: 1, state: 'AVAILABLE', qrCodeUrl: '/r/demo/t/B-01', createdAt: new Date(), updatedAt: new Date() },
 ];
+
+// Demo analytics data
+const demoAnalytics = {
+  todayRevenue: 1847.50,
+  yesterdayRevenue: 1423.00,
+  todayOrders: 47,
+  yesterdayOrders: 38,
+  avgOrderValue: 39.31,
+  peakHour: '14:00',
+  topItem: 'Signature Latte',
+  topItemSales: 23,
+};
 
 export default function CashierDashboard() {
   const router = useRouter();
@@ -296,6 +315,10 @@ export default function CashierDashboard() {
   const newOrders = orders.filter(o => o.state === 'NEW');
   const acceptedOrders = orders.filter(o => o.state === 'ACCEPTED');
   const activeTableIds = orders.filter(o => ['NEW', 'ACCEPTED'].includes(o.state)).map(o => o.tableId);
+  
+  // Calculate live stats
+  const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+  const avgOrderValue = orders.length > 0 ? totalRevenue / orders.length : 0;
 
   return (
     <DashboardLayout>
@@ -335,37 +358,117 @@ export default function CashierDashboard() {
       <div className="flex-1 flex overflow-hidden">
         {/* Grid Area */}
         <section className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 content-start">
-          {/* Stats Summary */}
+          
+          {/* Analytics Summary Cards */}
           <div className="col-span-full grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <div className="bg-white rounded-xl p-4 shadow-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-default">
-              <div className="flex items-center gap-2 text-secondary mb-2">
-                <Bell className="w-5 h-5 animate-bounce-subtle" />
-                <span className="font-label-caps text-label-caps">NEW ORDERS</span>
+            <div className="bg-white rounded-2xl p-5 shadow-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-default group relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-secondary/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+              <div className="relative">
+                <div className="flex items-center gap-2 text-secondary mb-2">
+                  <Bell className="w-5 h-5 animate-bounce-subtle" />
+                  <span className="font-label-caps text-label-caps uppercase tracking-wider">NEW ORDERS</span>
+                </div>
+                <p className="font-display text-4xl text-primary">{newOrders.length}</p>
+                <p className="text-on-surface-variant text-xs mt-1">Requires attention</p>
               </div>
-              <p className="font-display text-headline-md text-primary">{newOrders.length}</p>
             </div>
-            <div className="bg-white rounded-xl p-4 shadow-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-default">
-              <div className="flex items-center gap-2 text-primary mb-2">
-                <Utensils className="w-5 h-5" />
-                <span className="font-label-caps text-label-caps">IN PROGRESS</span>
+            
+            <div className="bg-white rounded-2xl p-5 shadow-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-default group relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+              <div className="relative">
+                <div className="flex items-center gap-2 text-primary mb-2">
+                  <Utensils className="w-5 h-5" />
+                  <span className="font-label-caps text-label-caps uppercase tracking-wider">IN PROGRESS</span>
+                </div>
+                <p className="font-display text-4xl text-primary">{acceptedOrders.length}</p>
+                <p className="text-on-surface-variant text-xs mt-1">Being prepared</p>
               </div>
-              <p className="font-display text-headline-md text-primary">{acceptedOrders.length}</p>
             </div>
-            <div className="bg-white rounded-xl p-4 shadow-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-default">
-              <div className="flex items-center gap-2 text-on-surface-variant mb-2">
-                <Armchair className="w-5 h-5" />
-                <span className="font-label-caps text-label-caps">AVAILABLE</span>
+            
+            <div className="bg-white rounded-2xl p-5 shadow-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-default group relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-accent/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+              <div className="relative">
+                <div className="flex items-center gap-2 text-on-surface-variant mb-2">
+                  <Armchair className="w-5 h-5" />
+                  <span className="font-label-caps text-label-caps uppercase tracking-wider">AVAILABLE</span>
+                </div>
+                <p className="font-display text-4xl text-primary">
+                  {tables.filter(t => !activeTableIds.includes(t.id) && t.state !== 'OFFLINE').length}
+                </p>
+                <p className="text-on-surface-variant text-xs mt-1">Ready to seat</p>
               </div>
-              <p className="font-display text-headline-md text-primary">
-                {tables.filter(t => !activeTableIds.includes(t.id) && t.state !== 'OFFLINE').length}
+            </div>
+            
+            <div className="bg-white rounded-2xl p-5 shadow-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-default group relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+              <div className="relative">
+                <div className="flex items-center gap-2 text-green-600 mb-2">
+                  <DollarSign className="w-5 h-5" />
+                  <span className="font-label-caps text-label-caps uppercase tracking-wider">REVENUE</span>
+                </div>
+                <p className="font-display text-4xl text-primary">${totalRevenue.toFixed(0)}</p>
+                <p className="text-on-surface-variant text-xs mt-1">Active orders</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Stats Row */}
+          <div className="col-span-full grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-2xl p-5 border border-secondary/20 hover:border-secondary/40 transition-all duration-300">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-label-caps text-xs text-on-surface-variant uppercase tracking-wider">Today&apos;s Revenue</p>
+                  <p className="font-display text-2xl text-primary mt-1">${demoAnalytics.todayRevenue.toFixed(2)}</p>
+                </div>
+                <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm ${
+                  demoAnalytics.todayRevenue >= demoAnalytics.yesterdayRevenue 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-red-100 text-red-700'
+                }`}>
+                  {demoAnalytics.todayRevenue >= demoAnalytics.yesterdayRevenue ? (
+                    <ArrowUpRight className="w-4 h-4" />
+                  ) : (
+                    <ArrowDownRight className="w-4 h-4" />
+                  )}
+                  {Math.abs(((demoAnalytics.todayRevenue - demoAnalytics.yesterdayRevenue) / demoAnalytics.yesterdayRevenue) * 100).toFixed(0)}%
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-2xl p-5 border border-accent/20 hover:border-accent/40 transition-all duration-300">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-label-caps text-xs text-on-surface-variant uppercase tracking-wider">Orders Today</p>
+                  <p className="font-display text-2xl text-primary mt-1">{demoAnalytics.todayOrders}</p>
+                </div>
+                <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm ${
+                  demoAnalytics.todayOrders >= demoAnalytics.yesterdayOrders 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-red-100 text-red-700'
+                }`}>
+                  {demoAnalytics.todayOrders >= demoAnalytics.yesterdayOrders ? (
+                    <ArrowUpRight className="w-4 h-4" />
+                  ) : (
+                    <ArrowDownRight className="w-4 h-4" />
+                  )}
+                  {Math.abs(((demoAnalytics.todayOrders - demoAnalytics.yesterdayOrders) / demoAnalytics.yesterdayOrders) * 100).toFixed(0)}%
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-5 border border-primary/10 hover:border-primary/20 transition-all duration-300">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-label-caps text-xs text-on-surface-variant uppercase tracking-wider">Avg Order Value</p>
+                  <p className="font-display text-2xl text-primary mt-1">${avgOrderValue.toFixed(2)}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Coffee className="w-8 h-8 text-accent" />
+                </div>
+              </div>
+              <p className="text-xs text-on-surface-variant mt-2">
+                Top: {demoAnalytics.topItem} ({demoAnalytics.topItemSales} sold)
               </p>
-            </div>
-            <div className="bg-white rounded-xl p-4 shadow-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-default">
-              <div className="flex items-center gap-2 text-on-surface-variant mb-2">
-                <Clock className="w-5 h-5" />
-                <span className="font-label-caps text-label-caps">CURRENT TIME</span>
-              </div>
-              <p className="font-display text-headline-md text-primary">{formatTime(currentTime)}</p>
             </div>
           </div>
 
@@ -374,8 +477,9 @@ export default function CashierDashboard() {
             <div
               key={order.id}
               onClick={() => setSelectedOrder(order)}
-              className="pulse-border bg-white rounded-3xl p-6 shadow-card active:scale-95 transition-all duration-300 cursor-pointer hover:shadow-xl hover:-translate-y-1 group"
+              className="pulse-border bg-white rounded-3xl p-6 shadow-card active:scale-95 transition-all duration-300 cursor-pointer hover:shadow-xl hover:-translate-y-1 group relative overflow-hidden"
             >
+              <div className="absolute top-0 left-0 w-2 h-full bg-secondary animate-pulse" />
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="font-display text-title-sm text-primary group-hover:text-secondary transition-colors">{order.tableName}</h3>
@@ -404,8 +508,9 @@ export default function CashierDashboard() {
             <div
               key={order.id}
               onClick={() => setSelectedOrder(order)}
-              className="bg-white border border-outline-variant/30 rounded-3xl p-6 shadow-card active:scale-95 transition-all duration-300 cursor-pointer ring-2 ring-primary hover:shadow-xl hover:-translate-y-1 group"
+              className="bg-white border border-outline-variant/30 rounded-3xl p-6 shadow-card active:scale-95 transition-all duration-300 cursor-pointer ring-2 ring-primary hover:shadow-xl hover:-translate-y-1 group relative overflow-hidden"
             >
+              <div className="absolute top-0 left-0 w-2 h-full bg-primary" />
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="font-display text-title-sm text-primary group-hover:text-secondary transition-colors">{order.tableName}</h3>
@@ -435,11 +540,11 @@ export default function CashierDashboard() {
             .map((table) => (
               <div
                 key={table.id}
-                className="bg-surface-container-low border border-dashed border-outline-variant rounded-3xl p-6 opacity-70 hover:opacity-90 transition-all duration-300 hover:border-secondary hover:shadow-md"
+                className="bg-surface-container-low border border-dashed border-outline-variant rounded-3xl p-6 opacity-70 hover:opacity-90 transition-all duration-300 hover:border-secondary hover:shadow-md group"
               >
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="font-display text-title-sm text-on-surface-variant">{table.name}</h3>
+                    <h3 className="font-display text-title-sm text-on-surface-variant group-hover:text-primary transition-colors">{table.name}</h3>
                     <p className="text-on-surface-variant font-label-caps text-label-caps">
                       {table.seats} SEATS
                     </p>
@@ -459,7 +564,10 @@ export default function CashierDashboard() {
         {/* Right Side Detail Panel */}
         {selectedOrder && (
           <aside className="w-[400px] bg-white border-l border-outline-variant flex flex-col h-full shadow-2xl z-40">
-            <div className="p-6 border-b border-surface-container">
+            <div className="p-6 border-b border-surface-container relative">
+              <div className={`absolute top-0 left-0 w-full h-1 ${
+                selectedOrder.state === 'NEW' ? 'bg-secondary' : 'bg-primary'
+              }`} />
               <div className="flex justify-between items-center mb-2">
                 <h2 className="font-display text-title-sm text-primary">{selectedOrder.tableName} Details</h2>
                 <button
@@ -474,19 +582,19 @@ export default function CashierDashboard() {
               </p>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 custom-scrollbar">
               {selectedOrder.items.map((item, i) => (
-                <div key={i} className="flex justify-between items-start">
+                <div key={i} className="flex justify-between items-start p-3 rounded-xl bg-surface-container-low/50 hover:bg-surface-container-low transition-colors">
                   <div className="flex gap-4">
-                    <span className="font-bold text-primary">{item.quantity}x</span>
+                    <span className="font-bold text-primary bg-secondary-fixed/30 w-8 h-8 rounded-full flex items-center justify-center text-sm">{item.quantity}x</span>
                     <div>
                       <p className="text-primary font-semibold">{item.name}</p>
                       {item.notes && (
-                        <p className="text-on-surface-variant text-sm">{item.notes}</p>
+                        <p className="text-on-surface-variant text-sm mt-1 italic">&quot;{item.notes}&quot;</p>
                       )}
                     </div>
                   </div>
-                  <p className="text-primary">${(item.unitPrice * item.quantity).toFixed(2)}</p>
+                  <p className="text-primary font-semibold">${(item.unitPrice * item.quantity).toFixed(2)}</p>
                 </div>
               ))}
               
@@ -495,9 +603,9 @@ export default function CashierDashboard() {
                   <p className="text-on-surface-variant">Subtotal</p>
                   <p className="text-on-surface-variant">${selectedOrder.totalAmount.toFixed(2)}</p>
                 </div>
-                <div className="flex justify-between items-center mt-4">
+                <div className="flex justify-between items-center mt-4 p-4 bg-secondary-fixed/20 rounded-xl">
                   <p className="font-display text-title-sm text-primary">Total</p>
-                  <p className="font-display text-title-sm text-primary">${selectedOrder.totalAmount.toFixed(2)}</p>
+                  <p className="font-display text-2xl text-primary">${selectedOrder.totalAmount.toFixed(2)}</p>
                 </div>
               </div>
             </div>
@@ -509,7 +617,7 @@ export default function CashierDashboard() {
                   <Button
                     onClick={() => handleAcceptOrder(selectedOrder.id)}
                     disabled={actionLoading === selectedOrder.id + '-accept'}
-                    className="col-span-2 bg-secondary-container text-on-secondary-container rounded-full py-4 hover:opacity-90"
+                    className="col-span-2 bg-secondary-container text-on-secondary-container rounded-full py-4 hover:opacity-90 shadow-md hover:shadow-lg transition-all duration-300"
                   >
                     {actionLoading === selectedOrder.id + '-accept' ? (
                       <>
@@ -549,7 +657,7 @@ export default function CashierDashboard() {
                   <Button
                     onClick={() => handleCompleteOrder(selectedOrder.id)}
                     disabled={actionLoading === selectedOrder.id + '-complete'}
-                    className="col-span-2 bg-primary text-on-primary rounded-full py-4 hover:opacity-90"
+                    className="col-span-2 bg-primary text-on-primary rounded-full py-4 hover:opacity-90 shadow-md hover:shadow-lg transition-all duration-300"
                   >
                     {actionLoading === selectedOrder.id + '-complete' ? (
                       <>
@@ -559,7 +667,7 @@ export default function CashierDashboard() {
                     ) : (
                       <>
                         <CreditCard className="w-5 h-5 mr-2" />
-                        Mark Paid
+                        Mark as Paid
                       </>
                     )}
                   </Button>

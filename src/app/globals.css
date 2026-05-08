@@ -48,6 +48,10 @@
   --color-error: #ba1a1a;
   --color-error-container: #ffdad6;
   
+  /* Success Colors */
+  --color-success: #15803d;
+  --color-success-container: #dcfce7;
+  
   /* Text Colors */
   --color-on-primary: #ffffff;
   --color-on-secondary: #ffffff;
@@ -77,6 +81,24 @@
   --font-sans: 'Plus Jakarta Sans', sans-serif;
   --font-body: 'Plus Jakarta Sans', sans-serif;
   
+  /* Font Sizes */
+  --text-display-xl: 4rem;
+  --text-display-lg: 3rem;
+  --text-display-md: 2.5rem;
+  --text-headline-lg: 2rem;
+  --text-headline-md: 1.75rem;
+  --text-headline-sm: 1.5rem;
+  --text-title-lg: 1.375rem;
+  --text-title-md: 1rem;
+  --text-title-sm: 0.875rem;
+  --text-body-lg: 1rem;
+  --text-body-md: 0.875rem;
+  --text-body-sm: 0.75rem;
+  --text-label-lg: 0.875rem;
+  --text-label-md: 0.75rem;
+  --text-label-sm: 0.6875rem;
+  --text-label-caps: 0.6875rem;
+  
   /* Border Radius */
   --radius-lg: 0.5rem;
   --radius-xl: 0.75rem;
@@ -87,6 +109,14 @@
   /* Box Shadows */
   --shadow-luxury: 0 10px 40px -10px rgba(58, 50, 45, 0.15);
   --shadow-card: 0px 10px 30px rgba(58, 50, 45, 0.05);
+  --shadow-card-hover: 0px 20px 40px rgba(58, 50, 45, 0.1);
+  --shadow-button: 0px 4px 12px rgba(58, 50, 45, 0.1);
+  --shadow-dropdown: 0px 8px 24px rgba(58, 50, 45, 0.12);
+  
+  /* Transitions */
+  --transition-fast: 150ms;
+  --transition-normal: 200ms;
+  --transition-slow: 300ms;
 }
 
 @custom-variant dark (&:is(.dark *));
@@ -121,8 +151,8 @@ body {
 
 /* Custom Scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -154,7 +184,7 @@ body {
 }
 
 /* Card Shadow Utility */
-.card-shadow {
+.shadow-card {
   box-shadow: var(--shadow-card);
 }
 
@@ -407,6 +437,52 @@ body {
   animation: heartbeat 1.5s ease-in-out infinite;
 }
 
+/* Float animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Slide in from top */
+@keyframes slide-in-top {
+  0% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-top {
+  animation: slide-in-top 0.3s ease-out forwards;
+}
+
+/* Rotate in animation */
+@keyframes rotate-in {
+  0% {
+    transform: rotate(-180deg) scale(0);
+    opacity: 0;
+  }
+  100% {
+    transform: rotate(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-rotate-in {
+  animation: rotate-in 0.4s ease-out forwards;
+}
+
 /* ============ Hover Effects ============ */
 
 /* Card hover lift */
@@ -492,6 +568,10 @@ body {
 .stagger-children > *:nth-child(6) { animation-delay: 250ms; }
 .stagger-children > *:nth-child(7) { animation-delay: 300ms; }
 .stagger-children > *:nth-child(8) { animation-delay: 350ms; }
+.stagger-children > *:nth-child(9) { animation-delay: 400ms; }
+.stagger-children > *:nth-child(10) { animation-delay: 450ms; }
+.stagger-children > *:nth-child(11) { animation-delay: 500ms; }
+.stagger-children > *:nth-child(12) { animation-delay: 550ms; }
 
 /* ============ Page Transitions ============ */
 
@@ -513,4 +593,223 @@ body {
 .page-exit-active {
   opacity: 0;
   transition: opacity 0.2s ease;
+}
+
+/* ============ Card Styles ============ */
+
+.card-base {
+  background: var(--color-surface-container-lowest);
+  border-radius: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* ============ Button Styles ============ */
+
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--color-secondary);
+  color: var(--color-on-secondary);
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--color-outline-variant);
+  color: var(--color-primary);
+  transition: all 0.2s ease;
+}
+
+.btn-outline:hover {
+  background: var(--color-surface-container-low);
+  border-color: var(--color-primary);
+}
+
+/* ============ Badge Styles ============ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.badge-secondary {
+  background: var(--color-secondary-fixed);
+  color: var(--color-on-secondary-fixed-variant);
+}
+
+.badge-success {
+  background: var(--color-success-container);
+  color: var(--color-success);
+}
+
+.badge-error {
+  background: var(--color-error-container);
+  color: var(--color-on-error-container);
+}
+
+/* ============ Input Styles ============ */
+
+.input-base {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 0.75rem;
+  background: var(--color-surface-container-low);
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.input-base:focus {
+  border-color: var(--color-secondary);
+  box-shadow: 0 0 0 3px rgba(201, 160, 126, 0.1);
+}
+
+.input-base::placeholder {
+  color: var(--color-on-surface-variant);
+  opacity: 0.6;
+}
+
+/* ============ Typography Utilities ============ */
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.text-display-xl { font-size: var(--text-display-xl); }
+.text-display-lg { font-size: var(--text-display-lg); }
+.text-display-md { font-size: var(--text-display-md); }
+.text-headline-lg { font-size: var(--text-headline-lg); }
+.text-headline-md { font-size: var(--text-headline-md); }
+.text-headline-sm { font-size: var(--text-headline-sm); }
+.text-title-lg { font-size: var(--text-title-lg); }
+.text-title-md { font-size: var(--text-title-md); }
+.text-title-sm { font-size: var(--text-title-sm); }
+.text-body-lg { font-size: var(--text-body-lg); }
+.text-body-md { font-size: var(--text-body-md); }
+.text-body-sm { font-size: var(--text-body-sm); }
+.text-label-lg { font-size: var(--text-label-lg); }
+.text-label-md { font-size: var(--text-label-md); }
+.text-label-sm { font-size: var(--text-label-sm); }
+.text-label-caps { 
+  font-size: var(--text-label-caps); 
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+/* ============ Gradient Utilities ============ */
+
+.gradient-primary {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-espresso) 100%);
+}
+
+.gradient-secondary {
+  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-accent) 100%);
+}
+
+.gradient-surface {
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-surface-container-low) 100%);
+}
+
+/* ============ Glass Effect ============ */
+
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.glass-dark {
+  background: rgba(36, 29, 25, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ============ Tooltip Styles ============ */
+
+.tooltip {
+  position: relative;
+}
+
+.tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 0.75rem;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 0.75rem;
+  border-radius: 0.5rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+}
+
+.tooltip:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ============ Responsive Utilities ============ */
+
+@media (max-width: 768px) {
+  .mobile-hidden {
+    display: none;
+  }
+  
+  .mobile-full {
+    width: 100%;
+  }
+}
+
+@media (min-width: 769px) {
+  .desktop-hidden {
+    display: none;
+  }
+}
+
+/* ============ Print Styles ============ */
+
+@media print {
+  .no-print {
+    display: none;
+  }
+  
+  body {
+    background: white;
+    color: black;
+  }
 }
