@@ -1,6 +1,6 @@
 # MenuxPRO Final Export Checklist
 
-**Generated:** 2025-01-08
+**Generated:** 2026-05-09
 **Status:** ✅ EXPORT READY (with Firebase config requirement)
 
 ---
@@ -183,8 +183,15 @@ Build completes successfully with graceful Firebase config handling
 
 ### Test Rules
 ```
-⏳ Requires Firebase emulator
-Command: bun run test:rules
+⚠️ NOT RUN LOCALLY — Requires Firebase Emulator Setup
+
+The Firebase CLI (firebase-tools) is not installed in this environment.
+To run rules tests locally:
+
+1. Install Firebase CLI: npm install -g firebase-tools
+2. Run: bun run test:rules
+
+Tests can also be run in CI/CD with Firebase Emulator GitHub Action.
 ```
 
 ---
@@ -313,4 +320,4 @@ Command: bun run test:rules
 ---
 
 **Export prepared by:** Agent2 (Final Pre-Export Sprint)
-**Date:** 2025-01-08
+**Date:** 2026-05-09
