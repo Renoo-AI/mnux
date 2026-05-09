@@ -5,9 +5,13 @@
 
 export type TableStatus = 'EMPTY' | 'NEW_ORDER' | 'ACTIVE' | 'AWAITING_PAYMENT' | 'OFFLINE';
 
-export type OrderStatus = 'CREATED' | 'ACCEPTED' | 'REJECTED' | 'PAID' | 'CLOSED' | 'CANCELLED';
+export type OrderStatus = 'CREATED' | 'ACCEPTED' | 'PREPARING' | 'SERVED' | 'BILL_REQUESTED' | 'PAID' | 'CLOSED' | 'CANCELLED' | 'REJECTED';
 
-export type StaffRole = 'cashier' | 'owner' | 'admin';
+export type TableRequestType = 'CALL_WAITER' | 'REQUEST_BILL';
+
+export type TableRequestStatus = 'PENDING' | 'ACKNOWLEDGED' | 'RESOLVED';
+
+export type StaffRole = 'cashier' | 'owner' | 'admin' | 'waiter';
 
 export type RestaurantStatus = 'ACTIVE' | 'OFFLINE';
 
@@ -311,4 +315,26 @@ export interface StaffDocument extends Omit<StaffMember, 'createdAt' | 'updatedA
 
 export interface ActivityLogDocument extends Omit<ActivityLog, 'createdAt'> {
   createdAt: { seconds: number; nanoseconds: number };
+}
+
+// ============ Table Request Types ============
+
+export interface TableRequest {
+  id: string;
+  restaurantId: string;
+  tableId: string;
+  tableName: string;
+  type: TableRequestType;
+  status: TableRequestStatus;
+  createdAt: Date;
+  acknowledgedAt?: Date;
+  resolvedAt?: Date;
+  acknowledgedBy?: string;
+  resolvedBy?: string;
+}
+
+export interface TableRequestDocument extends Omit<TableRequest, 'createdAt' | 'acknowledgedAt' | 'resolvedAt'> {
+  createdAt: { seconds: number; nanoseconds: number };
+  acknowledgedAt?: { seconds: number; nanoseconds: number };
+  resolvedAt?: { seconds: number; nanoseconds: number };
 }

@@ -242,3 +242,93 @@ Files Modified: 8 total
 - dashboard/promotions/page.tsx
 - dashboard/specials/page.tsx
 - dashboard/floor-plan/page.tsx
+
+---
+Task ID: 6
+Agent: Main Agent
+Task: Smart Restaurant Experience OS - UX Upgrade
+
+Work Log:
+- Analyzed design system from tailwind.config.ts and globals.css
+  - Confirmed colors: Background #FCFBF9, Espresso #3A322D, Accent #C9A07E, Soft Beige #EFE4D8
+  - Confirmed fonts: Playfair Display (display), Plus Jakarta Sans (body)
+  - Verified existing CSS variable system in globals.css
+- Updated /src/types/index.ts with extended order statuses
+  - Added PREPARING, SERVED, BILL_REQUESTED to OrderStatus
+  - Added TableRequestType (CALL_WAITER, REQUEST_BILL)
+  - Added TableRequestStatus (PENDING, ACKNOWLEDGED, RESOLVED)
+  - Added TableRequest interface for waiter calls and bill requests
+  - Added 'waiter' to StaffRole
+- Created /src/components/order/OrderStatusTimeline.tsx
+  - Premium timeline visualization with progress steps
+  - Arabic/French support
+  - Visual indicators for current status
+  - Handles rejected/cancelled orders elegantly
+- Created /src/components/ui/bottom-sheet.tsx
+  - Reusable bottom sheet component
+  - RTL support
+  - Smooth animations
+- Created /src/components/order/CallWaiterSheet.tsx
+  - Call waiter feature with anti-spam (2 minute cooldown)
+  - Arabic/French translations
+  - Success/error states
+- Created /src/components/order/RequestBillSheet.tsx
+  - Request bill feature with order summary
+  - Currency-aware formatting
+  - Context-aware (only shows after order accepted)
+- Rewrote /src/app/r/[slug]/t/[tableId]/sent/page.tsx
+  - Complete redesign with status timeline
+  - Call waiter button with bottom sheet
+  - Request bill button (context-aware)
+  - Real-time order subscription
+  - French/Arabic language toggle
+  - Premium MenuxPRO styling
+- Created /src/app/staff/waiter/page.tsx
+  - Mobile-first waiter mode
+  - Task list with pending/acknowledged states
+  - Big readable cards for table numbers
+  - Urgent request highlighting
+  - Premium warm color scheme
+- Updated /src/services/orderService.ts
+  - Added subscribeToOrder() for single order real-time updates
+- Improved /src/components/cashier/TableCard.tsx
+  - Larger cards with better readability
+  - Bigger table numbers
+  - More prominent action buttons
+  - Anti-chaos design for busy service
+  - Premium warm color scheme
+
+Stage Summary:
+- Order status timeline with visual progress
+- Call waiter feature with anti-spam protection
+- Request bill feature (context-aware)
+- Waiter mode page (mobile-first)
+- Improved cashier dashboard (anti-chaos)
+- All components follow MenuxPRO design system
+- Lint passes with only 1 font warning
+
+Design Compliance:
+- Colors: Used #FCFBF9 (bg), #3A322D (espresso), #C9A07E (accent), #EFE4D8 (beige)
+- Fonts: Playfair Display for headers, Plus Jakarta Sans for body
+- RTL support for Arabic
+- Large touch targets for staff interfaces
+- Premium warm color palette throughout
+
+Files Created:
+- /src/components/order/OrderStatusTimeline.tsx
+- /src/components/order/CallWaiterSheet.tsx
+- /src/components/order/RequestBillSheet.tsx
+- /src/components/ui/bottom-sheet.tsx
+- /src/app/staff/waiter/page.tsx
+
+Files Modified:
+- /src/types/index.ts
+- /src/services/orderService.ts
+- /src/app/r/[slug]/t/[tableId]/sent/page.tsx
+- /src/components/cashier/TableCard.tsx
+
+Remaining Tasks:
+- Push notification opt-in flow
+- Returning customer recognition
+- Owner dashboard improvements
+- More empty/error states

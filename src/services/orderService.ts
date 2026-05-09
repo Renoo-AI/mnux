@@ -171,6 +171,33 @@ export function subscribeToActiveOrders(
   }
 }
 
+// Subscribe to a single order (for customer status page)
+export function subscribeToOrder(
+  orderId: string,
+  callback: (order: Order | null) => void,
+  onError?: (error: Error) => void
+): () => void {
+  try {
+    const docRef = doc(db, ORDERS_COLLECTION, orderId);
+    
+    return onSnapshot(docRef, (snapshot) => {
+      const order = documentToOrder(snapshot);
+      callback(order);
+    }, (error) => {
+      console.error('Error subscribing to order:', error);
+      if (onError) {
+        onError(new Error('Failed to sync order status.'));
+      }
+    });
+  } catch (error) {
+    console.error('Error setting up order subscription:', error);
+    if (onError) {
+      onError(new Error('Failed to subscribe to order.'));
+    }
+    return () => {};
+  }
+}
+
 // Create order - REAL Firebase write with table status update
 export async function createOrder(
   restaurantId: string,
@@ -417,6 +444,7 @@ export const orderService = {
   getOrderById,
   subscribeToOrders,
   subscribeToActiveOrders,
+  subscribeToOrder,
   createOrder,
   acceptOrder,
   markOrderPaid,
