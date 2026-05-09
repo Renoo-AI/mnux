@@ -207,9 +207,16 @@ Tests can also be run in CI/CD with Firebase Emulator GitHub Action.
 
 ---
 
-## 11. Safe to Export
+## 11. Export Types
 
-### Folders to Include
+### A. Private Repository Export (Full)
+For internal use, includes all documentation.
+
+### B. Public/Client Export (Clean)
+For GitHub, client delivery, or public sharing.
+Excludes internal notes, security reports, and development logs.
+
+### Folders to Include (Both)
 ```
 /public/          # Static assets, brand, OG images
 /src/             # Application source code
@@ -217,13 +224,9 @@ Tests can also be run in CI/CD with Firebase Emulator GitHub Action.
 /scripts/         # Utility scripts
 /tests/           # Firestore rules tests
 /functions/       # Firebase functions
-/examples/        # WebSocket examples
-/docs/            # Documentation
-/db/              # SQLite database (if exists)
-/mini-services/   # Additional services
 ```
 
-### Files to Include
+### Files to Include (Both)
 ```
 /.env.example     # Environment template
 /.gitignore       # Git ignore rules
@@ -238,16 +241,14 @@ Tests can also be run in CI/CD with Firebase Emulator GitHub Action.
 /firestore.indexes.json # Firestore indexes
 /firebase.json    # Firebase config
 /jest.config.js   # Jest config
-/Caddyfile        # Gateway config
 /FIREBASE_EXPORT_CONFIG.md # Firebase guide
 /EXPORT_FINAL_CHECKLIST.md # This file
-/README.md        # Project readme
-/worklog.md       # Development log
+/README.md        # Project readme (if exists)
 ```
 
 ---
 
-## 12. DO NOT Export
+## 12. DO NOT Export (Either Type)
 
 | Item | Reason |
 |------|--------|
@@ -262,10 +263,30 @@ Tests can also be run in CI/CD with Firebase Emulator GitHub Action.
 | `/dist/` | Build output |
 | `/coverage/` | Test output |
 | `*.log` | Log files |
+| `*.db` | Database file with potential data |
+| `*.sqlite` | Database file with potential data |
+| `*.sqlite3` | Database file with potential data |
 | Screenshot files | Temp files |
 | `/upload/` | Temp folder |
 | `/download/` | Temp folder |
 | `/agent-ctx/` | Agent context |
+| `/db/` | Database folder |
+| `/examples/` | Example code (not production) |
+| `/mini-services/` | Development services |
+| `/skills/` | Skills directory |
+| `.git/` | Version control history |
+
+### DO NOT Export (Public/Client Only)
+| Item | Reason |
+|------|--------|
+| `/docs/reports/archive/` | Security reports with vulnerabilities |
+| `worklog.md` | Development notes with internal details |
+| `FIREBASE_CONFIG_FIX_REPORT.md` | Internal troubleshooting |
+| `VULNSCHECKPLAN.md` | Security vulnerability details |
+| `SECURITY_HARDENING_REPORT.md` | Security details |
+| `OPEN_PORTS_AND_EXPOSURE_AUDIT.md` | Security audit |
+| `FIRESTORE_RULES_AUDIT.md` | Security audit |
+| `RATE_LIMITING_PLAN.md` | Security implementation details |
 
 ---
 
@@ -309,13 +330,17 @@ Tests can also be run in CI/CD with Firebase Emulator GitHub Action.
 
 | Metric | Value |
 |--------|-------|
-| **Export Status** | ✅ READY |
-| **Files Deleted** | 34 |
-| **Files Moved** | 6 |
+| **Export Status** | ✅ READY (Public/Client) |
+| **Files Deleted** | 42 |
 | **Build Status** | ✅ PASSED |
 | **Lint Status** | ✅ PASSED (1 warning) |
 | **Security Blockers** | 0 |
 | **Firebase Config** | Required before deployment |
+
+### Admin Route Protection Verified
+- Middleware: Checks for auth session cookies/headers ✅
+- Client: Uses `isSuperadminFromClaims()` with `getIdTokenResult()` ✅
+- Server API: All `/api/admin/*` routes verify token server-side ✅
 
 ---
 
