@@ -17,9 +17,121 @@ export type RestaurantStatus = 'ACTIVE' | 'OFFLINE';
 
 export type Currency = 'TND' | 'QAR' | 'EUR' | 'USD';
 
-export type PlanType = 'free' | 'pro';
+// Updated plan types - uppercase for consistency
+export type PlanType = 'FREE' | 'BASIC' | 'PRO' | 'MAX';
 
-export type SlugType = 'free-random' | 'custom';
+// Legacy plan type alias for backwards compatibility
+export type LegacyPlanType = 'free' | 'pro';
+
+export type SlugType = 'FREE_RANDOM' | 'CUSTOM';
+
+// Legacy slug type alias for backwards compatibility
+export type LegacySlugType = 'free-random' | 'custom';
+
+// ============ Plan Feature Keys ============
+
+export type PlanFeatureKey = 
+  | 'CUSTOM_LOGO'
+  | 'CUSTOM_COLORS'
+  | 'CUSTOM_BACKGROUND'
+  | 'CUSTOM_FAVICON'
+  | 'CUSTOM_OPEN_GRAPH'
+  | 'CUSTOM_MENU_COVER'
+  | 'CUSTOM_TYPOGRAPHY'
+  | 'CUSTOM_CSS'
+  | 'WHITE_LABEL'
+  | 'ADVANCED_BRANDING'
+  | 'REMOVE_WATERMARK'
+  | 'UNLIMITED_MENU_ITEMS';
+
+// ============ Branding Types ============
+
+export interface BrandingTheme {
+  background: string | null;   // Hex color #RRGGBB
+  foreground: string | null;   // Hex color #RRGGBB
+  primary: string | null;      // Hex color #RRGGBB
+  accent: string | null;       // Hex color #RRGGBB
+  card: string | null;         // Hex color #RRGGBB
+  border: string | null;       // Hex color #RRGGBB
+}
+
+export interface BrandingTypography {
+  headingFont: string | null;  // Google Font name
+  bodyFont: string | null;     // Google Font name
+}
+
+export interface BrandingOpenGraph {
+  title: string | null;        // Max 80 chars
+  description: string | null;  // Max 180 chars
+  imageUrl: string | null;     // URL to OG image
+}
+
+export interface BrandingCustomCss {
+  enabled: boolean;
+  css: string | null;          // Max 10,000 chars
+  updatedAt: Date | null;
+}
+
+export interface BrandingWhiteLabel {
+  enabled: boolean;
+  hideMenuxBranding: boolean;
+}
+
+export interface Branding {
+  logoUrl: string | null;
+  coverImageUrl: string | null;
+  backgroundImageUrl: string | null;
+  faviconUrl: string | null;
+  theme: BrandingTheme;
+  typography: BrandingTypography;
+  openGraph: BrandingOpenGraph;
+  customCss: BrandingCustomCss;
+  whiteLabel: BrandingWhiteLabel;
+}
+
+// Default branding (MenuxPRO defaults)
+export const DEFAULT_BRANDING: Branding = {
+  logoUrl: null,
+  coverImageUrl: null,
+  backgroundImageUrl: null,
+  faviconUrl: null,
+  theme: {
+    background: null,
+    foreground: null,
+    primary: null,
+    accent: null,
+    card: null,
+    border: null,
+  },
+  typography: {
+    headingFont: null,
+    bodyFont: null,
+  },
+  openGraph: {
+    title: null,
+    description: null,
+    imageUrl: null,
+  },
+  customCss: {
+    enabled: false,
+    css: null,
+    updatedAt: null,
+  },
+  whiteLabel: {
+    enabled: false,
+    hideMenuxBranding: false,
+  },
+};
+
+// MenuxPRO default colors (for fallback)
+export const MENUXPRO_DEFAULTS = {
+  background: '#FCFBF9',
+  foreground: '#3A322D',
+  primary: '#3A322D',
+  accent: '#C9A07E',
+  card: '#FFFFFF',
+  border: '#EFE4D8',
+} as const;
 
 // ============ Core Models ============
 
@@ -40,12 +152,11 @@ export interface Restaurant {
   slugType: SlugType;
   watermarkEnabled: boolean;
   maxMenuItems: number;
-  // Branding (pro only)
-  branding?: {
-    logoUrl?: string;
-    primaryColor?: string;
-    accentColor?: string;
-  };
+  // Enhanced branding (plan-based)
+  branding?: Branding;
+  // Legacy branding fields (for backwards compatibility)
+  primaryColor?: string;
+  accentColor?: string;
   openingHours?: OpeningHours;
   // Staff management
   staffUids?: Record<string, string>; // uid -> role mapping
@@ -283,9 +394,18 @@ export interface CancelOrderParams {
 
 // ============ Firestore Document Types ============
 
-export interface RestaurantDocument extends Omit<Restaurant, 'createdAt' | 'updatedAt'> {
+export interface RestaurantDocument extends Omit<Restaurant, 'createdAt' | 'updatedAt' | 'branding'> {
+  branding?: BrandingDocument;
   createdAt: { seconds: number; nanoseconds: number };
   updatedAt: { seconds: number; nanoseconds: number };
+}
+
+export interface BrandingDocument extends Omit<Branding, 'customCss'> {
+  customCss?: {
+    enabled: boolean;
+    css: string | null;
+    updatedAt: { seconds: number; nanoseconds: number } | null;
+  };
 }
 
 export interface TableDocument extends Omit<Table, 'createdAt' | 'updatedAt'> {
@@ -337,4 +457,34 @@ export interface TableRequestDocument extends Omit<TableRequest, 'createdAt' | '
   createdAt: { seconds: number; nanoseconds: number };
   acknowledgedAt?: { seconds: number; nanoseconds: number };
   resolvedAt?: { seconds: number; nanoseconds: number };
+}
+
+// ============ Branding API Types ============
+
+export interface UpdateBrandingRequest {
+  logoUrl?: string | null;
+  coverImageUrl?: string | null;
+  backgroundImageUrl?: string | null;
+  faviconUrl?: string | null;
+  theme?: Partial<BrandingTheme>;
+  typography?: Partial<BrandingTypography>;
+  openGraph?: Partial<BrandingOpenGraph>;
+  customCss?: Partial<BrandingCustomCss>;
+  whiteLabel?: Partial<BrandingWhiteLabel>;
+}
+
+export interface BrandingSettings {
+  plan: PlanType;
+  features: Record<PlanFeatureKey, boolean>;
+  branding: Branding;
+  limits: {
+    maxLogoSize: number;       // in bytes
+    maxCoverSize: number;
+    maxBackgroundSize: number;
+    maxOgSize: number;
+    maxFaviconSize: number;
+    maxCustomCssLength: number;
+    maxOgTitleLength: number;
+    maxOgDescriptionLength: number;
+  };
 }

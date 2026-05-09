@@ -791,3 +791,137 @@ IMPORTANT NOTE:
 This sprint makes brand/SEO/social sharing production-grade.
 The project is NOT production-ready until Firebase env vars are configured.
 See FIREBASE_CONFIG_FIX_REPORT.md for required configuration.
+
+---
+Task ID: 11
+Agent: Agent2
+Task: Plan-Based Customization System for Restaurant Branding
+
+Work Log:
+- Updated /src/types/index.ts with new Plan and Branding models
+  - Added PlanType: 'FREE' | 'BASIC' | 'PRO' | 'MAX'
+  - Added PlanFeatureKey for feature flags
+  - Added comprehensive Branding interface with theme, typography, OG, custom CSS, white label
+  - Added DEFAULT_BRANDING and MENUXPRO_DEFAULTS constants
+  - Added BrandingDocument, BrandingSettings, UpdateBrandingRequest types
+- Created /src/lib/plan-features.ts
+  - PLAN_HIERARCHY for plan comparison
+  - PLAN_FEATURES matrix defining features per plan
+  - PLAN_LIMITS for max sizes and limits
+  - canUseFeature() - check if plan allows feature
+  - isPlanAtLeast() - compare plan levels
+  - getPlanFeatures(), getPlanLimits(), getFeaturesStatus()
+  - shouldShowWatermark() - watermark visibility logic
+  - canUseCustomCss() - MAX only check
+  - getEffectiveBranding() - apply plan restrictions
+  - normalizePlanType() - convert legacy plan formats
+  - getPlanDisplayName(), getPlanPrice()
+- Created /src/services/brandingService.ts
+  - Validation: isValidHexColor, isValidUrl, isValidFontFamily
+  - Sanitization: sanitizeHexColor, sanitizeUrl, sanitizeFontFamily
+  - Custom CSS validation and scoping
+  - validateCustomCss() - block dangerous patterns
+  - scopeCss() - wrap CSS in .restaurant-public-scope
+  - getBranding(), updateBranding() - Firestore operations
+  - generateThemeVariables() - CSS variable generation
+  - getDisplayBranding() - effective branding for display
+- Created /src/app/api/branding/route.ts
+  - GET: Fetch branding settings for restaurant
+  - PATCH: Update branding with plan restrictions
+  - POST: Reset branding to defaults
+- Created /src/hooks/use-restaurant-branding.ts
+  - Hook for loading and applying branding
+  - getBrandingStyles() - inline styles helper
+  - getRestaurantOgMetadata() - OG metadata generator
+- Created /src/app/dashboard/settings/branding/page.tsx
+  - Full branding settings UI
+  - Plan status display
+  - Logo upload section
+  - Color picker with presets
+  - Background & cover image settings
+  - Open Graph/social preview settings
+  - Custom CSS (MAX only)
+  - White label (MAX only)
+  - Live preview
+  - Feature locks with upgrade prompts
+- Created /src/app/admin/layout.tsx, /src/app/staff/layout.tsx, /src/app/dashboard/layout.tsx, /src/app/login/layout.tsx
+  - All with noindex, nofollow metadata
+- Created /src/app/r/layout.tsx
+  - Restaurant public pages layout with OG metadata
+- Updated /firestore.rules
+  - Added isValidPlan() helper
+  - Added isValidHexColor() helper
+  - Added isValidTheme() helper
+  - Added isValidBranding() helper
+  - Updated restaurant update rules to validate branding
+  - Plan restrictions enforced in rules
+
+Stage Summary:
+- Complete plan-based customization system implemented
+- Plan hierarchy: FREE < BASIC < PRO < MAX
+- Feature flags control customization options
+- Branding validation and sanitization complete
+- Custom CSS restricted to MAX with dangerous pattern blocking
+- Firestore rules updated for branding validation
+- Branding settings UI with live preview
+- Public pages ready for branding integration
+
+Files Created:
+- /src/lib/plan-features.ts
+- /src/services/brandingService.ts
+- /src/app/api/branding/route.ts
+- /src/hooks/use-restaurant-branding.ts
+- /src/app/dashboard/settings/branding/page.tsx
+- /src/app/admin/layout.tsx
+- /src/app/staff/layout.tsx
+- /src/app/dashboard/layout.tsx
+- /src/app/login/layout.tsx
+- /src/app/r/layout.tsx
+
+Files Modified:
+- /src/types/index.ts (added Plan and Branding types)
+- /firestore.rules (added branding validation)
+
+Build Status:
+- bun run lint: PASSED (1 pre-existing font warning)
+- bun run build: FAILED (Firebase auth/invalid-api-key)
+  - Root cause: Firebase environment variables not configured
+  - This is a configuration issue, NOT a code issue
+
+Plan Features Implemented:
+FREE:
+- MenuxPRO branding visible
+- No customization
+- Max 8 menu items
+
+BASIC:
+- Custom logo
+- Basic accent color
+- Max 50 menu items
+
+PRO:
+- Custom logo, colors, background
+- Custom menu cover, OG image
+- Custom favicon
+- Watermark removed
+- Max 200 menu items
+
+MAX:
+- Everything in PRO
+- White label option
+- Custom CSS (sandboxed)
+- Custom typography
+- Unlimited menu items
+
+Known Limitations:
+1. Image uploads not yet integrated with Firebase Storage
+2. Public menu page not yet updated to use branding hook
+3. Dynamic OG metadata for restaurants not yet implemented
+4. Billing/payment integration not implemented
+
+Next Recommended Steps:
+1. Integrate branding hook into public menu pages
+2. Add Firebase Storage rules for image uploads
+3. Implement image upload UI with Firebase Storage
+4. Add billing integration for plan upgrades
+5. Create admin page for plan management

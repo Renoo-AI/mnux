@@ -50,10 +50,65 @@ service cloud.firestore {
       return value.matches('^[-a-zA-Z0-9 ]*$');
     }
     
-    // Check if restaurant is on free plan
+    // Check if restaurant is on free plan (supports both old and new plan formats)
     function isFreePlan(restaurantId) {
       let restaurant = get(/databases/$(database)/documents/restaurants/$(restaurantId)).data;
-      return restaurant.plan == 'free';
+      return restaurant.plan == 'free' || restaurant.plan == 'FREE';
+    }
+    
+    // Check if plan is valid (supports both old and new formats)
+    function isValidPlan(plan) {
+      return plan in ['free', 'pro', 'FREE', 'BASIC', 'PRO', 'MAX'];
+    }
+    
+    // Check if plan is PRO or higher (can use advanced features)
+    function isProOrHigher(restaurantId) {
+      let restaurant = get(/databases/$(database)/documents/restaurants/$(restaurantId)).data;
+      let plan = restaurant.plan;
+      return plan == 'pro' || plan == 'PRO' || plan == 'MAX';
+    }
+    
+    // Validate hex color format (#RRGGBB)
+    function isValidHexColor(color) {
+      return color == null || 
+        (color is string && 
+         color.size() == 7 && 
+         color.matches('^#[0-9A-Fa-f]{6}$'));
+    }
+    
+    // Validate branding theme colors
+    function isValidTheme(theme) {
+      return theme == null || (
+        (theme.background == null || isValidHexColor(theme.background)) &&
+        (theme.foreground == null || isValidHexColor(theme.foreground)) &&
+        (theme.primary == null || isValidHexColor(theme.primary)) &&
+        (theme.accent == null || isValidHexColor(theme.accent)) &&
+        (theme.card == null || isValidHexColor(theme.card)) &&
+        (theme.border == null || isValidHexColor(theme.border))
+      );
+    }
+    
+    // Validate branding object
+    function isValidBranding(branding) {
+      return branding == null || (
+        // Validate URLs
+        (branding.logoUrl == null || (branding.logoUrl is string && branding.logoUrl.size() <= 500)) &&
+        (branding.coverImageUrl == null || (branding.coverImageUrl is string && branding.coverImageUrl.size() <= 500)) &&
+        (branding.backgroundImageUrl == null || (branding.backgroundImageUrl is string && branding.backgroundImageUrl.size() <= 500)) &&
+        (branding.faviconUrl == null || (branding.faviconUrl is string && branding.faviconUrl.size() <= 256)) &&
+        // Validate theme
+        isValidTheme(branding.theme) &&
+        // Validate openGraph
+        (branding.openGraph == null || 
+          (branding.openGraph.title == null || branding.openGraph.title.size() <= 80) &&
+          (branding.openGraph.description == null || branding.openGraph.description.size() <= 180) &&
+          (branding.openGraph.imageUrl == null || branding.openGraph.imageUrl.size() <= 500)
+        ) &&
+        // Validate customCss
+        (branding.customCss == null || 
+          (branding.customCss.css == null || branding.customCss.css.size() <= 10000)
+        )
+      );
     }
     
     // Count current menu items for a restaurant (used for free plan limit)
@@ -80,7 +135,8 @@ service cloud.firestore {
         && isValidString(resource.data.slug, 50)
         && resource.data.status == 'ACTIVE'
         && resource.data.ownerUid == request.auth.uid
-        && resource.data.plan in ['free', 'pro'];
+        && isValidPlan(resource.data.plan)
+        && isValidBranding(resource.data.branding);
       
       // 6. Owner can edit own restaurant (with plan restriction enforcement)
       // SECURITY: Owners CANNOT modify these fields:
@@ -90,6 +146,7 @@ service cloud.firestore {
       // - watermarkEnabled (forced true for free plan)
       // - slugType (forced 'free-random' for free plan)
       // - slug (only superadmin can change)
+      // - branding must be valid
       allow update: if (isOwner(restaurantId) || isSuperAdmin())
         // Owners on free plan cannot disable watermark
         && (isSuperAdmin() || 
@@ -103,7 +160,15 @@ service cloud.firestore {
             request.resource.data.maxMenuItems == resource.data.maxMenuItems)
         // Owners cannot change menuItemCount directly
         && (isSuperAdmin() || 
-            request.resource.data.menuItemCount == resource.data.menuItemCount);
+            request.resource.data.menuItemCount == resource.data.menuItemCount)
+        // Validate branding if provided
+        && isValidBranding(request.resource.data.branding)
+        // Only allow specific fields to be updated by owner
+        && (isSuperAdmin() || 
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'name', 'cuisineType', 'address', 'phone', 'email', 
+              'openingHours', 'branding', 'updatedAt'
+            ]));
       
       // Only superadmin can delete
       allow delete: if isSuperAdmin();
@@ -152,11 +217,11 @@ service cloud.firestore {
     // Uses menuItemCount counter maintained by API routes
     function isWithinMenuItemLimit(restaurantId) {
       let restaurant = get(/databases/$(database)/documents/restaurants/$(restaurantId)).data;
-      // Pro/Business plans have unlimited items
-      if (restaurant.plan == 'pro' || restaurant.plan == 'business') {
+      // PRO/MAX plans have unlimited items
+      if (restaurant.plan == 'pro' || restaurant.plan == 'PRO' || restaurant.plan == 'MAX') {
         return true;
       }
-      // Free plan: check current count against maxMenuItems (default 8)
+      // Free/Basic plan: check current count against maxMenuItems (default 8)
       let maxItems = restaurant.maxMenuItems != null ? restaurant.maxMenuItems : 8;
       let currentCount = restaurant.menuItemCount != null ? restaurant.menuItemCount : 0;
       return currentCount < maxItems;
