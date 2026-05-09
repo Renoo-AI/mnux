@@ -66,6 +66,41 @@ export const RATE_LIMIT_CONFIGS = {
     blockDurationMs: 2 * 60 * 60 * 1000, // 2 hour block
     type: 'magic_link',
   },
+  // Call waiter - strict limits (anti-spam)
+  callWaiter: {
+    windowMs: 2 * 60 * 1000, // 2 minutes
+    maxRequests: 1, // 1 request per 2 minutes
+    blockDurationMs: 5 * 60 * 1000, // 5 minute block
+    type: 'call_waiter',
+  },
+  // Request bill - strict limits
+  requestBill: {
+    windowMs: 2 * 60 * 1000, // 2 minutes
+    maxRequests: 1, // 1 request per 2 minutes
+    blockDurationMs: 5 * 60 * 1000, // 5 minute block
+    type: 'request_bill',
+  },
+  // Table requests hourly limit
+  tableRequestsHourly: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    maxRequests: 5, // 5 requests per hour per table
+    blockDurationMs: 2 * 60 * 60 * 1000, // 2 hour block
+    type: 'table_requests_hourly',
+  },
+  // Reviews - moderate limits
+  reviews: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    maxRequests: 5, // 5 reviews per hour per session
+    blockDurationMs: 2 * 60 * 60 * 1000, // 2 hour block
+    type: 'reviews',
+  },
+  // Admin login - strict limits
+  adminLogin: {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    maxRequests: 5, // 5 attempts per 15 minutes
+    blockDurationMs: 60 * 60 * 1000, // 1 hour block
+    type: 'admin_login',
+  },
 } as const;
 
 /**

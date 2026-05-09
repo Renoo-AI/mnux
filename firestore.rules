@@ -330,6 +330,90 @@ service cloud.firestore {
     }
     
     // ============================================
+    // TABLE REQUESTS (CALL_WAITER, REQUEST_BILL)
+    // ============================================
+    match /table_requests/{requestId} {
+      // Staff can read requests for their restaurant
+      allow read: if isAuthenticated() && (
+        (resource.data.restaurantId != null && isStaff(resource.data.restaurantId)) ||
+        isSuperAdmin()
+      );
+      
+      // Public can create requests with validation
+      allow create: if isValidString(resource.data.restaurantId, 128)
+        && isValidString(resource.data.tableId, 128)
+        && resource.data.type in ['CALL_WAITER', 'REQUEST_BILL']
+        && resource.data.status == 'PENDING'
+        // Validate required fields
+        && resource.data.createdAt != null
+        && resource.data.updatedAt != null;
+      
+      // Staff can update (acknowledge, resolve)
+      allow update: if isAuthenticated() && (
+        (resource.data.restaurantId != null && isStaff(resource.data.restaurantId)) ||
+        isSuperAdmin()
+      ) && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'status', 'acknowledgedAt', 'acknowledgedBy', 'resolvedAt', 'resolvedBy', 'updatedAt'
+      ]);
+      
+      // Only superadmin can delete
+      allow delete: if isSuperAdmin();
+    }
+    
+    // ============================================
+    // REVIEWS (Customer feedback)
+    // ============================================
+    match /reviews/{reviewId} {
+      // Public can read reviews for active restaurants
+      allow read: if resource.data.restaurantId != null && (
+        get(/databases/$(database)/documents/restaurants/$(resource.data.restaurantId)).data.status == 'ACTIVE' ||
+        isStaff(resource.data.restaurantId) ||
+        isSuperAdmin()
+      );
+      
+      // Public can create review with validation
+      allow create: if isValidString(resource.data.restaurantId, 128)
+        && isValidString(resource.data.orderId, 128)
+        && resource.data.rating is int
+        && resource.data.rating >= 1
+        && resource.data.rating <= 5
+        && (resource.data.comment == null || 
+            (resource.data.comment is string && resource.data.comment.size() <= 500))
+        && resource.data.createdAt != null;
+      
+      // No updates allowed (reviews are immutable)
+      allow update: if false;
+      
+      // Only superadmin can delete
+      allow delete: if isSuperAdmin();
+    }
+    
+    // ============================================
+    // RESTAURANT BANS (Per-restaurant security)
+    // ============================================
+    match /restaurants/{restaurantId}/securityBans/{banId} {
+      // Staff can read bans for their restaurant
+      allow read: if isStaff(restaurantId) || isSuperAdmin();
+      
+      // Only owner/superadmin can create bans
+      allow create: if isOwner(restaurantId) || isSuperAdmin();
+      
+      // Only owner/superadmin can update bans
+      allow update: if isOwner(restaurantId) || isSuperAdmin();
+      
+      // Only owner/superadmin can delete bans
+      allow delete: if isOwner(restaurantId) || isSuperAdmin();
+    }
+    
+    // ============================================
+    // ABUSE COUNTERS (Rate limit tracking)
+    // ============================================
+    match /restaurants/{restaurantId}/abuseCounters/{counterId} {
+      // Only system/API routes can read/write (no direct client access)
+      allow read, write: if false;
+    }
+    
+    // ============================================
     // DENY ALL OTHER (Default Deny)
     // ============================================
     match /{document=**} {

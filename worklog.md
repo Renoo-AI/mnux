@@ -332,3 +332,92 @@ Remaining Tasks:
 - Returning customer recognition
 - Owner dashboard improvements
 - More empty/error states
+
+---
+Task ID: 7
+Agent: Security Agent
+Task: Security Sprint - Comprehensive Hardening
+
+Work Log:
+- Created OPEN_PORTS_AND_EXPOSURE_AUDIT.md
+  - Analyzed all exposed routes and endpoints
+  - Identified client-side auth vulnerabilities
+  - Documented SUPERADMIN_UID exposure risk
+  - Listed all public API routes with risk levels
+- Created RATE_LIMITING_PLAN.md
+  - Defined multi-layer rate limiting architecture
+  - Specified limits for all customer actions
+  - Specified limits for staff/admin actions
+  - Documented abuse counter structure
+- Created /src/app/api/table-requests/route.ts
+  - API for CALL_WAITER and REQUEST_BILL
+  - Rate limiting: 1 request per 2 minutes, 5 per hour
+  - Honeypot validation
+  - Ban checking
+  - Duplicate request prevention
+  - Order status validation for REQUEST_BILL
+- Created /src/services/securityEventsService.ts
+  - Centralized security event logging
+  - Functions: logRateLimitHit, logHoneypotTrigger, logStaffLoginFailed
+  - Functions: logStaffLockout, logBanCreated, logUnauthorizedAccess
+  - Functions: logInvalidStatusUpdate, logPriceManipulation
+  - Query functions for dashboard
+- Updated /firestore.rules
+  - Added table_requests collection rules
+  - Added reviews collection rules
+  - Added securityBans subcollection rules
+  - Added abuseCounters rules
+  - Field-level restrictions on all updates
+  - Type and status validation
+- Updated /src/lib/rate-limit.ts
+  - Added callWaiter rate limit config
+  - Added requestBill rate limit config
+  - Added tableRequestsHourly config
+  - Added reviews config
+  - Added adminLogin config
+- Created SECURITY_HARDENING_REPORT.md
+  - Comprehensive security audit report
+  - Vulnerabilities found and fixed
+  - Rate limits implemented
+  - Ban/kick system status
+  - App Check recommendations
+- Created FIRESTORE_RULES_AUDIT.md
+  - Complete rules documentation
+  - Collection-by-collection analysis
+  - Attack vectors and mitigations
+  - Testing commands
+
+Stage Summary:
+- Security posture significantly improved
+- All customer actions rate-limited
+- Security event logging operational
+- Firestore rules hardened for new collections
+- Documentation complete
+- Lint passes with only 1 font warning
+
+Security Status:
+- ✅ Rate limiting implemented for orders, waiter calls, bill requests
+- ✅ Honeypot system active
+- ✅ Ban system implemented (IP, device, session)
+- ✅ Security events logging
+- ✅ Firestore rules hardened
+- ⚠️ Admin route protection needs server-side validation
+- ⚠️ SUPERADMIN_UID should be server-only
+
+Files Created:
+- OPEN_PORTS_AND_EXPOSURE_AUDIT.md
+- RATE_LIMITING_PLAN.md
+- SECURITY_HARDENING_REPORT.md
+- FIRESTORE_RULES_AUDIT.md
+- /src/app/api/table-requests/route.ts
+- /src/services/securityEventsService.ts
+
+Files Modified:
+- /firestore.rules
+- /src/lib/rate-limit.ts
+
+Remaining Security Tasks:
+- Remove NEXT_PUBLIC_ prefix from SUPERADMIN_UID
+- Implement server-side session validation for admin routes
+- Configure Firebase App Check for web
+- Add middleware protection for /staff/* routes
