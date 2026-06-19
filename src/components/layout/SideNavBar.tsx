@@ -23,10 +23,11 @@ import {
   Clock,
   Shield,
   BarChart3,
-  Crown
+  Crown,
+  CreditCard
 } from 'lucide-react';
 
-type StaffRole = 'cashier' | 'owner' | 'admin';
+import type { StaffRole } from '@/types';
 
 interface NavItem {
   href: string;
@@ -50,6 +51,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard/feedback', label: 'Feedback', icon: <Star className="w-5 h-5" />, roles: ['owner', 'admin'] },
   { href: '/dashboard/security', label: 'Security', icon: <Shield className="w-5 h-5" />, roles: ['owner', 'admin'] },
   { href: '/dashboard/logs', label: 'Activity', icon: <Receipt className="w-5 h-5" /> },
+  { href: '/dashboard/billing', label: 'Billing', icon: <CreditCard className="w-5 h-5" />, roles: ['owner', 'admin'] },
   { href: '/dashboard/settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
 ];
 

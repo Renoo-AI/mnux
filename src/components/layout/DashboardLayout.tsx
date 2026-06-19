@@ -5,10 +5,12 @@ import { SideNavBar } from './SideNavBar';
 import { BottomNavBar } from './BottomNavBar';
 import { useStaffSession } from '@/contexts/StaffSessionContext';
 
+import type { StaffRole } from '@/types';
+
 interface DashboardLayoutProps {
   children: ReactNode;
   restaurantName?: string;
-  userRole?: 'cashier' | 'owner' | 'admin';
+  userRole?: StaffRole;
 }
 
 export function DashboardLayout({ children, restaurantName, userRole: propUserRole }: DashboardLayoutProps) {

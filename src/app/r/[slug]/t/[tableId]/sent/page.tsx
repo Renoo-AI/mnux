@@ -219,7 +219,7 @@ export default function OrderSentPage({ params }: { params: Promise<{ slug: stri
     );
   }
 
-  const showWatermark = restaurant?.plan === 'free' || restaurant?.watermarkEnabled === true;
+  const showWatermark = restaurant?.plan === 'FREE' || restaurant?.watermarkEnabled === true;
   const estimatedTime = getEstimatedTime();
 
   return (

@@ -12,7 +12,7 @@ import type { Restaurant } from '@/types';
 // Demo data
 const DEMO_RESTAURANT: Restaurant = {
   id: 'demo', slug: 'demo', name: 'ZCOFFEE', status: 'ACTIVE', currency: 'TND',
-  plan: 'free', slugType: 'free-random', watermarkEnabled: false, maxMenuItems: 50,
+  plan: 'FREE', slugType: 'FREE_RANDOM', watermarkEnabled: false, maxMenuItems: 50,
   createdAt: new Date(), updatedAt: new Date(),
 };
 
@@ -104,7 +104,7 @@ export default function MenuPage({ params }: { params: Promise<{ slug: string }>
   }
 
   return (
-    <WatermarkSpacer showWatermark={restaurant?.plan === 'free'}>
+    <WatermarkSpacer showWatermark={restaurant?.plan === 'FREE'}>
       <div className="bg-[#FFFEF9] min-h-screen pb-24" dir={lang === 'ar' ? 'rtl' : 'ltr'} lang={lang}>
         
         {/* HEADER */}
@@ -275,7 +275,7 @@ export default function MenuPage({ params }: { params: Promise<{ slug: string }>
           }
         `}</style>
       </div>
-      <Watermark show={restaurant?.plan === 'free'} />
+      <Watermark show={restaurant?.plan === 'FREE'} />
     </WatermarkSpacer>
   );
 }

@@ -1,167 +1,51 @@
-import { db } from '@/lib/firebase';
-import { 
-  doc, 
-  getDoc, 
-  updateDoc, 
-  Timestamp, 
-  serverTimestamp,
-  collection,
-  query,
-  where,
-  orderBy,
-  getDocs,
-  onSnapshot,
-  DocumentSnapshot,
-  QueryDocumentSnapshot
-} from 'firebase/firestore';
+import { supabase } from '@/lib/supabaseClient';
+import { auth } from '@/lib/firebase';
 import type { 
   Order, 
-  OrderStatus,
   Table,
-  TableStatus,
   AcceptOrderParams,
   RejectOrderParams,
   MarkPaidParams,
   CloseOrderParams,
   CancelOrderParams
 } from '@/types';
-import { logService } from './logService';
 
-const ORDERS_COLLECTION = 'orders';
-const TABLES_COLLECTION = 'tables';
-const LOGS_COLLECTION = 'logs';
-
-// ============ Helper Functions ============
-
-type FirestoreTimestamp = { seconds: number; nanoseconds: number };
-
-function documentToOrder(docSnap: DocumentSnapshot | QueryDocumentSnapshot): Order | null {
-  if (!docSnap.exists()) return null;
-  
-  const data = docSnap.data()!;
-  return {
-    restaurantId: data.restaurantId,
-    tableId: data.tableId,
-    tableName: data.tableName,
-    items: data.items,
-    subtotal: data.subtotal,
-    totalAmount: data.totalAmount,
-    status: data.status,
-    notes: data.notes,
-    customerNote: data.customerNote,
-    rejectReason: data.rejectReason,
-    cancelReason: data.cancelReason,
-    id: docSnap.id,
-    createdAt: new Date((data.createdAt as FirestoreTimestamp).seconds * 1000),
-    updatedAt: new Date((data.updatedAt as FirestoreTimestamp).seconds * 1000),
-    acceptedAt: data.acceptedAt ? new Date((data.acceptedAt as FirestoreTimestamp).seconds * 1000) : undefined,
-    paidAt: data.paidAt ? new Date((data.paidAt as FirestoreTimestamp).seconds * 1000) : undefined,
-    closedAt: data.closedAt ? new Date((data.closedAt as FirestoreTimestamp).seconds * 1000) : undefined,
-    cancelledAt: data.cancelledAt ? new Date((data.cancelledAt as FirestoreTimestamp).seconds * 1000) : undefined,
+// Helper to get authorization headers
+async function getAuthHeaders() {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
   };
-}
-
-function documentToTable(docSnap: DocumentSnapshot | QueryDocumentSnapshot): Table | null {
-  if (!docSnap.exists()) return null;
-  
-  const data = docSnap.data()!;
-  return {
-    restaurantId: data.restaurantId,
-    name: data.name,
-    label: data.label,
-    seats: data.seats,
-    status: data.status,
-    qrCodeUrl: data.qrCodeUrl,
-    activeOrderId: data.activeOrderId,
-    id: docSnap.id,
-    createdAt: new Date((data.createdAt as FirestoreTimestamp).seconds * 1000),
-    updatedAt: new Date((data.updatedAt as FirestoreTimestamp).seconds * 1000),
-  };
-}
-
-function getOrderStatusForTable(status: OrderStatus): TableStatus {
-  switch (status) {
-    case 'CREATED':
-      return 'NEW_ORDER';
-    case 'ACCEPTED':
-      return 'ACTIVE';
-    case 'PAID':
-      return 'AWAITING_PAYMENT';
-    case 'CLOSED':
-    case 'REJECTED':
-    case 'CANCELLED':
-      return 'EMPTY';
-    default:
-      return 'EMPTY';
+  const user = auth.currentUser;
+  if (user) {
+    const token = await user.getIdToken();
+    headers['Authorization'] = `Bearer ${token}`;
   }
-}
-
-// ============ Order Status Validation ============
-
-const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  'CREATED': ['ACCEPTED', 'REJECTED', 'CANCELLED'],
-  'ACCEPTED': ['PAID', 'CANCELLED'],
-  'REJECTED': [],
-  'PAID': ['CLOSED'],
-  'CLOSED': [],
-  'CANCELLED': [],
-};
-
-function isValidTransition(currentStatus: OrderStatus, newStatus: OrderStatus): boolean {
-  return VALID_TRANSITIONS[currentStatus]?.includes(newStatus) ?? false;
+  return headers;
 }
 
 // ============ Order Actions ============
 
 // Accept an order
 export async function acceptOrder(params: AcceptOrderParams): Promise<{ success: boolean; error?: string }> {
-  const { restaurantId, orderId, tableId, actorId, actorName, actorRole } = params;
+  const { orderId, actorId, actorName, actorRole } = params;
   
   try {
-    // Get current order
-    const orderRef = doc(db, ORDERS_COLLECTION, orderId);
-    const orderSnap = await getDoc(orderRef);
-    
-    if (!orderSnap.exists()) {
-      return { success: false, error: 'Order not found' };
-    }
-    
-    const order = documentToOrder(orderSnap);
-    if (!order) {
-      return { success: false, error: 'Invalid order data' };
-    }
-    
-    // Validate status transition
-    if (!isValidTransition(order.status, 'ACCEPTED')) {
-      return { success: false, error: `Cannot accept order with status ${order.status}` };
-    }
-    
-    // Update order status
-    await updateDoc(orderRef, {
-      status: 'ACCEPTED',
-      acceptedAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+    const headers = await getAuthHeaders();
+    const res = await fetch(`/api/orders/${orderId}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        status: 'ACCEPTED',
+        actorId,
+        actorName,
+        actorRole,
+      }),
     });
     
-    // Update table status
-    const tableRef = doc(db, TABLES_COLLECTION, tableId);
-    await updateDoc(tableRef, {
-      status: 'ACTIVE',
-      updatedAt: serverTimestamp(),
-    });
-    
-    // Create activity log
-    await logService.createLog({
-      restaurantId,
-      actorId,
-      actorName,
-      actorRole,
-      action: 'ORDER_ACCEPTED',
-      targetType: 'order',
-      targetId: orderId,
-      before: { status: order.status },
-      after: { status: 'ACCEPTED' },
-    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, error: data.error || 'Failed to accept order' };
+    }
     
     return { success: true };
   } catch (error) {
@@ -172,59 +56,30 @@ export async function acceptOrder(params: AcceptOrderParams): Promise<{ success:
 
 // Reject an order
 export async function rejectOrder(params: RejectOrderParams): Promise<{ success: boolean; error?: string }> {
-  const { restaurantId, orderId, tableId, reason, actorId, actorName, actorRole } = params;
+  const { orderId, reason, actorId, actorName, actorRole } = params;
   
   if (!reason || reason.trim() === '') {
     return { success: false, error: 'Reason is required for rejection' };
   }
   
   try {
-    // Get current order
-    const orderRef = doc(db, ORDERS_COLLECTION, orderId);
-    const orderSnap = await getDoc(orderRef);
-    
-    if (!orderSnap.exists()) {
-      return { success: false, error: 'Order not found' };
-    }
-    
-    const order = documentToOrder(orderSnap);
-    if (!order) {
-      return { success: false, error: 'Invalid order data' };
-    }
-    
-    // Validate status transition
-    if (!isValidTransition(order.status, 'REJECTED')) {
-      return { success: false, error: `Cannot reject order with status ${order.status}` };
-    }
-    
-    // Update order status
-    await updateDoc(orderRef, {
-      status: 'REJECTED',
-      rejectReason: reason,
-      updatedAt: serverTimestamp(),
+    const headers = await getAuthHeaders();
+    const res = await fetch(`/api/orders/${orderId}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        status: 'REJECTED',
+        reason,
+        actorId,
+        actorName,
+        actorRole,
+      }),
     });
     
-    // Update table status
-    const tableRef = doc(db, TABLES_COLLECTION, tableId);
-    await updateDoc(tableRef, {
-      status: 'EMPTY',
-      activeOrderId: null,
-      updatedAt: serverTimestamp(),
-    });
-    
-    // Create activity log
-    await logService.createLog({
-      restaurantId,
-      actorId,
-      actorName,
-      actorRole,
-      action: 'ORDER_REJECTED',
-      targetType: 'order',
-      targetId: orderId,
-      before: { status: order.status },
-      after: { status: 'REJECTED' },
-      reason,
-    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, error: data.error || 'Failed to reject order' };
+    }
     
     return { success: true };
   } catch (error) {
@@ -235,53 +90,25 @@ export async function rejectOrder(params: RejectOrderParams): Promise<{ success:
 
 // Mark order as paid
 export async function markOrderPaid(params: MarkPaidParams): Promise<{ success: boolean; error?: string }> {
-  const { restaurantId, orderId, tableId, actorId, actorName, actorRole } = params;
+  const { orderId, actorId, actorName, actorRole } = params;
   
   try {
-    // Get current order
-    const orderRef = doc(db, ORDERS_COLLECTION, orderId);
-    const orderSnap = await getDoc(orderRef);
-    
-    if (!orderSnap.exists()) {
-      return { success: false, error: 'Order not found' };
-    }
-    
-    const order = documentToOrder(orderSnap);
-    if (!order) {
-      return { success: false, error: 'Invalid order data' };
-    }
-    
-    // Validate status transition
-    if (!isValidTransition(order.status, 'PAID')) {
-      return { success: false, error: `Cannot mark order as paid with status ${order.status}` };
-    }
-    
-    // Update order status
-    await updateDoc(orderRef, {
-      status: 'PAID',
-      paidAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+    const headers = await getAuthHeaders();
+    const res = await fetch(`/api/orders/${orderId}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        status: 'PAID',
+        actorId,
+        actorName,
+        actorRole,
+      }),
     });
     
-    // Update table status
-    const tableRef = doc(db, TABLES_COLLECTION, tableId);
-    await updateDoc(tableRef, {
-      status: 'AWAITING_PAYMENT',
-      updatedAt: serverTimestamp(),
-    });
-    
-    // Create activity log
-    await logService.createLog({
-      restaurantId,
-      actorId,
-      actorName,
-      actorRole,
-      action: 'ORDER_PAID',
-      targetType: 'order',
-      targetId: orderId,
-      before: { status: order.status },
-      after: { status: 'PAID' },
-    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, error: data.error || 'Failed to mark order as paid' };
+    }
     
     return { success: true };
   } catch (error) {
@@ -292,54 +119,25 @@ export async function markOrderPaid(params: MarkPaidParams): Promise<{ success: 
 
 // Close an order
 export async function closeOrder(params: CloseOrderParams): Promise<{ success: boolean; error?: string }> {
-  const { restaurantId, orderId, tableId, actorId, actorName, actorRole } = params;
+  const { orderId, actorId, actorName, actorRole } = params;
   
   try {
-    // Get current order
-    const orderRef = doc(db, ORDERS_COLLECTION, orderId);
-    const orderSnap = await getDoc(orderRef);
-    
-    if (!orderSnap.exists()) {
-      return { success: false, error: 'Order not found' };
-    }
-    
-    const order = documentToOrder(orderSnap);
-    if (!order) {
-      return { success: false, error: 'Invalid order data' };
-    }
-    
-    // Validate status transition
-    if (!isValidTransition(order.status, 'CLOSED')) {
-      return { success: false, error: `Cannot close order with status ${order.status}` };
-    }
-    
-    // Update order status
-    await updateDoc(orderRef, {
-      status: 'CLOSED',
-      closedAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+    const headers = await getAuthHeaders();
+    const res = await fetch(`/api/orders/${orderId}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        status: 'CLOSED',
+        actorId,
+        actorName,
+        actorRole,
+      }),
     });
     
-    // Update table status
-    const tableRef = doc(db, TABLES_COLLECTION, tableId);
-    await updateDoc(tableRef, {
-      status: 'EMPTY',
-      activeOrderId: null,
-      updatedAt: serverTimestamp(),
-    });
-    
-    // Create activity log
-    await logService.createLog({
-      restaurantId,
-      actorId,
-      actorName,
-      actorRole,
-      action: 'ORDER_CLOSED',
-      targetType: 'order',
-      targetId: orderId,
-      before: { status: order.status },
-      after: { status: 'CLOSED' },
-    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, error: data.error || 'Failed to close order' };
+    }
     
     return { success: true };
   } catch (error) {
@@ -350,60 +148,30 @@ export async function closeOrder(params: CloseOrderParams): Promise<{ success: b
 
 // Cancel an order
 export async function cancelOrder(params: CancelOrderParams): Promise<{ success: boolean; error?: string }> {
-  const { restaurantId, orderId, tableId, reason, actorId, actorName, actorRole } = params;
+  const { orderId, reason, actorId, actorName, actorRole } = params;
   
   if (!reason || reason.trim() === '') {
     return { success: false, error: 'Reason is required for cancellation' };
   }
   
   try {
-    // Get current order
-    const orderRef = doc(db, ORDERS_COLLECTION, orderId);
-    const orderSnap = await getDoc(orderRef);
-    
-    if (!orderSnap.exists()) {
-      return { success: false, error: 'Order not found' };
-    }
-    
-    const order = documentToOrder(orderSnap);
-    if (!order) {
-      return { success: false, error: 'Invalid order data' };
-    }
-    
-    // Validate status transition
-    if (!isValidTransition(order.status, 'CANCELLED')) {
-      return { success: false, error: `Cannot cancel order with status ${order.status}` };
-    }
-    
-    // Update order status
-    await updateDoc(orderRef, {
-      status: 'CANCELLED',
-      cancelReason: reason,
-      cancelledAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+    const headers = await getAuthHeaders();
+    const res = await fetch(`/api/orders/${orderId}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        status: 'CANCELLED',
+        reason,
+        actorId,
+        actorName,
+        actorRole,
+      }),
     });
     
-    // Update table status
-    const tableRef = doc(db, TABLES_COLLECTION, tableId);
-    await updateDoc(tableRef, {
-      status: 'EMPTY',
-      activeOrderId: null,
-      updatedAt: serverTimestamp(),
-    });
-    
-    // Create activity log
-    await logService.createLog({
-      restaurantId,
-      actorId,
-      actorName,
-      actorRole,
-      action: 'ORDER_CANCELLED',
-      targetType: 'order',
-      targetId: orderId,
-      before: { status: order.status },
-      after: { status: 'CANCELLED' },
-      reason,
-    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, error: data.error || 'Failed to cancel order' };
+    }
     
     return { success: true };
   } catch (error) {
@@ -416,31 +184,62 @@ export async function cancelOrder(params: CancelOrderParams): Promise<{ success:
 
 // Get all orders for a restaurant
 export async function getOrders(restaurantId: string): Promise<Order[]> {
-  const q = query(
-    collection(db, ORDERS_COLLECTION),
-    where('restaurantId', '==', restaurantId),
-    orderBy('createdAt', 'desc')
-  );
-  
-  const snapshot = await getDocs(q);
-  return snapshot.docs
-    .map(documentToOrder)
-    .filter((order): order is Order => order !== null);
+  try {
+    const res = await fetch(`/api/orders?restaurantId=${restaurantId}`);
+    if (!res.ok) {
+      throw new Error('Failed to fetch orders');
+    }
+    const data = await res.json();
+    return data.orders || [];
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    return [];
+  }
 }
 
-// Get active orders (CREATED or ACCEPTED)
+// Get active orders (CREATED or ACCEPTED or PAID)
 export async function getActiveOrders(restaurantId: string): Promise<Order[]> {
-  const q = query(
-    collection(db, ORDERS_COLLECTION),
-    where('restaurantId', '==', restaurantId),
-    where('status', 'in', ['CREATED', 'ACCEPTED']),
-    orderBy('createdAt', 'desc')
-  );
-  
-  const snapshot = await getDocs(q);
-  return snapshot.docs
-    .map(documentToOrder)
-    .filter((order): order is Order => order !== null);
+  try {
+    const res = await fetch(`/api/orders?restaurantId=${restaurantId}&active=true`);
+    if (!res.ok) {
+      throw new Error('Failed to fetch active orders');
+    }
+    const data = await res.json();
+    return data.orders || [];
+  } catch (error) {
+    console.error('Error fetching active orders:', error);
+    return [];
+  }
+}
+
+// Get a single order
+export async function getOrderById(orderId: string): Promise<Order | null> {
+  try {
+    const res = await fetch(`/api/orders?id=${orderId}`);
+    if (res.status === 404) return null;
+    if (!res.ok) {
+      throw new Error('Failed to fetch order');
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching order by ID:', error);
+    return null;
+  }
+}
+
+// Get all tables for a restaurant
+export async function getTables(restaurantId: string): Promise<Table[]> {
+  try {
+    const res = await fetch(`/api/tables?restaurantId=${restaurantId}`);
+    if (!res.ok) {
+      throw new Error('Failed to fetch tables');
+    }
+    const data = await res.json();
+    return data.tables || [];
+  } catch (error) {
+    console.error('Error fetching tables:', error);
+    return [];
+  }
 }
 
 // Subscribe to orders changes
@@ -448,18 +247,30 @@ export function subscribeToOrders(
   restaurantId: string,
   callback: (orders: Order[]) => void
 ): () => void {
-  const q = query(
-    collection(db, ORDERS_COLLECTION),
-    where('restaurantId', '==', restaurantId),
-    orderBy('createdAt', 'desc')
-  );
+  // Initial fetch
+  getOrders(restaurantId).then(callback);
   
-  return onSnapshot(q, (snapshot) => {
-    const orders = snapshot.docs
-      .map(documentToOrder)
-      .filter((order): order is Order => order !== null);
-    callback(orders);
-  });
+  // Realtime subscription
+  const channel = supabase
+    .channel(`cashier_orders_${restaurantId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'Order',
+        filter: `restaurantId=eq.${restaurantId}`,
+      },
+      async () => {
+        const freshOrders = await getOrders(restaurantId);
+        callback(freshOrders);
+      }
+    )
+    .subscribe();
+    
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }
 
 // Subscribe to active orders
@@ -467,40 +278,30 @@ export function subscribeToActiveOrders(
   restaurantId: string,
   callback: (orders: Order[]) => void
 ): () => void {
-  const q = query(
-    collection(db, ORDERS_COLLECTION),
-    where('restaurantId', '==', restaurantId),
-    where('status', 'in', ['CREATED', 'ACCEPTED', 'PAID']),
-    orderBy('createdAt', 'desc')
-  );
+  // Initial fetch
+  getActiveOrders(restaurantId).then(callback);
   
-  return onSnapshot(q, (snapshot) => {
-    const orders = snapshot.docs
-      .map(documentToOrder)
-      .filter((order): order is Order => order !== null);
-    callback(orders);
-  });
-}
-
-// Get a single order
-export async function getOrderById(orderId: string): Promise<Order | null> {
-  const docRef = doc(db, ORDERS_COLLECTION, orderId);
-  const snapshot = await getDoc(docRef);
-  return documentToOrder(snapshot);
-}
-
-// Get all tables for a restaurant
-export async function getTables(restaurantId: string): Promise<Table[]> {
-  const q = query(
-    collection(db, TABLES_COLLECTION),
-    where('restaurantId', '==', restaurantId),
-    orderBy('name')
-  );
-  
-  const snapshot = await getDocs(q);
-  return snapshot.docs
-    .map(documentToTable)
-    .filter((table): table is Table => table !== null);
+  // Realtime subscription
+  const channel = supabase
+    .channel(`cashier_active_orders_${restaurantId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'Order',
+        filter: `restaurantId=eq.${restaurantId}`,
+      },
+      async () => {
+        const freshOrders = await getActiveOrders(restaurantId);
+        callback(freshOrders);
+      }
+    )
+    .subscribe();
+    
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }
 
 // Subscribe to tables changes
@@ -508,18 +309,30 @@ export function subscribeToTables(
   restaurantId: string,
   callback: (tables: Table[]) => void
 ): () => void {
-  const q = query(
-    collection(db, TABLES_COLLECTION),
-    where('restaurantId', '==', restaurantId),
-    orderBy('name')
-  );
+  // Initial fetch
+  getTables(restaurantId).then(callback);
   
-  return onSnapshot(q, (snapshot) => {
-    const tables = snapshot.docs
-      .map(documentToTable)
-      .filter((table): table is Table => table !== null);
-    callback(tables);
-  });
+  // Realtime subscription
+  const channel = supabase
+    .channel(`cashier_tables_${restaurantId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'Table',
+        filter: `restaurantId=eq.${restaurantId}`,
+      },
+      async () => {
+        const freshTables = await getTables(restaurantId);
+        callback(freshTables);
+      }
+    )
+    .subscribe();
+    
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }
 
 export const cashierService = {

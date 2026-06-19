@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps, getApp, cert } from 'firebase-admin/app';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
+import { db } from '@/lib/db';
 
 // Initialize Firebase Admin
 function getAdminApp() {
@@ -36,12 +36,15 @@ async function verifyAuth(request: NextRequest): Promise<{ uid: string } | null>
   }
 }
 
-async function hasRestaurantAccess(db: ReturnType<typeof getFirestore>, uid: string, restaurantId: string): Promise<boolean> {
+async function hasRestaurantAccess(uid: string, restaurantId: string): Promise<boolean> {
   if (uid === SUPERADMIN_UID) return true;
-  const doc = await db.collection('restaurants').doc(restaurantId).get();
-  if (!doc.exists) return false;
-  const data = doc.data();
-  return data?.ownerUid === uid || data?.staffUids?.[uid] !== undefined;
+  const restaurant = await db.restaurant.findUnique({
+    where: { id: restaurantId },
+    select: { ownerUid: true, staffUids: true }
+  });
+  if (!restaurant) return false;
+  const staffUids = restaurant.staffUids as Record<string, string> | null;
+  return restaurant.ownerUid === uid || !!(staffUids && staffUids[uid] !== undefined);
 }
 
 // Sanitize string input
@@ -61,20 +64,15 @@ export async function GET(request: NextRequest) {
     const id = searchParams.get('id');
     const name = searchParams.get('name');
     
-    const db = getFirestore(getAdminApp());
-    
     // Get single table by ID
     if (id) {
-      const doc = await db.collection('tables').doc(id).get();
-      if (!doc.exists) {
+      const table = await db.table.findUnique({
+        where: { id }
+      });
+      if (!table) {
         return NextResponse.json({ error: 'Table not found' }, { status: 404 });
       }
-      return NextResponse.json({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data()?.createdAt?.toDate?.()?.toISOString(),
-        updatedAt: doc.data()?.updatedAt?.toDate?.()?.toISOString(),
-      });
+      return NextResponse.json(table);
     }
     
     if (!restaurantId) {
@@ -83,37 +81,25 @@ export async function GET(request: NextRequest) {
     
     // Get by name
     if (name) {
-      const snapshot = await db.collection('tables')
-        .where('restaurantId', '==', restaurantId)
-        .where('name', '==', name)
-        .limit(1)
-        .get();
+      const table = await db.table.findFirst({
+        where: {
+          restaurantId,
+          name: name.toUpperCase()
+        }
+      });
       
-      if (snapshot.empty) {
+      if (!table) {
         return NextResponse.json({ error: 'Table not found' }, { status: 404 });
       }
       
-      const doc = snapshot.docs[0];
-      return NextResponse.json({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data()?.createdAt?.toDate?.()?.toISOString(),
-        updatedAt: doc.data()?.updatedAt?.toDate?.()?.toISOString(),
-      });
+      return NextResponse.json(table);
     }
     
     // List all tables for restaurant
-    const snapshot = await db.collection('tables')
-      .where('restaurantId', '==', restaurantId)
-      .orderBy('name', 'asc')
-      .get();
-    
-    const tables = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data()?.createdAt?.toDate?.()?.toISOString(),
-      updatedAt: doc.data()?.updatedAt?.toDate?.()?.toISOString(),
-    }));
+    const tables = await db.table.findMany({
+      where: { restaurantId },
+      orderBy: { name: 'asc' }
+    });
     
     return NextResponse.json({ tables });
   } catch (error) {
@@ -141,46 +127,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid table name (use letters, numbers, hyphens only, max 10 chars)' }, { status: 400 });
     }
     
-    const db = getFirestore(getAdminApp());
-    
-    if (!await hasRestaurantAccess(db, user.uid, restaurantId)) {
+    if (!await hasRestaurantAccess(user.uid, restaurantId)) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
     
     // Check if table name already exists for this restaurant
-    const existingTable = await db.collection('tables')
-      .where('restaurantId', '==', restaurantId)
-      .where('name', '==', sanitizedName)
-      .limit(1)
-      .get();
+    const existingTable = await db.table.findFirst({
+      where: {
+        restaurantId,
+        name: sanitizedName
+      }
+    });
     
-    if (!existingTable.empty) {
+    if (existingTable) {
       return NextResponse.json({ error: 'Table name already exists' }, { status: 400 });
     }
     
     // Get restaurant slug for QR URL
-    const restaurantDoc = await db.collection('restaurants').doc(restaurantId).get();
-    const restaurantData = restaurantDoc.data();
-    const slug = restaurantData?.slug || restaurantId;
+    const restaurant = await db.restaurant.findUnique({
+      where: { id: restaurantId },
+      select: { slug: true }
+    });
+    const slug = restaurant?.slug || restaurantId;
     
-    const tableData = {
-      restaurantId,
-      name: sanitizedName,
-      label: sanitize(label, 50) || '',
-      seats: Math.max(1, Math.min(20, parseInt(String(seats)) || 2)),
-      status: 'EMPTY',
-      qrCodeUrl: `/r/${slug}/t/${sanitizedName}`,
-      isActive: true,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-    };
-    
-    const docRef = await db.collection('tables').add(tableData);
+    const table = await db.table.create({
+      data: {
+        restaurantId,
+        name: sanitizedName,
+        label: sanitize(label, 50) || '',
+        seats: Math.max(1, Math.min(20, parseInt(String(seats)) || 2)),
+        status: 'EMPTY',
+        qrCodeUrl: `/r/${slug}/t/${sanitizedName}`,
+      }
+    });
     
     return NextResponse.json({
       success: true,
-      id: docRef.id,
-      table: { id: docRef.id, ...tableData },
+      id: table.id,
+      table,
     });
   } catch (error) {
     console.error('Error in POST /api/tables:', error);
@@ -201,19 +185,19 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Table ID is required' }, { status: 400 });
     }
     
-    const db = getFirestore(getAdminApp());
-    const doc = await db.collection('tables').doc(id).get();
+    const table = await db.table.findUnique({
+      where: { id }
+    });
     
-    if (!doc.exists) {
+    if (!table) {
       return NextResponse.json({ error: 'Table not found' }, { status: 404 });
     }
     
-    const data = doc.data();
-    if (!await hasRestaurantAccess(db, user.uid, data?.restaurantId)) {
+    if (!await hasRestaurantAccess(user.uid, table.restaurantId)) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
     
-    const updateData: Record<string, unknown> = { updatedAt: Timestamp.now() };
+    const updateData: any = {};
     
     if (name !== undefined) {
       const sanitizedName = sanitize(name, 10)?.toUpperCase();
@@ -222,24 +206,29 @@ export async function PUT(request: NextRequest) {
       }
       
       // Check for duplicate name
-      if (sanitizedName !== data?.name) {
-        const existingTable = await db.collection('tables')
-          .where('restaurantId', '==', data?.restaurantId)
-          .where('name', '==', sanitizedName)
-          .limit(1)
-          .get();
+      if (sanitizedName !== table.name) {
+        const existingTable = await db.table.findFirst({
+          where: {
+            restaurantId: table.restaurantId,
+            name: sanitizedName
+          }
+        });
         
-        if (!existingTable.empty && existingTable.docs[0].id !== id) {
+        if (existingTable && existingTable.id !== id) {
           return NextResponse.json({ error: 'Table name already exists' }, { status: 400 });
         }
       }
       
       updateData.name = sanitizedName;
       // Update QR URL if name changes
-      const restaurantDoc = await db.collection('restaurants').doc(data?.restaurantId).get();
-      const slug = restaurantDoc.data()?.slug || data?.restaurantId;
+      const restaurant = await db.restaurant.findUnique({
+        where: { id: table.restaurantId },
+        select: { slug: true }
+      });
+      const slug = restaurant?.slug || table.restaurantId;
       updateData.qrCodeUrl = `/r/${slug}/t/${sanitizedName}`;
     }
+    
     if (label !== undefined) updateData.label = sanitize(label, 50) || '';
     if (seats !== undefined) updateData.seats = Math.max(1, Math.min(20, parseInt(String(seats)) || 2));
     if (status !== undefined) {
@@ -248,9 +237,20 @@ export async function PUT(request: NextRequest) {
       }
       updateData.status = status;
     }
-    if (isActive !== undefined) updateData.isActive = Boolean(isActive);
     
-    await db.collection('tables').doc(id).update(updateData);
+    // Map legacy isActive parameter to OFFLINE status in Postgres
+    if (isActive !== undefined) {
+      if (isActive === false) {
+        updateData.status = 'OFFLINE';
+      } else if (isActive === true && (status === 'OFFLINE' || table.status === 'OFFLINE')) {
+        updateData.status = 'EMPTY';
+      }
+    }
+    
+    await db.table.update({
+      where: { id },
+      data: updateData
+    });
     
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -272,24 +272,26 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Table ID is required' }, { status: 400 });
     }
     
-    const db = getFirestore(getAdminApp());
-    const doc = await db.collection('tables').doc(id).get();
+    const table = await db.table.findUnique({
+      where: { id }
+    });
     
-    if (!doc.exists) {
+    if (!table) {
       return NextResponse.json({ error: 'Table not found' }, { status: 404 });
     }
     
-    const data = doc.data();
-    if (!await hasRestaurantAccess(db, user.uid, data?.restaurantId)) {
+    if (!await hasRestaurantAccess(user.uid, table.restaurantId)) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
     
     // Check if table has active order
-    if (data?.status === 'ACTIVE' || data?.status === 'NEW_ORDER' || data?.activeOrderId) {
+    if (table.status === 'ACTIVE' || table.status === 'NEW_ORDER' || table.activeOrderId) {
       return NextResponse.json({ error: 'Cannot delete table with active order' }, { status: 400 });
     }
     
-    await db.collection('tables').doc(id).delete();
+    await db.table.delete({
+      where: { id }
+    });
     
     return NextResponse.json({ success: true });
   } catch (error) {

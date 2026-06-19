@@ -20,7 +20,7 @@ interface Restaurant {
   name: string;
   slug: string;
   ownerUid?: string;
-  plan: 'free' | 'pro' | 'business';
+  plan: 'FREE' | 'PRO' | 'MAX' | 'BASIC';
   status: 'active' | 'inactive' | 'offline';
   createdAt: number;
   menuItemCount?: number;
@@ -497,11 +497,11 @@ export default function SuperAdminDashboard() {
                           </td>
                           <td className="px-xl py-xl">
                             <span className={`px-lg py-xs rounded-full font-label-sm ${
-                              r.plan === 'pro' 
+                              r.plan === 'PRO' || r.plan === 'MAX'
                                 ? 'bg-secondary-fixed text-on-secondary-fixed-variant' 
                                 : 'bg-surface-container-highest text-on-surface-variant'
                             }`}>
-                              {r.plan.charAt(0).toUpperCase() + r.plan.slice(1)}
+                              {r.plan}
                             </span>
                           </td>
                           <td className="px-xl py-xl">

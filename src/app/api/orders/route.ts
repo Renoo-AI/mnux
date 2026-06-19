@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps, getApp, cert } from 'firebase-admin/app';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { getFirestore } from 'firebase-admin/firestore';
+import { db } from '@/lib/db';
 import { checkRateLimit, rateLimitResponse, RATE_LIMIT_CONFIGS } from '@/lib/rate-limit';
 import { validateFormSubmission, checkBanned, trackSuspiciousActivity, getClientIp } from '@/lib/security-defense';
 
-// Initialize Firebase Admin
+// Initialize Firebase Admin (still needed to validate Firestore menu items and tokens)
 function getAdminApp() {
   if (getApps().length > 0) return getApp();
   
@@ -29,8 +30,50 @@ const MAX_ITEMS_PER_ORDER = 50;
 // Sanitize string
 function sanitize(str: string | undefined, maxLength: number): string {
   if (!str) return '';
-  // Remove any HTML/script tags
   return str.replace(/<[^>]*>/g, '').slice(0, maxLength).trim();
+}
+
+// GET - Retrieve orders (either a single order by ID or list of orders for a restaurant)
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    const restaurantId = searchParams.get('restaurantId');
+    const activeOnly = searchParams.get('active') === 'true';
+
+    // Get single order by ID
+    if (id) {
+      const order = await db.order.findUnique({
+        where: { id },
+        include: { items: true }
+      });
+      if (!order) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+      return NextResponse.json(order);
+    }
+
+    if (!restaurantId) {
+      return NextResponse.json({ error: 'restaurantId is required' }, { status: 400 });
+    }
+
+    // List orders for a restaurant
+    const whereClause: any = { restaurantId };
+    if (activeOnly) {
+      whereClause.status = { in: ['CREATED', 'ACCEPTED', 'PAID'] };
+    }
+
+    const orders = await db.order.findMany({
+      where: whereClause,
+      include: { items: true },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    return NextResponse.json({ orders });
+  } catch (error) {
+    console.error('Error in GET /api/orders:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
 
 // POST - Create secure order with server-side validation
@@ -89,37 +132,37 @@ export async function POST(request: NextRequest) {
     const sanitizedCustomerName = sanitize(customerName, MAX_CUSTOMER_NAME_LENGTH);
     const sanitizedNotes = sanitize(notes, MAX_NOTES_LENGTH);
     
-    const app = getAdminApp();
-    const db = getFirestore(app);
+    // Verify restaurant exists and is active using Prisma
+    const restaurant = await db.restaurant.findUnique({
+      where: { id: restaurantId },
+    });
     
-    // Verify restaurant exists and is active
-    const restaurantDoc = await db.collection('restaurants').doc(restaurantId).get();
-    if (!restaurantDoc.exists) {
+    if (!restaurant) {
       return NextResponse.json({ error: 'Restaurant not found' }, { status: 404 });
     }
-    
-    const restaurantData = restaurantDoc.data();
-    if (restaurantData?.status !== 'ACTIVE') {
+    if (restaurant.status !== 'ACTIVE') {
       return NextResponse.json({ error: 'Restaurant is not active' }, { status: 400 });
     }
     
-    // Verify table exists and belongs to restaurant
-    const tableDoc = await db.collection('tables').doc(tableId).get();
-    if (!tableDoc.exists) {
+    // Verify table exists and belongs to restaurant using Prisma
+    const table = await db.table.findUnique({
+      where: { id: tableId },
+    });
+    
+    if (!table) {
       return NextResponse.json({ error: 'Table not found' }, { status: 404 });
     }
-    
-    const tableData = tableDoc.data();
-    if (tableData?.restaurantId !== restaurantId) {
+    if (table.restaurantId !== restaurantId) {
       return NextResponse.json({ error: 'Table does not belong to this restaurant' }, { status: 400 });
     }
-    
-    // Check if table is offline
-    if (tableData?.status === 'OFFLINE' || tableData?.isActive === false) {
+    if (table.status === 'OFFLINE') {
       return NextResponse.json({ error: 'Table is currently unavailable' }, { status: 400 });
     }
     
-    // Validate and recalculate prices from menu items
+    // Validate and recalculate prices from menu items in Firestore
+    const app = getAdminApp();
+    const firestoreDb = getFirestore(app);
+    
     const validatedItems: Array<{
       itemId: string;
       name: string;
@@ -141,8 +184,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid item quantity' }, { status: 400 });
       }
       
-      // Fetch the actual menu item from database
-      const menuItemDoc = await db.collection('menuItems').doc(item.itemId).get();
+      // Fetch the actual menu item from Firestore
+      const menuItemDoc = await firestoreDb.collection('menuItems').doc(item.itemId).get();
       
       if (!menuItemDoc.exists) {
         return NextResponse.json({ error: `Menu item not found: ${item.itemId}` }, { status: 400 });
@@ -160,7 +203,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: `Item not available: ${menuItemData.name}` }, { status: 400 });
       }
       
-      // Use SERVER-SIDE price (never trust client price!)
+      // Use SERVER-SIDE price
       const unitPrice = menuItemData?.price;
       if (typeof unitPrice !== 'number' || unitPrice < 0) {
         return NextResponse.json({ error: 'Invalid item price in database' }, { status: 500 });
@@ -179,60 +222,69 @@ export async function POST(request: NextRequest) {
       });
     }
     
-    // Round total to 2 decimal places
     calculatedTotal = Math.round(calculatedTotal * 100) / 100;
     
-    // Create order using transaction
-    const orderRef = db.collection('orders').doc();
-    const tableRef = db.collection('tables').doc(tableId);
-    
-    await db.runTransaction(async (transaction) => {
+    // Create order, update table status, and log activity in a PostgreSQL transaction
+    const newOrder = await db.$transaction(async (tx) => {
       // Create the order
-      const orderData = {
-        restaurantId,
-        tableId,
-        tableName: tableData?.name || tableId,
-        items: validatedItems,
-        subtotal: calculatedTotal,
-        totalAmount: calculatedTotal,
-        status: 'CREATED',
-        customerName: sanitizedCustomerName || null,
-        notes: sanitizedNotes || null,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
-        // Track source IP for security
-        sourceIp: clientIp,
-      };
-      
-      transaction.set(orderRef, orderData);
+      const order = await tx.order.create({
+        data: {
+          restaurantId,
+          tableId,
+          tableName: table.name,
+          subtotal: calculatedTotal,
+          totalAmount: calculatedTotal,
+          status: 'CREATED',
+          customerName: sanitizedCustomerName || null,
+          customerNote: sanitizedNotes || null,
+          notes: sanitizedNotes || null,
+          items: {
+            create: validatedItems.map(item => ({
+              itemId: item.itemId,
+              name: item.name,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              price: item.price,
+              notes: item.notes || null,
+            }))
+          }
+        }
+      });
       
       // Update table status
-      transaction.update(tableRef, {
-        status: 'NEW_ORDER',
-        activeOrderId: orderRef.id,
-        updatedAt: Timestamp.now(),
+      await tx.table.update({
+        where: { id: tableId },
+        data: {
+          status: 'NEW_ORDER',
+          activeOrderId: order.id,
+        }
       });
       
       // Log activity
-      const logRef = db.collection('logs').doc();
-      transaction.set(logRef, {
-        restaurantId,
-        action: 'ORDER_CREATED',
-        targetType: 'order',
-        targetId: orderRef.id,
-        orderId: orderRef.id,
-        tableId,
-        metadata: {
-          itemCount: validatedItems.length,
-          total: calculatedTotal,
-        },
-        createdAt: Timestamp.now(),
+      await tx.activityLog.create({
+        data: {
+          restaurantId,
+          action: 'ORDER_CREATED',
+          targetType: 'order',
+          targetId: order.id,
+          orderId: order.id,
+          tableId,
+          actorId: 'customer',
+          actorName: sanitizedCustomerName || 'Customer',
+          actorRole: 'customer',
+          metadata: {
+            itemCount: validatedItems.length,
+            total: calculatedTotal,
+          }
+        }
       });
+      
+      return order;
     });
     
     return NextResponse.json({
       success: true,
-      orderId: orderRef.id,
+      orderId: newOrder.id,
       total: calculatedTotal,
       itemCount: validatedItems.length,
     });

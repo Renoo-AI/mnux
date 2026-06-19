@@ -1,11 +1,15 @@
 import type { Metadata, Viewport } from "next";
 import { Playfair_Display, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import "./luxury.css";
 import { Toaster } from "@/components/ui/toaster";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ThemeProvider } from "@/components/theme-provider";
 import { StaffSessionProvider } from "@/contexts/StaffSessionContext";
 import SuperadminShortcut from "@/components/SuperadminShortcut";
+import { SecurityProvider } from "@/components/security/security-provider";
+import { AdvancedHoneypotProvider } from "@/components/security/advanced-honeypot";
+import { SecurityToastContainer } from "@/components/security/security-toast";
 
 // MenuxPRO Brand Fonts
 const playfairDisplay = Playfair_Display({
@@ -245,20 +249,25 @@ export default function RootLayout({
       <body
         className={`${playfairDisplay.variable} ${plusJakartaSans.variable} antialiased bg-background text-foreground font-sans`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <StaffSessionProvider>
-            <ErrorBoundary>
-              {children}
-            </ErrorBoundary>
-            <Toaster />
-            <SuperadminShortcut />
-          </StaffSessionProvider>
-        </ThemeProvider>
+        <SecurityProvider>
+          <AdvancedHoneypotProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="light"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <StaffSessionProvider>
+                <ErrorBoundary>
+                  {children}
+                </ErrorBoundary>
+                <Toaster />
+                <SuperadminShortcut />
+                <SecurityToastContainer />
+              </StaffSessionProvider>
+            </ThemeProvider>
+          </AdvancedHoneypotProvider>
+        </SecurityProvider>
       </body>
     </html>
   );

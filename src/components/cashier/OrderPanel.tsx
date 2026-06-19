@@ -13,7 +13,10 @@ import {
   ShoppingBag,
   ChefHat,
   Printer,
-  MessageSquare
+  MessageSquare,
+  Utensils,
+  CheckCheck,
+  CreditCard
 } from 'lucide-react';
 import type { Order, OrderStatus } from '@/types';
 
@@ -44,6 +47,24 @@ const statusConfig: Record<OrderStatus, {
     bgColor: 'bg-green-50',
     icon: ChefHat,
     label: 'In Progress',
+  },
+  PREPARING: {
+    color: 'text-violet-700',
+    bgColor: 'bg-violet-50',
+    icon: Utensils,
+    label: 'En préparation',
+  },
+  SERVED: {
+    color: 'text-emerald-700',
+    bgColor: 'bg-emerald-50',
+    icon: CheckCheck,
+    label: 'Servi',
+  },
+  BILL_REQUESTED: {
+    color: 'text-blue-700',
+    bgColor: 'bg-blue-50',
+    icon: CreditCard,
+    label: 'Addition demandée',
   },
   REJECTED: {
     color: 'text-red-600',

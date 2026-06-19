@@ -6,7 +6,8 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: true,
-  
+
+
   // Security headers
   async headers() {
     return [

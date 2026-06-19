@@ -1,32 +1,146 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Restaurant {
+  id               String         @id @default(uuid())
+  slug             String         @unique
+  name             String
+  status           String         @default("ACTIVE") // 'ACTIVE' | 'OFFLINE'
+  currency         String         @default("TND")    // 'TND' | 'QAR' | 'EUR' | 'USD'
+  cuisineType      String?
+  address          String?
+  logoUrl          String?
+  phone            String?
+  email            String?
+  ownerUid         String?
+  
+  // Plan fields
+  plan             String         @default("FREE")   // 'FREE' | 'BASIC' | 'PRO' | 'MAX'
+  slugType         String         @default("FREE_RANDOM") // 'FREE_RANDOM' | 'CUSTOM'
+  watermarkEnabled Boolean        @default(true)
+  maxMenuItems     Int            @default(50)
+  
+  // Enhanced branding
+  branding         Json?          // Stores nested structure for theme, typography, OG, custom CSS, white label
+  
+  // Legacy branding
+  primaryColor     String?
+  accentColor      String?
+  openingHours     Json?
+  
+  // Staff management
+  staffUids        Json?          // Record<string, string> uid -> role mapping
+  
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  // Relationships
+  tables           Table[]
+  orders           Order[]
+  activityLogs     ActivityLog[]
+  tableRequests    TableRequest[]
 }
 
-model Post {
-  id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Table {
+  id            String         @id @default(uuid())
+  restaurantId  String
+  restaurant    Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  name          String         // e.g., "T-01", "B-01"
+  label         String?        // e.g., "Window Side", "Bar Stool"
+  seats         Int            @default(2)
+  status        String         @default("EMPTY") // TableStatus: 'EMPTY' | 'NEW_ORDER' | 'ACTIVE' | 'AWAITING_PAYMENT' | 'OFFLINE'
+  qrCodeUrl     String
+  activeOrderId String?        @unique
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // Relationships
+  orders        Order[]        @relation("TableOrders")
+  activeOrder   Order?         @relation("ActiveTableOrder", fields: [activeOrderId], references: [id], onDelete: SetNull)
+  tableRequests TableRequest[]
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  restaurantId  String
+  restaurant    Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  tableId       String
+  table         Table       @relation("TableOrders", fields: [tableId], references: [id], onDelete: Cascade)
+  tableName     String
+  subtotal      Float
+  totalAmount   Float
+  status        String      @default("CREATED") // OrderStatus: 'CREATED' | 'ACCEPTED' | 'PREPARING' | 'SERVED' | 'BILL_REQUESTED' | 'PAID' | 'CLOSED' | 'CANCELLED' | 'REJECTED'
+  notes         String?
+  customerNote  String?
+  customerName  String?
+  rejectReason  String?
+  cancelReason  String?
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  acceptedAt    DateTime?
+  paidAt        DateTime?
+  closedAt      DateTime?
+  cancelledAt   DateTime?
+
+  // Relationships
+  items         OrderItem[]
+  activeTable   Table?      @relation("ActiveTableOrder")
+}
+
+model OrderItem {
+  id         String   @id @default(uuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  itemId     String
+  name       String
+  quantity   Int
+  price      Float    // total price = quantity * unitPrice
+  unitPrice  Float
+  notes      String?
+}
+
+model ActivityLog {
+  id           String      @id @default(uuid())
+  restaurantId String
+  restaurant   Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  actorId      String?
+  actorName    String?
+  actorRole    String?     // e.g. StaffRole | 'customer' | 'system'
+  action       String      // LogAction
+  targetType   String      // 'order' | 'table' | 'menuItem' | 'staff' | 'restaurant'
+  targetId     String
+  before       Json?
+  after        Json?
+  reason       String?
+  message      String?     // Legacy field
+  metadata     Json?
+  userId       String?
+  userName     String?
+  tableId      String?
+  orderId      String?
+  createdAt    DateTime    @default(now())
+}
+
+model TableRequest {
+  id             String     @id @default(uuid())
+  restaurantId   String
+  restaurant     Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  tableId        String
+  table          Table      @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  tableName      String
+  type           String     // TableRequestType: 'CALL_WAITER' | 'REQUEST_BILL'
+  status         String     @default("PENDING") // TableRequestStatus: 'PENDING' | 'ACKNOWLEDGED' | 'RESOLVED'
+  createdAt      DateTime   @default(now())
+  acknowledgedAt DateTime?
+  resolvedAt     DateTime?
+  acknowledgedBy String?
+  resolvedBy     String?
 }

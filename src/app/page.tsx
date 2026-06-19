@@ -27,8 +27,11 @@ export default function LandingPage() {
           <span className="font-display text-headline-md font-bold text-primary">Menux</span>
         </div>
         <div className="hidden md:flex items-center gap-10">
-          <Link href="#features" className="text-primary font-semibold border-b-2 border-primary pb-1">
+          <Link href="#features" className="text-primary font-semibold hover:text-primary/80 transition-colors pb-1">
             Découvrir
+          </Link>
+          <Link href="/pricing" className="text-primary font-semibold hover:text-[#C9A07E] transition-colors pb-1">
+            Tarifs
           </Link>
         </div>
         <Button asChild className="bg-primary text-on-primary hover:opacity-90">
@@ -252,68 +255,155 @@ export default function LandingPage() {
           </p>
         </div>
         
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {/* Lite Plan */}
-          <div className="bg-white p-10 rounded-lg border border-surface-container-high luxury-shadow flex flex-col h-full">
-            <div className="flex justify-between items-start mb-8">
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {/* FREE Plan */}
+          <div className="bg-white p-8 rounded-lg border border-surface-container-high luxury-shadow flex flex-col h-full">
+            <div className="flex justify-between items-start mb-6">
               <div>
-                <h3 className="font-display text-title-sm text-primary">Menux Lite</h3>
-                <p className="text-on-surface-variant">L&apos;excellence visuelle.</p>
+                <h3 className="font-display text-title-sm text-primary">FREE</h3>
+                <p className="text-on-surface-variant text-xs mt-1">Menu digital standard.</p>
               </div>
               <span className="text-primary font-bold text-2xl">
-                49€<span className="text-label-sm text-outline font-normal">/mois</span>
+                0 DT<span className="text-label-sm text-outline font-normal">/mois</span>
               </span>
             </div>
-            <ul className="flex flex-col gap-4 mb-10 flex-grow">
-              {[
-                'Menu Digital haute fidélité',
-                'Accès QR Code illimité',
-                'Branding Premium Personnalisé'
-              ].map((item, i) => (
-                <li key={i} className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-secondary" />
-                  {item}
-                </li>
-              ))}
+            <ul className="flex flex-col gap-4 mb-8 flex-grow text-sm">
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-[#C9A07E] shrink-0" />
+                <span>Menu QR digital (consultation)</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-[#C9A07E] shrink-0" />
+                <span>Jusqu'à 8 articles</span>
+              </li>
+              <li className="flex items-center gap-2 text-outline opacity-50">
+                <XCircle className="w-4 h-4 text-outline shrink-0" />
+                <span className="line-through">Sans filigrane</span>
+              </li>
             </ul>
-            <Button variant="outline" className="w-full rounded-full">
-              Choisir Lite
+            <Button asChild variant="outline" className="w-full rounded-full mt-auto">
+              <Link href="/login?signup=true">Commencer</Link>
             </Button>
           </div>
           
-          {/* Pro Plan */}
-          <div className="bg-primary text-on-primary p-10 rounded-lg luxury-shadow flex flex-col h-full relative overflow-hidden">
-            <div className="absolute top-4 right-4 bg-secondary text-on-secondary text-[10px] px-3 py-1 rounded-full uppercase font-bold tracking-widest">
+          {/* PRO Plan */}
+          <div className="bg-primary text-on-primary p-8 rounded-lg luxury-shadow flex flex-col h-full relative overflow-hidden">
+            <div className="absolute top-4 right-4 bg-secondary text-on-secondary text-[9px] px-3 py-1 rounded-full uppercase font-bold tracking-widest">
               Populaire
             </div>
-            <div className="flex justify-between items-start mb-8">
+            <div className="flex justify-between items-start mb-6">
               <div>
-                <h3 className="font-display text-title-sm text-surface-container-lowest">Menux Pro</h3>
-                <p className="text-primary-fixed opacity-70">Opérationnel complet.</p>
+                <h3 className="font-display text-title-sm text-surface-container-lowest">PRO</h3>
+                <p className="text-primary-fixed opacity-70 text-xs mt-1">Commandes à table en direct.</p>
               </div>
               <span className="text-secondary-fixed font-bold text-2xl">
-                99€<span className="text-primary-fixed text-label-sm opacity-60 font-normal">/mois</span>
+                19 DT<span className="text-primary-fixed text-label-sm opacity-60 font-normal">/mois</span>
               </span>
             </div>
-            <ul className="flex flex-col gap-4 mb-10 flex-grow">
-              {[
-                'Commande directe à table',
-                'Dashboard encaissement temps réel',
-                'Gestion des stocks en direct',
-                'Support prioritaire 7j/7'
-              ].map((item, i) => (
-                <li key={i} className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-secondary-fixed" />
-                  {item}
-                </li>
-              ))}
+            <ul className="flex flex-col gap-4 mb-8 flex-grow text-sm">
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-secondary-fixed shrink-0" />
+                <span>Articles & tables illimités</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-secondary-fixed shrink-0" />
+                <span>Sans filigrane Menux</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-secondary-fixed shrink-0" />
+                <span>Commandes à table en temps réel</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-secondary-fixed shrink-0" />
+                <span>Tableau de caisse direct</span>
+              </li>
             </ul>
-            <Button className="w-full bg-secondary text-white rounded-full hover:opacity-90">
-              Choisir Pro
+            <Button asChild className="w-full bg-secondary text-white rounded-full hover:opacity-90 mt-auto">
+              <a href="https://wa.me/21656110674?text=Je%20voudrais%20le%20plan%20PRO%20MenuxPro">Activer PRO</a>
+            </Button>
+          </div>
+
+          {/* MAX Plan */}
+          <div className="bg-white p-8 rounded-lg border border-surface-container-high luxury-shadow flex flex-col h-full">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="font-display text-title-sm text-primary">MAX</h3>
+                <p className="text-on-surface-variant text-xs mt-1">White label & sur-mesure.</p>
+              </div>
+              <span className="text-primary font-bold text-2xl">
+                49 DT<span className="text-label-sm text-outline font-normal">/mois</span>
+              </span>
+            </div>
+            <ul className="flex flex-col gap-4 mb-8 flex-grow text-sm">
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-[#C9A07E] shrink-0" />
+                <span>Tout le plan PRO inclus</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-[#C9A07E] shrink-0" />
+                <span>White label (sans marque Menux)</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-[#C9A07E] shrink-0" />
+                <span>CSS custom & page couverture</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-[#C9A07E] shrink-0" />
+                <span>Support prioritaire WhatsApp</span>
+              </li>
+            </ul>
+            <Button asChild variant="outline" className="w-full rounded-full mt-auto">
+              <a href="mailto:contact@menuxpro.com?subject=Demande%20Plan%20MAX%20MenuxPro">Contacter</a>
             </Button>
           </div>
         </div>
         
+        {/* Testimonials Section */}
+        <div className="my-24 border-t border-b border-outline-variant/30 py-24 bg-surface-container-low/50">
+          <div className="max-w-6xl mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 className="font-display text-headline-md text-primary mb-4">
+                Ce que disent nos clients
+              </h2>
+              <p className="font-body-md text-on-surface-variant max-w-lg mx-auto">
+                Découvrez comment MenuxPro simplifie la vie des cafés et salons de thé partout en Tunisie.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-white p-8 rounded-xl border border-outline-variant/60 luxury-shadow flex flex-col justify-between">
+                <p className="text-on-surface-variant italic font-light mb-6 text-sm">
+                  "Nos clients commandent plus rapidement et le caissier stresse beaucoup moins. La rotation des tables a augmenté de manière significative."
+                </p>
+                <div>
+                  <div className="font-semibold text-primary text-sm">Café El Menzah</div>
+                  <div className="text-xs text-[#C9A07E]">Tunis</div>
+                </div>
+              </div>
+
+              <div className="bg-white p-8 rounded-xl border border-outline-variant/60 luxury-shadow flex flex-col justify-between">
+                <p className="text-on-surface-variant italic font-light mb-6 text-sm">
+                  "Simple à installer en 10 minutes, parfait pour le rush du weekend. Le menu est magnifique sur mobile."
+                </p>
+                <div>
+                  <div className="font-semibold text-primary text-sm">Salon de Thé Jasmina</div>
+                  <div className="text-xs text-[#C9A07E]">Sfax</div>
+                </div>
+              </div>
+
+              <div className="bg-white p-8 rounded-xl border border-outline-variant/60 luxury-shadow flex flex-col justify-between">
+                <p className="text-on-surface-variant italic font-light mb-6 text-sm">
+                  "Le QR code par table a complètement transformé nos opérations. Zéro erreur de commande et gain de temps incroyable pour nos serveurs."
+                </p>
+                <div>
+                  <div className="font-semibold text-primary text-sm">Terrasse Bab Souika</div>
+                  <div className="text-xs text-[#C9A07E]">Tunis</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <p className="text-center mt-8 text-on-surface-variant italic">
           Note: Works with your existing caisse.
         </p>

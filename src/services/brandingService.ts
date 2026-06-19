@@ -388,7 +388,7 @@ export async function updateBranding(
         return { success: false, error: `Custom CSS must be ${limits.maxCustomCssLength} characters or less` };
       }
       
-      const cssValidation = validateCustomCss(updates.customCss.css);
+      const cssValidation = validateCustomCss(updates.customCss.css ?? null);
       if (!cssValidation.valid) {
         return { success: false, error: cssValidation.error };
       }
@@ -426,15 +426,15 @@ export async function updateBranding(
  * Generate CSS variables from branding theme
  */
 export function generateThemeVariables(branding?: Branding): Record<string, string> {
-  const theme = branding?.theme || {};
+  const theme = branding?.theme;
   
   return {
-    '--restaurant-bg': theme.background || MENUXPRO_DEFAULTS.background,
-    '--restaurant-foreground': theme.foreground || MENUXPRO_DEFAULTS.foreground,
-    '--restaurant-primary': theme.primary || MENUXPRO_DEFAULTS.primary,
-    '--restaurant-accent': theme.accent || MENUXPRO_DEFAULTS.accent,
-    '--restaurant-card': theme.card || MENUXPRO_DEFAULTS.card,
-    '--restaurant-border': theme.border || MENUXPRO_DEFAULTS.border,
+    '--restaurant-bg': theme?.background || MENUXPRO_DEFAULTS.background,
+    '--restaurant-foreground': theme?.foreground || MENUXPRO_DEFAULTS.foreground,
+    '--restaurant-primary': theme?.primary || MENUXPRO_DEFAULTS.primary,
+    '--restaurant-accent': theme?.accent || MENUXPRO_DEFAULTS.accent,
+    '--restaurant-card': theme?.card || MENUXPRO_DEFAULTS.card,
+    '--restaurant-border': theme?.border || MENUXPRO_DEFAULTS.border,
   };
 }
 

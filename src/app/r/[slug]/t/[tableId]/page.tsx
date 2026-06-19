@@ -26,15 +26,33 @@ interface MenuDisplayItem {
 
 // Demo menu items
 const DEMO_MENU_ITEMS: MenuDisplayItem[] = [
+  // Cafés
   { id: '1', category: 'Cafés', categoryAr: 'القهوة', nameFr: 'Express / Demi / Allongé', nameAr: 'إكسبريسو / دمي / ألونجي', price: '2.5', categoryId: 'cat-1', available: true },
   { id: '2', category: 'Cafés', categoryAr: 'القهوة', nameFr: 'Cappuccino / Americano', nameAr: 'كابوتشينو / أمريكانو', price: '2.8', categoryId: 'cat-1', available: true },
   { id: '3', category: 'Cafés', categoryAr: 'القهوة', nameFr: 'Direct', nameAr: 'قهوة ديريكت', price: '3.2', categoryId: 'cat-1', available: true },
   { id: '4', category: 'Cafés', categoryAr: 'القهوة', nameFr: 'Spécial', nameAr: 'قهوة خاصة', price: '3.5', categoryId: 'cat-1', available: true },
+  // Boissons Fraîches
   { id: '5', category: 'Boissons Fraîches', categoryAr: 'مشروبات باردة', nameFr: 'Jus Frais', nameAr: 'عصير طازج', price: '4', categoryId: 'cat-2', available: true },
   { id: '6', category: 'Boissons Fraîches', categoryAr: 'مشروبات باردة', nameFr: 'Citronnade', nameAr: 'ليموناضة', price: '3', categoryId: 'cat-2', available: true },
-  { id: '7', category: 'Boissons Fraîches', categoryAr: 'مشروبات باردة', nameFr: 'Mojito', nameAr: 'موهيتو', price: '6', categoryId: 'cat-2', available: true },
-  { id: '8', category: 'Viennoiseries', categoryAr: 'مخبوزات', nameFr: 'Croissant', nameAr: 'كرواسون', price: '2.5', categoryId: 'cat-3', available: true },
-  { id: '9', category: 'Viennoiseries', categoryAr: 'مخبوزات', nameFr: 'Pâté', nameAr: 'باتي', price: '2', categoryId: 'cat-3', available: true },
+  { id: '7', category: 'Boissons Fraîches', categoryAr: 'مشروبات باردة', nameFr: 'Citronnade Amande', nameAr: 'ليموناضة باللوز', price: '5', categoryId: 'cat-2', available: true },
+  { id: '8', category: 'Boissons Fraîches', categoryAr: 'مشروبات باردة', nameFr: 'Mojito', nameAr: 'موهيتو', price: '6', categoryId: 'cat-2', available: true },
+  // Viennoiseries
+  { id: '9', category: 'Viennoiseries', categoryAr: 'مخبوزات', nameFr: 'Snoopy / Croissant', nameAr: 'سنوبي / كرواسون', price: '2.5', categoryId: 'cat-3', available: true },
+  { id: '10', category: 'Viennoiseries', categoryAr: 'مخبوزات', nameFr: 'Pâté', nameAr: 'باتي', price: '2', categoryId: 'cat-3', available: true },
+  // Thé
+  { id: '11', category: 'Thé', categoryAr: 'الشاي', nameFr: 'Thé', nameAr: 'شاي', price: '2', categoryId: 'cat-4', available: true },
+  { id: '12', category: 'Thé', categoryAr: 'الشاي', nameFr: 'Thé Amande', nameAr: 'شاي باللوز', price: '4', categoryId: 'cat-4', available: true },
+  // Chicha & Girac
+  { id: '13', category: 'Chicha & Girac', categoryAr: 'شيشة وجيراك', nameFr: 'Chicha Menthe', nameAr: 'شيشة نعناع', price: '4', categoryId: 'cat-5', available: true },
+  { id: '14', category: 'Chicha & Girac', categoryAr: 'شيشة وجيراك', nameFr: 'Chicha Cocktail', nameAr: 'شيشة كوكتيل', price: '4.5', categoryId: 'cat-5', available: true },
+  { id: '15', category: 'Chicha & Girac', categoryAr: 'شيشة وجيراك', nameFr: 'Chicha Vide', nameAr: 'شيشة فارغة', price: '3', categoryId: 'cat-5', available: true },
+  { id: '16', category: 'Chicha & Girac', categoryAr: 'شيشة وجيراك', nameFr: 'Girac (M)', nameAr: 'جيراك (M)', price: '3.5', categoryId: 'cat-5', available: true },
+  { id: '17', category: 'Chicha & Girac', categoryAr: 'شيشة وجيراك', nameFr: 'Girac (XL)', nameAr: 'جيراك (XL)', price: '4.5', categoryId: 'cat-5', available: true },
+  { id: '18', category: 'Chicha & Girac', categoryAr: 'شيشة وجيراك', nameFr: 'Girac (XXL)', nameAr: 'جيراك (XXL)', price: '5.5', categoryId: 'cat-5', available: true },
+  // Eaux & Soft
+  { id: '19', category: 'Eaux & Soft', categoryAr: 'مياه ومشروبات', nameFr: 'Eau 1.5 L', nameAr: 'ماء 1.5 ل', price: '2', categoryId: 'cat-6', available: true },
+  { id: '20', category: 'Eaux & Soft', categoryAr: 'مياه ومشروبات', nameFr: 'Eau 0.5 L', nameAr: 'ماء 0.5 ل', price: '1', categoryId: 'cat-6', available: true },
+  { id: '21', category: 'Eaux & Soft', categoryAr: 'مياه ومشروبات', nameFr: 'Canette', nameAr: 'كانات', price: '2.5', categoryId: 'cat-6', available: true },
 ];
 
 // UI Strings for language toggle
@@ -118,14 +136,14 @@ export default function TableOrderingPage({ params }: { params: Promise<{ slug: 
             name: 'ZCOFFEE',
             status: 'ACTIVE',
             currency: 'TND',
-            plan: 'free',
-            slugType: 'free-random',
+            plan: 'FREE',
+            slugType: 'FREE_RANDOM',
             watermarkEnabled: false,
             maxMenuItems: 50,
             createdAt: new Date(),
             updatedAt: new Date(),
           });
-          setTable({ id: 'demo-table', restaurantId: 'demo', name: resolvedParams.tableId, status: 'ACTIVE', createdAt: new Date(), updatedAt: new Date() });
+          setTable({ id: 'demo-table', restaurantId: 'demo', name: resolvedParams.tableId, seats: 2, status: 'ACTIVE', qrCodeUrl: '', createdAt: new Date(), updatedAt: new Date() });
           setMenuItems(DEMO_MENU_ITEMS);
           setContext('demo', resolvedParams.slug, 'demo-table');
           setLoading(false);
@@ -192,14 +210,14 @@ export default function TableOrderingPage({ params }: { params: Promise<{ slug: 
           name: 'ZCOFFEE',
           status: 'ACTIVE',
           currency: 'TND',
-          plan: 'free',
-          slugType: 'free-random',
+          plan: 'FREE',
+          slugType: 'FREE_RANDOM',
           watermarkEnabled: false,
           maxMenuItems: 50,
           createdAt: new Date(),
           updatedAt: new Date(),
         });
-        setTable({ id: 'demo-table', restaurantId: 'demo', name: resolvedParams.tableId, status: 'ACTIVE', createdAt: new Date(), updatedAt: new Date() });
+        setTable({ id: 'demo-table', restaurantId: 'demo', name: resolvedParams.tableId, seats: 2, status: 'ACTIVE', qrCodeUrl: '', createdAt: new Date(), updatedAt: new Date() });
         setMenuItems(DEMO_MENU_ITEMS);
         setContext('demo', resolvedParams.slug, 'demo-table');
       } finally {
@@ -279,7 +297,7 @@ export default function TableOrderingPage({ params }: { params: Promise<{ slug: 
     );
   }
 
-  const showWatermark = restaurant?.plan === 'free' || restaurant?.watermarkEnabled === true;
+  const showWatermark = restaurant?.plan === 'FREE' || restaurant?.watermarkEnabled === true;
 
   return (
     <WatermarkSpacer showWatermark={showWatermark}>

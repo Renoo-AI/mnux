@@ -55,8 +55,8 @@ export default function BrandingSettingsPage() {
   
   // Form state
   const [logoUrl, setLogoUrl] = useState<string>('');
-  const [primaryColor, setPrimaryColor] = useState(MENUXPRO_DEFAULTS.primary);
-  const [accentColor, setAccentColor] = useState(MENUXPRO_DEFAULTS.accent);
+  const [primaryColor, setPrimaryColor] = useState<string>(MENUXPRO_DEFAULTS.primary);
+  const [accentColor, setAccentColor] = useState<string>(MENUXPRO_DEFAULTS.accent);
   const [coverImageUrl, setCoverImageUrl] = useState<string>('');
   const [backgroundImageUrl, setBackgroundImageUrl] = useState<string>('');
   const [ogTitle, setOgTitle] = useState<string>('');

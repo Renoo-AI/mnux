@@ -215,8 +215,8 @@ export async function logBanCreated(params: {
   return logSecurityEvent({
     eventType: 'BAN_CREATED',
     severity: params.severity === 'HIGH' ? 'HIGH' : 'MEDIUM',
-    actorType: createdBy === 'system' ? 'SYSTEM' : 'OWNER',
-    actorId: createdBy !== 'system' ? createdBy : undefined,
+    actorType: params.createdBy === 'system' ? 'SYSTEM' : 'OWNER',
+    actorId: params.createdBy !== 'system' ? params.createdBy : undefined,
     restaurantId: params.restaurantId,
     message: `Ban created for ${params.targetType}: ${params.reason}`,
     metadata: {

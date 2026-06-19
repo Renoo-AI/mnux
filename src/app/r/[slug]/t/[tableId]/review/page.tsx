@@ -125,7 +125,7 @@ export default function OrderReviewPage({ params }: { params: Promise<{ slug: st
   }
 
   // Check if watermark should be shown
-  const showWatermark = restaurant?.plan === 'free' || restaurant?.watermarkEnabled === true;
+  const showWatermark = restaurant?.plan === 'FREE' || restaurant?.watermarkEnabled === true;
 
   return (
     <WatermarkSpacer showWatermark={showWatermark}>
