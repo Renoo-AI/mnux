@@ -19,10 +19,9 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/stores/authStore';
+import { supabase } from '@/lib/supabase/browser';
 import { useSoundNotification } from '@/hooks/use-sound-notification';
 import { useToast } from '@/hooks/use-toast';
-import { useStaffSession } from '@/contexts/StaffSessionContext';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -72,8 +71,22 @@ const STATUS_DOT: Record<OrderStatus, string> = {
 
 export default function CashierPage() {
   const router = useRouter();
-  const { user } = useAuthStore();
-  const { session, isLoading: sessionLoading } = useStaffSession();
+  const [user, setUser] = useState<{ email?: string; id?: string } | null>(null);
+  const [session, setSession] = useState<{ restaurantId?: string; restaurantName?: string } | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session: s } }) => {
+      if (s?.user) {
+        setUser({ email: s.user.email, id: s.user.id });
+        const { data: staff } = await supabase.from('staff').select('*, restaurants(name)').eq('user_id', s.user.id).eq('is_active', true).maybeSingle();
+        if (staff) {
+          setSession({ restaurantId: staff.restaurant_id, restaurantName: (staff.restaurants as Record<string,string>)?.name });
+        }
+      }
+      setSessionLoading(false);
+    });
+  }, []);
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [tables, setTables] = useState<Record<string, unknown>[]>([]);
