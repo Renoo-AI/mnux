@@ -208,12 +208,10 @@ export default function OrderSentPage({ params }: { params: Promise<{ slug: stri
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FCFBF9] flex items-center justify-center">
+      <div className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-[#3A322D] flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-[#C9A07E] animate-spin" />
-          </div>
-          <p className="text-[#5A4A3D]">{language === 'ar' ? 'جاري التحميل...' : 'Chargement...'}</p>
+          <Loader2 className="w-8 h-8 text-[#D4A373] animate-spin" />
+          <p className="text-[#7f756f]">{language === 'ar' ? 'جاري التحميل...' : 'Chargement...'}</p>
         </div>
       </div>
     );
@@ -225,27 +223,22 @@ export default function OrderSentPage({ params }: { params: Promise<{ slug: stri
   return (
     <WatermarkSpacer showWatermark={showWatermark}>
       <div 
-        className="min-h-screen bg-[#FCFBF9] pb-32"
+        className="min-h-screen bg-[#FDF8F3] pb-32"
         dir={isRTL ? 'rtl' : 'ltr'}
         lang={language}
       >
         {/* Header */}
-        <header className="sticky top-0 z-40 bg-[#FCFBF9]/95 backdrop-blur-lg border-b border-[#EFE4D8]">
+        <header className="sticky top-0 z-40 bg-[#FDF8F3] border-b border-[#E8E2DA] shadow-[0px_10px_30px_rgba(58,50,45,0.05)]">
           <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#3A322D] flex items-center justify-center">
-                <Coffee className="w-5 h-5 text-[#C9A07E]" />
-              </div>
-              <div>
-                <h1 className="font-serif text-lg font-bold text-[#3A322D]">
-                  {strings.title}
-                </h1>
-                {table && (
-                  <p className="text-xs text-[#C9A07E]">
-                    {strings.table} {table.name}
-                  </p>
-                )}
-              </div>
+              <h1 className="text-lg font-bold text-[#3D2C1E]" style={{ fontFamily: "'Playfair Display', serif" }}>
+                {strings.title}
+              </h1>
+              {table && (
+                <span className="px-3 py-1 bg-[#f2edeb] text-[#7f756f] rounded-full text-xs font-bold uppercase tracking-wider">
+                  {strings.table} {table.name}
+                </span>
+              )}
             </div>
             
             <div className="flex items-center gap-2">
@@ -254,13 +247,13 @@ export default function OrderSentPage({ params }: { params: Promise<{ slug: stri
                 size="icon"
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="text-[#5A4A3D] hover:text-[#3A322D]"
+                className="text-[#7f756f] hover:text-[#3D2C1E]"
               >
                 <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
               </Button>
               <button
                 onClick={toggleLanguage}
-                className="px-4 py-1.5 rounded-full bg-white border border-[#EFE4D8] text-[#C9A07E] font-semibold text-sm hover:bg-[#EFE4D8]/50 transition-colors"
+                className="px-4 py-1.5 rounded-full bg-white border border-[#E8E2DA] text-[#D4A373] font-bold text-xs uppercase tracking-wider hover:bg-[#f8f2f1] transition-colors"
               >
                 {strings.toggleLang}
               </button>
@@ -271,7 +264,7 @@ export default function OrderSentPage({ params }: { params: Promise<{ slug: stri
         <main className="max-w-lg mx-auto px-4 py-6">
           {/* Status Timeline */}
           {order && (
-            <div className="mb-6 p-6 rounded-2xl bg-white shadow-sm border border-[#EFE4D8]/50">
+            <div className="mb-6 p-6 rounded-xl bg-white shadow-[0px_10px_30px_rgba(58,50,45,0.05)]">
               <OrderStatusTimeline 
                 status={order.status}
                 language={language}
@@ -283,20 +276,18 @@ export default function OrderSentPage({ params }: { params: Promise<{ slug: stri
 
           {/* Estimated Time Card */}
           {estimatedTime && order && !['REJECTED', 'CANCELLED'].includes(order.status) && (
-            <div className="mb-6 p-4 rounded-2xl bg-[#EFE4D8]/50 flex items-center justify-between">
+            <div className="mb-6 p-4 rounded-xl bg-[#f8f2f1] border border-[#E8E2DA] flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#3A322D] flex items-center justify-center">
-                  <Loader2 className={`w-5 h-5 text-[#C9A07E] ${order.status === 'SERVED' || order.status === 'PAID' ? '' : 'animate-spin'}`} />
-                </div>
+                <Loader2 className={`w-5 h-5 text-[#D4A373] ${order.status === 'SERVED' || order.status === 'PAID' ? '' : 'animate-spin'}`} />
                 <div>
-                  <p className="text-sm text-[#5A4A3D]">{strings.estimatedTime}</p>
-                  <p className="font-semibold text-[#3A322D]">{estimatedTime.label}</p>
+                  <p className="text-sm text-[#7f756f]">{strings.estimatedTime}</p>
+                  <p className="font-semibold text-[#3D2C1E]">{estimatedTime.label}</p>
                 </div>
               </div>
               {estimatedTime.time > 0 && (
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-[#3A322D]">~{estimatedTime.time}</p>
-                  <p className="text-xs text-[#C9A07E]">{strings.mins}</p>
+                  <p className="text-2xl font-bold text-[#3D2C1E]" style={{ fontFamily: "'Playfair Display', serif" }}>~{estimatedTime.time}</p>
+                  <p className="text-xs text-[#D4A373]">{strings.mins}</p>
                 </div>
               )}
             </div>
@@ -304,31 +295,31 @@ export default function OrderSentPage({ params }: { params: Promise<{ slug: stri
 
           {/* Order Summary Card */}
           {order && (
-            <div className="mb-6 rounded-2xl bg-white shadow-sm border border-[#EFE4D8]/50 overflow-hidden">
-              <div className="p-4 border-b border-[#EFE4D8]/50">
-                <h2 className="font-serif font-bold text-[#3A322D]">
+            <div className="mb-6 rounded-xl bg-white shadow-[0px_10px_30px_rgba(58,50,45,0.05)] overflow-hidden">
+              <div className="p-4 border-b border-[#f2edeb]">
+                <h2 className="font-bold text-[#3D2C1E]" style={{ fontFamily: "'Playfair Display', serif" }}>
                   {strings.orderSummary}
                 </h2>
               </div>
-              
+               
               <div className="p-4 space-y-3">
                 {order.items.map((item, i) => (
                   <div key={i} className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
-                      <span className="text-[#C9A07E] font-semibold">{item.quantity}x</span>
-                      <span className="text-[#3A322D]">{item.name}</span>
+                      <span className="text-[#D4A373] font-bold">{item.quantity}x</span>
+                      <span className="text-[#3D2C1E]">{item.name}</span>
                     </div>
-                    <span className="text-[#5A4A3D]">
-                      {(item.price * item.quantity).toFixed(2)} {getCurrencySymbol()}
+                    <span className="text-[#7f756f]">
+                      {(item.price * item.quantity).toFixed(3)} {getCurrencySymbol()}
                     </span>
                   </div>
                 ))}
               </div>
-              
-              <div className="p-4 bg-[#EFE4D8]/30 flex items-center justify-between">
-                <span className="font-semibold text-[#3A322D]">{strings.total}</span>
-                <span className="text-xl font-bold text-[#3A322D]">
-                  {order.totalAmount.toFixed(2)} {getCurrencySymbol()}
+               
+              <div className="p-4 bg-[#f8f2f1] flex items-center justify-between">
+                <span className="font-bold text-[#3D2C1E]">{strings.total}</span>
+                <span className="text-xl font-bold text-[#3D2C1E]" style={{ fontFamily: "'Playfair Display', serif" }}>
+                  {order.totalAmount.toFixed(3)} {getCurrencySymbol()}
                 </span>
               </div>
             </div>
@@ -340,16 +331,16 @@ export default function OrderSentPage({ params }: { params: Promise<{ slug: stri
               <Button
                 onClick={() => setShowCallWaiter(true)}
                 variant="outline"
-                className="w-full py-6 rounded-2xl border-[#EFE4D8] text-[#3A322D] hover:bg-[#EFE4D8]/50"
+                className="w-full py-4 rounded-full border-[#E8E2DA] text-[#3D2C1E] hover:bg-[#f8f2f1]"
               >
                 <Bell className="w-5 h-5 mr-2" />
                 {strings.callWaiter}
               </Button>
-              
+               
               {canRequestBill && (
                 <Button
                   onClick={() => setShowRequestBill(true)}
-                  className="w-full py-6 rounded-2xl bg-[#3A322D] hover:bg-[#5A4A3D] text-white"
+                  className="w-full py-4 rounded-full bg-[#3D2C1E] hover:opacity-90 text-white"
                 >
                   <CreditCard className="w-5 h-5 mr-2" />
                   {strings.requestBill}
@@ -361,7 +352,7 @@ export default function OrderSentPage({ params }: { params: Promise<{ slug: stri
           {/* Back to Menu */}
           <Link
             href={`/r/${restaurant?.slug || ''}/t/${table?.name || ''}`}
-            className="flex items-center justify-center gap-2 mt-6 text-[#C9A07E] hover:text-[#3A322D] transition-colors"
+            className="flex items-center justify-center gap-2 mt-6 text-[#D4A373] hover:text-[#3D2C1E] transition-colors font-semibold"
           >
             <ArrowLeft className={`w-4 h-4 ${isRTL ? 'rotate-180' : ''}`} />
             <span>{strings.backToMenu}</span>
@@ -369,7 +360,7 @@ export default function OrderSentPage({ params }: { params: Promise<{ slug: stri
 
           {/* Thank you footer */}
           <div className="mt-8 text-center">
-            <p className="font-serif italic text-[#C9A07E]">{strings.thankYou}</p>
+            <p className="text-sm text-[#7f756f] opacity-60">{strings.thankYou}</p>
           </div>
         </main>
 

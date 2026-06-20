@@ -1,884 +1,368 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  CreditCard, 
-  Sparkles, 
-  CheckCheck,
-  Utensils,
-  Armchair,
-  Loader2,
-  Bell,
-  Volume2,
-  VolumeX,
-  AlertCircle,
-  AlertTriangle,
-  TrendingUp,
-  DollarSign,
-  Coffee,
-  Users,
-  BarChart3,
-  ArrowUpRight,
-  ArrowDownRight,
-  RefreshCw
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { DashboardLayout } from '@/components/layout';
-import { TopAppBar } from '@/components/layout';
-import { useAuthStore } from '@/stores/authStore';
-import { useSoundNotification } from '@/hooks/use-sound-notification';
-import { useToast } from '@/hooks/use-toast';
-import { useStaffSession } from '@/contexts/StaffSessionContext';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import type { Order, Table, OrderStatus } from '@/types';
-import { 
-  subscribeToActiveOrders, 
-  acceptOrder, 
-  closeOrder, 
-  cancelOrder,
-  markOrderPaid 
-} from '@/services/orderService';
-import { subscribeToTables as subscribeToTablesService } from '@/services/tableService';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabase/browser';
+import type { User } from '@supabase/supabase-js';
 
-export default function CashierDashboard() {
-  const router = useRouter();
-  const { user, isAuthenticated } = useAuthStore();
-  const { session, isLoading: sessionLoading } = useStaffSession();
-  
-  // State for real data
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [tables, setTables] = useState<Table[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [showNewOrderAlert, setShowNewOrderAlert] = useState(false);
-  const previousNewOrdersCount = useRef(0);
-  const { playSound, isMuted, toggleMute } = useSoundNotification({ enabled: true, volume: 0.4 });
-  const { toast } = useToast();
-  
-  // Cancel order dialog state
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
-  const [cancelReason, setCancelReason] = useState('');
+interface MenuItem {
+  id: string;
+  category: string;
+  categoryAr: string;
+  nameFr: string;
+  nameAr: string;
+  price: string;
+  available: boolean;
+}
 
-  // Update current time every minute
+interface FormData {
+  id: string;
+  category: string;
+  categoryAr: string;
+  nameFr: string;
+  nameAr: string;
+  price: string;
+}
+
+const RESTAURANT_ID = process.env.NEXT_PUBLIC_RESTAURANT_ID || 'demo-restaurant';
+
+const DEFAULT_MENU: Omit<FormData, 'id'>[] = [
+  { category: 'Cafés', categoryAr: 'القهوة', nameFr: 'Express / Demi / Allongé', nameAr: 'إكسبريسو / دمي / ألونجي', price: '2.5' },
+  { category: 'Cafés', categoryAr: 'القهوة', nameFr: 'Cappuccino / Americano', nameAr: 'كابوتشينو / أمريكانو', price: '2.8' },
+  { category: 'Cafés', categoryAr: 'القهوة', nameFr: 'Direct', nameAr: 'قهوة ديريكت', price: '3.2' },
+  { category: 'Cafés', categoryAr: 'القهوة', nameFr: 'Spécial', nameAr: 'قهوة خاصة', price: '3.5' },
+  { category: 'Boissons Fraîches', categoryAr: 'مشروبات باردة', nameFr: 'Jus Frais', nameAr: 'عصير طازج', price: '4' },
+  { category: 'Boissons Fraîches', categoryAr: 'مشروبات باردة', nameFr: 'Citronnade', nameAr: 'ليموناضة', price: '3' },
+  { category: 'Boissons Fraîches', categoryAr: 'مشروبات باردة', nameFr: 'Citronnade Amande', nameAr: 'ليموناضة باللوز', price: '5' },
+  { category: 'Boissons Fraîches', categoryAr: 'مشروبات باردة', nameFr: 'Mojito', nameAr: 'موهيتو', price: '6' },
+  { category: 'Viennoiseries', categoryAr: 'مخبوزات', nameFr: 'Snoopy / Croissant', nameAr: 'سنوبي / كرواسون', price: '2.5' },
+  { category: 'Viennoiseries', categoryAr: 'مخبوزات', nameFr: 'Pâté', nameAr: 'باتي', price: '2' },
+  { category: 'Thé', categoryAr: 'الشاي', nameFr: 'Thé', nameAr: 'شاي', price: '2' },
+  { category: 'Thé', categoryAr: 'الشاي', nameFr: 'Thé Amande', nameAr: 'شاي باللوز', price: '4' },
+  { category: 'Chicha & Girac', categoryAr: 'شيشة وجيراك', nameFr: 'Chicha Menthe', nameAr: 'شيشة نعناع', price: '4' },
+  { category: 'Chicha & Girac', categoryAr: 'شيشة وجيراك', nameFr: 'Chicha Cocktail', nameAr: 'شيشة كوكتيل', price: '4.5' },
+  { category: 'Chicha & Girac', categoryAr: 'شيشة وجيراك', nameFr: 'Chicha Vide', nameAr: 'شيشة فارغة', price: '3' },
+  { category: 'Chicha & Girac', categoryAr: 'شيشة وجيراك', nameFr: 'Girac (M)', nameAr: 'جيراك (M)', price: '3.5' },
+  { category: 'Chicha & Girac', categoryAr: 'شيشة وجيراك', nameFr: 'Girac (XL)', nameAr: 'جيراك (XL)', price: '4.5' },
+  { category: 'Chicha & Girac', categoryAr: 'شيشة وجيراك', nameFr: 'Girac (XXL)', nameAr: 'جيراك (XXL)', price: '5.5' },
+  { category: 'Eaux & Soft', categoryAr: 'مياه ومشروبات', nameFr: 'Eau 1.5 L', nameAr: 'ماء 1.5 ل', price: '2' },
+  { category: 'Eaux & Soft', categoryAr: 'مياه ومشروبات', nameFr: 'Eau 0.5 L', nameAr: 'ماء 0.5 ل', price: '1' },
+  { category: 'Eaux & Soft', categoryAr: 'مياه ومشروبات', nameFr: 'Canette', nameAr: 'كانات', price: '2.5' },
+];
+
+export default function DashboardPage() {
+  const [user, setUser] = useState<User | null>(null);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<FormData>({ id: '', category: '', categoryAr: '', nameFr: '', nameAr: '', price: '' });
+  const [saving, setSaving] = useState(false);
+
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // Subscribe to real-time orders and tables from Firebase
-  useEffect(() => {
-    const restaurantId = session?.restaurantId;
-    if (!restaurantId) {
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    setLoadError(null);
-
-    // Subscribe to active orders
-    const unsubscribeOrders = subscribeToActiveOrders(restaurantId, (newOrders) => {
-      setOrders(newOrders);
-      setIsLoading(false);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) loadMenu();
+      else setLoading(false);
     });
 
-    // Subscribe to tables
-    const unsubscribeTables = subscribeToTablesService(restaurantId, (newTables) => {
-      setTables(newTables);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) loadMenu();
+      else setLoading(false);
     });
 
-    return () => {
-      unsubscribeOrders();
-      unsubscribeTables();
-    };
-  }, [session?.restaurantId]);
-
-  // Sound notification for new orders
-  useEffect(() => {
-    const currentNewOrdersCount = orders.filter(o => o.status === 'CREATED').length;
-    
-    // Check if new orders increased
-    if (currentNewOrdersCount > previousNewOrdersCount.current && previousNewOrdersCount.current >= 0) {
-      playSound('urgent');
-      // Use requestAnimationFrame to defer state update and avoid cascading renders
-      requestAnimationFrame(() => {
-        setShowNewOrderAlert(true);
-        // Auto-hide alert after 3 seconds
-        setTimeout(() => setShowNewOrderAlert(false), 3000);
-      });
-    }
-    
-    previousNewOrdersCount.current = currentNewOrdersCount;
-  }, [orders, playSound]);
-
-  const handleAcceptOrder = useCallback(async (orderId: string) => {
-    setActionLoading(orderId + '-accept');
-    
-    try {
-      const result = await acceptOrder(orderId);
-      
-      if (result.success) {
-        const order = orders.find(o => o.id === orderId);
-        toast({
-          title: 'Order Accepted',
-          description: `Order from ${order?.tableName || 'Unknown'} has been accepted and is now being prepared.`,
-        });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: result.error || 'Failed to accept order. Please try again.',
-        });
-      }
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to accept order. Please try again.',
-      });
-    } finally {
-      setActionLoading(null);
-    }
-  }, [orders, toast]);
-
-  const handleCompleteOrder = useCallback(async (orderId: string) => {
-    setActionLoading(orderId + '-complete');
-    
-    try {
-      // First mark as paid, then close
-      const paidResult = await markOrderPaid(orderId);
-      
-      if (!paidResult.success) {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: paidResult.error || 'Failed to mark order as paid.',
-        });
-        setActionLoading(null);
-        return;
-      }
-      
-      const closeResult = await closeOrder(orderId);
-      
-      if (closeResult.success) {
-        const order = orders.find(o => o.id === orderId);
-        setSelectedOrder(null);
-        toast({
-          title: 'Order Completed',
-          description: `Order from ${order?.tableName || 'Unknown'} has been marked as paid and completed.`,
-        });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: closeResult.error || 'Failed to close order. Please try again.',
-        });
-      }
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to complete order. Please try again.',
-      });
-    } finally {
-      setActionLoading(null);
-    }
-  }, [orders, toast]);
-
-  const handleMarkPaid = useCallback(async (orderId: string) => {
-    setActionLoading(orderId + '-paid');
-    
-    try {
-      const result = await markOrderPaid(orderId);
-      
-      if (result.success) {
-        const order = orders.find(o => o.id === orderId);
-        toast({
-          title: 'Order Paid',
-          description: `Order from ${order?.tableName || 'Unknown'} has been marked as paid.`,
-        });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: result.error || 'Failed to mark order as paid.',
-        });
-      }
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to mark order as paid.',
-      });
-    } finally {
-      setActionLoading(null);
-    }
-  }, [orders, toast]);
-
-  const handleCloseOrder = useCallback(async (orderId: string) => {
-    setActionLoading(orderId + '-close');
-    
-    try {
-      const result = await closeOrder(orderId);
-      
-      if (result.success) {
-        const order = orders.find(o => o.id === orderId);
-        setSelectedOrder(null);
-        toast({
-          title: 'Order Closed',
-          description: `Order from ${order?.tableName || 'Unknown'} has been closed.`,
-        });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: result.error || 'Failed to close order.',
-        });
-      }
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to close order.',
-      });
-    } finally {
-      setActionLoading(null);
-    }
-  }, [orders, toast]);
-
-  const handleCancelOrderClick = useCallback((order: Order) => {
-    setOrderToCancel(order);
-    setCancelReason('');
-    setShowCancelDialog(true);
+    return () => subscription.unsubscribe();
   }, []);
 
-  const handleConfirmCancelOrder = useCallback(async () => {
-    if (!orderToCancel) return;
-    
-    setActionLoading(orderToCancel.id + '-cancel');
-    setShowCancelDialog(false);
-    
+  const loadMenu = useCallback(async () => {
+    setLoading(true);
     try {
-      const reason = cancelReason.trim() || 'Cancelled by staff';
-      const result = await cancelOrder(orderToCancel.id, reason);
-      
-      if (result.success) {
-        setSelectedOrder(null);
-        toast({
-          title: 'Order Cancelled',
-          description: `Order from ${orderToCancel.tableName} has been cancelled.`,
+      const res = await fetch(`/api/menu?restaurantId=${RESTAURANT_ID}`);
+      const data = await res.json();
+      if (data.items?.length) {
+        setMenuItems(data.items.map((i: Record<string, unknown>) => ({
+          id: i.id as string,
+          category: (i.categories as Record<string, string>)?.name_fr || (i.category as string) || '',
+          categoryAr: (i.categories as Record<string, string>)?.name_ar || (i.categoryAr as string) || '',
+          nameFr: i.name_fr as string,
+          nameAr: i.name_ar as string,
+          price: String(i.price),
+          available: Boolean(i.is_available ?? i.available),
+        })));
+      } else {
+        setMenuItems([]);
+      }
+    } catch {
+      setMenuItems([]);
+    }
+    setLoading(false);
+  }, []);
+
+  const openAddModal = () => {
+    setForm({ id: '', category: '', categoryAr: '', nameFr: '', nameAr: '', price: '' });
+    setEditing(false);
+    setShowModal(true);
+  };
+
+  const openEditModal = (item: MenuItem) => {
+    setForm({ id: item.id, category: item.category, categoryAr: item.categoryAr, nameFr: item.nameFr, nameAr: item.nameAr, price: item.price });
+    setEditing(true);
+    setShowModal(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const body: Record<string, string> = {
+        restaurantId: RESTAURANT_ID,
+        nameFr: form.nameFr,
+        nameAr: form.nameAr,
+        price: form.price,
+        category: form.category,
+        categoryAr: form.categoryAr,
+      };
+
+      if (editing && form.id) {
+        await fetch(`/api/menu`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: form.id, ...body }),
         });
       } else {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: result.error || 'Failed to cancel order. Please try again.',
+        await fetch('/api/menu', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
         });
       }
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to cancel order. Please try again.',
+
+      setShowModal(false);
+      loadMenu();
+    } catch (err) {
+      alert('Error saving: ' + (err as Error).message);
+    }
+    setSaving(false);
+  };
+
+  const deleteItem = async (id: string) => {
+    if (!confirm('Supprimer cet article ?')) return;
+    await fetch(`/api/menu?id=${id}`, { method: 'DELETE' });
+    loadMenu();
+  };
+
+  const clearMenu = async () => {
+    if (!confirm('ATTENTION : Cela va supprimer TOUT le menu. Continuer ?')) return;
+    for (const item of menuItems) {
+      await fetch(`/api/menu?id=${item.id}`, { method: 'DELETE' });
+    }
+    loadMenu();
+  };
+
+  const restoreDefaults = async () => {
+    if (!confirm("Restaurer la liste d'origine ZCOFFEE ?")) return;
+    for (const item of DEFAULT_MENU) {
+      await fetch('/api/menu', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ restaurantId: RESTAURANT_ID, ...item }),
       });
-    } finally {
-      setActionLoading(null);
-      setOrderToCancel(null);
     }
-  }, [orderToCancel, cancelReason, toast]);
-
-  const getStateColor = (status: OrderStatus) => {
-    switch (status) {
-      case 'CREATED':
-        return 'bg-secondary-fixed text-on-secondary-fixed-variant';
-      case 'ACCEPTED':
-        return 'bg-surface-container-high text-on-surface-variant';
-      case 'PAID':
-        return 'bg-primary-fixed text-on-primary-fixed-variant';
-      case 'CANCELLED':
-        return 'bg-error-container text-on-error-container';
-      default:
-        return 'bg-surface-container-high text-on-surface-variant';
-    }
+    loadMenu();
   };
 
-  const getStateLabel = (status: OrderStatus) => {
-    switch (status) {
-      case 'CREATED':
-        return 'NEW ORDER';
-      case 'ACCEPTED':
-        return 'ACCEPTED';
-      case 'PAID':
-        return 'PAID';
-      case 'CLOSED':
-        return 'CLOSED';
-      case 'CANCELLED':
-        return 'CANCELLED';
-      case 'REJECTED':
-        return 'REJECTED';
-      default:
-        return status;
-    }
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) alert(error.message);
   };
 
-  const formatTimeAgo = (date: Date) => {
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - date.getTime()) / 1000 / 60);
-    if (diff < 1) return 'Just now';
-    if (diff < 60) return `${diff}m ago`;
-    return `${Math.floor(diff / 60)}h ago`;
-  };
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-  };
-
-  // Group orders by status for display
-  const newOrders = orders.filter(o => o.status === 'CREATED');
-  const acceptedOrders = orders.filter(o => o.status === 'ACCEPTED');
-  const paidOrders = orders.filter(o => o.status === 'PAID');
-  const activeTableIds = orders.filter(o => ['CREATED', 'ACCEPTED', 'PAID'].includes(o.status)).map(o => o.tableId);
-  
-  // Calculate live stats
-  const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
-  const avgOrderValue = orders.length > 0 ? totalRevenue / orders.length : 0;
-
-  // Show loading state
-  if (sessionLoading || isLoading) {
+  if (!user) {
     return (
-      <DashboardLayout>
-        <TopAppBar
-          title="Active Tables"
-          subtitle="Loading..."
-          showSearch={false}
-          user={{
-            name: user?.staffProfile?.name || session?.staffName || 'User',
-            role: user?.role || session?.role || 'cashier',
-          }}
-        />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <Loader2 className="w-12 h-12 animate-spin text-secondary mx-auto mb-4" />
-            <p className="text-on-surface-variant">Loading dashboard...</p>
+      <div className="min-h-screen bg-[#faf9f6] flex items-center justify-center p-4">
+        <form onSubmit={handleLogin} className="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl">
+          <div className="text-center mb-8">
+            <div className="w-14 h-14 bg-[#2d2a26] rounded-xl flex items-center justify-center mx-auto mb-4">
+              <span className="text-[#b48c68] font-bold text-xl">Z</span>
+            </div>
+            <h1 className="text-xl font-bold text-[#2d2a26]">ZCOFFEE</h1>
+            <p className="text-xs text-[#b48c68] font-bold uppercase tracking-widest mt-1">Administration</p>
           </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  // Show error state
-  if (loadError) {
-    return (
-      <DashboardLayout>
-        <TopAppBar
-          title="Active Tables"
-          subtitle="Error"
-          showSearch={false}
-          user={{
-            name: user?.staffProfile?.name || session?.staffName || 'User',
-            role: user?.role || session?.role || 'cashier',
-          }}
-        />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <AlertTriangle className="w-12 h-12 text-error mx-auto mb-4" />
-            <p className="text-on-surface-variant mb-4">{loadError}</p>
-            <Button onClick={() => window.location.reload()}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Retry
-            </Button>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  // Show no session state
-  if (!session?.restaurantId) {
-    return (
-      <DashboardLayout>
-        <TopAppBar
-          title="Active Tables"
-          subtitle="No Session"
-          showSearch={false}
-          user={{
-            name: user?.staffProfile?.name || 'User',
-            role: user?.role || 'cashier',
-          }}
-        />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <AlertCircle className="w-12 h-12 text-on-surface-variant mx-auto mb-4" />
-            <p className="text-on-surface-variant mb-4">No restaurant session found.</p>
-            <Button onClick={() => router.push('/login')}>
-              Go to Login
-            </Button>
-          </div>
-        </div>
-      </DashboardLayout>
+          <input
+            name="email"
+            type="email"
+            placeholder="Email"
+            required
+            className="w-full bg-[#faf9f6] border border-black/5 rounded-lg px-4 py-3 mb-3 outline-none focus:border-[#b48c68] text-sm"
+          />
+          <input
+            name="password"
+            type="password"
+            placeholder="Mot de passe"
+            required
+            className="w-full bg-[#faf9f6] border border-black/5 rounded-lg px-4 py-3 mb-6 outline-none focus:border-[#b48c68] text-sm"
+          />
+          <button
+            type="submit"
+            className="w-full bg-[#2d2a26] text-white py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-[#b48c68] transition-all shadow-lg"
+          >
+            Connexion
+          </button>
+        </form>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
-      <TopAppBar
-        title="Active Tables"
-        subtitle={`${orders.length} busy`}
-        showSearch={false}
-        user={{
-          name: user?.staffProfile?.name || session?.staffName || 'Demo Manager',
-          role: user?.role || session?.role || 'manager',
-        }}
-      />
-      
-      {/* New Order Alert Banner */}
-      {showNewOrderAlert && (
-        <div className="fixed top-4 right-4 z-50 animate-slide-in-right">
-          <div className="bg-secondary text-on-secondary px-6 py-4 rounded-xl shadow-lg flex items-center gap-3">
-            <AlertCircle className="w-6 h-6 animate-pulse" />
-            <span className="font-display text-title-sm">New Order Received!</span>
+    <div className="min-h-screen bg-[#faf9f6]">
+      {/* Navigation */}
+      <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-black/5 px-4 md:px-10 py-4 flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-[#2d2a26] rounded-xl flex items-center justify-center shadow-sm">
+            <span className="text-[#b48c68] font-bold text-lg">Z</span>
+          </div>
+          <div className="hidden sm:block">
+            <h1 className="text-sm font-bold uppercase tracking-widest text-[#2d2a26]">ZCOFFEE</h1>
+            <p className="text-[9px] text-[#b48c68] font-bold uppercase">{user.email}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 md:gap-4">
+          <a href={`/r/zcoffee`} target="_blank" className="hidden md:flex items-center gap-2 px-5 py-2.5 rounded-xl border border-black/5 bg-white hover:bg-black hover:text-white transition-all text-xs font-bold uppercase tracking-widest">
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            Visualiser
+          </a>
+          <button onClick={() => supabase.auth.signOut()} className="px-5 py-2.5 rounded-xl bg-red-50 text-red-600 text-xs font-bold uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all">
+            Déconnexion
+          </button>
+        </div>
+      </nav>
+
+      <main className="max-w-7xl mx-auto px-4 py-6 md:py-10">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+          <div>
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>
+              Bonjour, Youssef
+            </h2>
+            <p className="text-sm text-[#b48c68] font-medium">Gérez votre menu et vos prix en temps réel.</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button onClick={clearMenu} className="px-6 py-3 rounded-xl border border-red-200 text-red-600 text-xs font-bold uppercase tracking-widest hover:bg-red-50 transition-all flex items-center gap-2">
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+              Vider
+            </button>
+            <button onClick={restoreDefaults} className="px-6 py-3 rounded-xl border border-black text-black text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-all flex items-center gap-2">
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              Restaurer
+            </button>
+            <button onClick={openAddModal} className="px-8 py-3 rounded-xl bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-[#b48c68] shadow-lg shadow-black/10 transition-all flex items-center gap-2">
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" /></svg>
+              Ajouter un article
+            </button>
+          </div>
+        </div>
+
+        {/* Loading */}
+        {loading && (
+          <div className="text-center py-20 opacity-20 font-bold uppercase tracking-widest text-xs">
+            Chargement...
+          </div>
+        )}
+
+        {/* Menu Grid */}
+        {!loading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {menuItems.length === 0 ? (
+              <div className="col-span-full py-20 text-center opacity-30 font-bold uppercase tracking-widest text-[10px]">
+                Menu vide. Cliquez sur &quot;Restaurer Menu&quot; en haut.
+              </div>
+            ) : (
+              menuItems.map((item) => (
+                <div key={item.id} className="bg-white p-6 rounded-2xl flex flex-col justify-between gap-6 border border-black/5 hover:border-[#b48c68] hover:shadow-[0_15px_30px_rgba(180,140,104,0.1)] transition-all">
+                  <div>
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="text-[8px] font-bold uppercase tracking-[0.2em] bg-[#b48c68]/10 text-[#b48c68] px-3 py-1 rounded-md">
+                        {item.category}
+                      </span>
+                      <span className="text-[8px] font-bold opacity-30 uppercase" dir="rtl">{item.categoryAr}</span>
+                    </div>
+                    <h4 className="font-bold text-base mb-1">{item.nameFr}</h4>
+                    <p className="text-xs font-bold opacity-30" dir="rtl">{item.nameAr}</p>
+                  </div>
+                  <div className="flex justify-between items-center pt-4 border-t border-black/5">
+                    <div className="text-xl font-bold text-[#b48c68]">
+                      {item.price}<span className="text-[9px] opacity-40 ml-1 uppercase">DT</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => openEditModal(item)} className="p-3 bg-gray-50 hover:bg-black hover:text-white rounded-xl transition-all">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                      </button>
+                      <button onClick={() => deleteItem(item.id)} className="p-3 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white rounded-xl transition-all">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Mobile FAB */}
+        <div className="fixed bottom-8 right-6 md:hidden z-50 flex flex-col gap-3">
+          <a href={`/r/zcoffee`} target="_blank" className="w-14 h-14 rounded-[18px] bg-[#b48c68] text-white flex items-center justify-center shadow-[0_10px_25px_rgba(180,140,104,0.4)] active:scale-90 transition-all">
+            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+          </a>
+        </div>
+      </main>
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" onClick={() => setShowModal(false)}>
+          <div className="bg-white rounded-3xl p-6 md:p-10 w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold">{editing ? 'Modifier Article' : 'Nouvel Article'}</h3>
+              <button onClick={() => setShowModal(false)} className="p-2 opacity-30 hover:opacity-100 transition-all">
+                <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-4 text-sm">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest opacity-40 mb-1">Catégorie (FR)</label>
+                  <input type="text" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="w-full bg-gray-50 border border-black/5 rounded-lg px-4 py-3 focus:border-[#b48c68] outline-none" required />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest opacity-40 mb-1 text-right">Catégorie (AR)</label>
+                  <input type="text" value={form.categoryAr} onChange={e => setForm({ ...form, categoryAr: e.target.value })} className="w-full bg-gray-50 border border-black/5 rounded-lg px-4 py-3 focus:border-[#b48c68] outline-none text-right font-bold" dir="rtl" required />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-widest opacity-40 mb-1">Nom du produit (FR)</label>
+                <input type="text" value={form.nameFr} onChange={e => setForm({ ...form, nameFr: e.target.value })} className="w-full bg-gray-50 border border-black/5 rounded-lg px-4 py-3 focus:border-[#b48c68] outline-none" required />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-widest opacity-40 mb-1 text-right">Nom du produit (AR)</label>
+                <input type="text" value={form.nameAr} onChange={e => setForm({ ...form, nameAr: e.target.value })} className="w-full bg-gray-50 border border-black/5 rounded-lg px-4 py-3 focus:border-[#b48c68] outline-none text-right font-bold" dir="rtl" required />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-widest opacity-40 mb-1">Prix (DT)</label>
+                <input type="text" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} className="w-full bg-gray-50 border border-black/5 rounded-lg px-4 py-3 focus:border-[#b48c68] outline-none font-bold" required />
+              </div>
+              <button type="submit" disabled={saving} className="w-full bg-[#2d2a26] text-white py-4 rounded-xl font-bold uppercase tracking-widest text-[10px] mt-4 shadow-lg shadow-black/10 hover:bg-[#b48c68] transition-all">
+                {saving ? 'Synchronisation...' : 'Enregistrer'}
+              </button>
+            </form>
           </div>
         </div>
       )}
-      
-      {/* Sound Toggle Button */}
-      <button
-        onClick={toggleMute}
-        className="fixed top-4 right-4 z-40 bg-white p-3 rounded-full shadow-card hover:shadow-lg transition-all duration-300 hover:scale-105"
-        title={isMuted ? 'Unmute notifications' : 'Mute notifications'}
-      >
-        {isMuted ? (
-          <VolumeX className="w-5 h-5 text-on-surface-variant" />
-        ) : (
-          <Volume2 className="w-5 h-5 text-secondary" />
-        )}
-      </button>
-      
-      <div className="flex-1 flex overflow-hidden">
-        {/* Grid Area */}
-        <section className="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 content-start">
-          
-          {/* Analytics Summary Cards */}
-          <div className="col-span-full grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <div className="bg-white rounded-2xl p-5 shadow-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-default group relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-secondary/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-              <div className="relative">
-                <div className="flex items-center gap-2 text-secondary mb-2">
-                  <Bell className="w-5 h-5 animate-bounce-subtle" />
-                  <span className="font-label-caps text-label-caps uppercase tracking-wider">NEW ORDERS</span>
-                </div>
-                <p className="font-display text-4xl text-primary">{newOrders.length}</p>
-                <p className="text-on-surface-variant text-xs mt-1">Requires attention</p>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-2xl p-5 shadow-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-default group relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-              <div className="relative">
-                <div className="flex items-center gap-2 text-primary mb-2">
-                  <Utensils className="w-5 h-5" />
-                  <span className="font-label-caps text-label-caps uppercase tracking-wider">IN PROGRESS</span>
-                </div>
-                <p className="font-display text-4xl text-primary">{acceptedOrders.length}</p>
-                <p className="text-on-surface-variant text-xs mt-1">Being prepared</p>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-2xl p-5 shadow-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-default group relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-accent/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-              <div className="relative">
-                <div className="flex items-center gap-2 text-on-surface-variant mb-2">
-                  <Armchair className="w-5 h-5" />
-                  <span className="font-label-caps text-label-caps uppercase tracking-wider">AVAILABLE</span>
-                </div>
-                <p className="font-display text-4xl text-primary">
-                  {tables.filter(t => !activeTableIds.includes(t.id) && t.status !== 'OFFLINE').length}
-                </p>
-                <p className="text-on-surface-variant text-xs mt-1">Ready to seat</p>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-2xl p-5 shadow-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-default group relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-              <div className="relative">
-                <div className="flex items-center gap-2 text-green-600 mb-2">
-                  <DollarSign className="w-5 h-5" />
-                  <span className="font-label-caps text-label-caps uppercase tracking-wider">REVENUE</span>
-                </div>
-                <p className="font-display text-4xl text-primary">${totalRevenue.toFixed(0)}</p>
-                <p className="text-on-surface-variant text-xs mt-1">Active orders</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Stats Row */}
-          <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-2xl p-5 border border-secondary/20 hover:border-secondary/40 transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-label-caps text-xs text-on-surface-variant uppercase tracking-wider">Active Revenue</p>
-                  <p className="font-display text-2xl text-primary mt-1">${totalRevenue.toFixed(2)}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-8 h-8 text-secondary" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-5 border border-primary/10 hover:border-primary/20 transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-label-caps text-xs text-on-surface-variant uppercase tracking-wider">Avg Order Value</p>
-                  <p className="font-display text-2xl text-primary mt-1">${avgOrderValue.toFixed(2)}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Coffee className="w-8 h-8 text-accent" />
-                </div>
-              </div>
-              <p className="text-xs text-on-surface-variant mt-2">
-                {orders.length} active orders • {tables.length} tables
-              </p>
-            </div>
-          </div>
-
-          {/* Empty State for Orders */}
-          {orders.length === 0 && (
-            <div className="col-span-full bg-white rounded-2xl p-12 shadow-card text-center">
-              <Utensils className="w-16 h-16 text-on-surface-variant mx-auto mb-4 opacity-50" />
-              <h3 className="font-display text-title-md text-primary mb-2">No Active Orders</h3>
-              <p className="text-on-surface-variant mb-4">
-                Orders will appear here in real-time as customers place them.
-              </p>
-              <p className="text-sm text-on-surface-variant opacity-70">
-                Restaurant: {session?.restaurantName || 'Unknown'}
-              </p>
-            </div>
-          )}
-
-          {/* New Orders (Pulsing) */}
-          {newOrders.map((order) => (
-            <div
-              key={order.id}
-              onClick={() => setSelectedOrder(order)}
-              className="pulse-border bg-white rounded-3xl p-6 shadow-card active:scale-95 transition-all duration-300 cursor-pointer hover:shadow-xl hover:-translate-y-1 group relative overflow-hidden"
-            >
-              <div className="absolute top-0 left-0 w-2 h-full bg-secondary animate-pulse" />
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="font-display text-title-sm text-primary group-hover:text-secondary transition-colors">{order.tableName}</h3>
-                  <p className="text-on-surface-variant font-label-caps text-label-caps">
-                    {order.items.length} ITEMS
-                  </p>
-                </div>
-                <span className={`px-3 py-1 rounded-full font-label-caps text-label-caps animate-pulse-subtle ${getStateColor(order.status)}`}>
-                  {getStateLabel(order.status)}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mb-4">
-                <Clock className="w-4 h-4 text-secondary" />
-                <span className="text-on-surface-variant font-medium text-sm">
-                  {formatTimeAgo(order.createdAt)}
-                </span>
-              </div>
-              <div className="border-t border-surface-container pt-4">
-                <p className="text-primary font-bold text-lg">${order.totalAmount.toFixed(2)}</p>
-              </div>
-            </div>
-          ))}
-          
-          {/* Accepted Orders */}
-          {acceptedOrders.map((order) => (
-            <div
-              key={order.id}
-              onClick={() => setSelectedOrder(order)}
-              className="bg-white border border-outline-variant/30 rounded-3xl p-6 shadow-card active:scale-95 transition-all duration-300 cursor-pointer ring-2 ring-primary hover:shadow-xl hover:-translate-y-1 group relative overflow-hidden"
-            >
-              <div className="absolute top-0 left-0 w-2 h-full bg-primary" />
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="font-display text-title-sm text-primary group-hover:text-secondary transition-colors">{order.tableName}</h3>
-                  <p className="text-on-surface-variant font-label-caps text-label-caps">
-                    {order.items.length} ITEMS
-                  </p>
-                </div>
-                <span className={`px-3 py-1 rounded-full font-label-caps text-label-caps ${getStateColor(order.status)}`}>
-                  {getStateLabel(order.status)}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mb-4">
-                <Utensils className="w-4 h-4 text-outline group-hover:text-secondary transition-colors" />
-                <span className="text-on-surface-variant font-medium text-sm">
-                  {formatTimeAgo(order.createdAt)}
-                </span>
-              </div>
-              <div className="border-t border-surface-container pt-4">
-                <p className="text-primary font-bold text-lg">${order.totalAmount.toFixed(2)}</p>
-              </div>
-            </div>
-          ))}
-
-          {/* Paid Orders (Awaiting Close) */}
-          {paidOrders.map((order) => (
-            <div
-              key={order.id}
-              onClick={() => setSelectedOrder(order)}
-              className="bg-white border border-green-200 rounded-3xl p-6 shadow-card active:scale-95 transition-all duration-300 cursor-pointer ring-2 ring-green-500 hover:shadow-xl hover:-translate-y-1 group relative overflow-hidden"
-            >
-              <div className="absolute top-0 left-0 w-2 h-full bg-green-500" />
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="font-display text-title-sm text-primary group-hover:text-green-600 transition-colors">{order.tableName}</h3>
-                  <p className="text-on-surface-variant font-label-caps text-label-caps">
-                    {order.items.length} ITEMS
-                  </p>
-                </div>
-                <span className={`px-3 py-1 rounded-full font-label-caps text-label-caps ${getStateColor(order.status)}`}>
-                  {getStateLabel(order.status)}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mb-4">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                <span className="text-on-surface-variant font-medium text-sm">
-                  {formatTimeAgo(order.createdAt)}
-                </span>
-              </div>
-              <div className="border-t border-surface-container pt-4">
-                <p className="text-primary font-bold text-lg">${order.totalAmount.toFixed(2)}</p>
-              </div>
-            </div>
-          ))}
-          
-          {/* Available Tables */}
-          {tables
-            .filter(t => !activeTableIds.includes(t.id) && t.status !== 'OFFLINE')
-            .map((table) => (
-              <div
-                key={table.id}
-                className="bg-surface-container-low border border-dashed border-outline-variant rounded-3xl p-6 opacity-70 hover:opacity-90 transition-all duration-300 hover:border-secondary hover:shadow-md group"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="font-display text-title-sm text-on-surface-variant group-hover:text-primary transition-colors">{table.name}</h3>
-                    <p className="text-on-surface-variant font-label-caps text-label-caps">
-                      {table.seats} SEATS
-                    </p>
-                  </div>
-                  <span className="px-3 py-1 bg-surface-dim text-on-surface-variant rounded-full font-label-caps text-label-caps">
-                    EMPTY
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Armchair className="w-4 h-4 text-outline-variant" />
-                  <span className="text-on-surface-variant font-medium text-sm">Available</span>
-                </div>
-              </div>
-            ))}
-        </section>
-
-        {/* Right Side Detail Panel */}
-        {selectedOrder && (
-          <aside className="w-[400px] bg-white border-l border-outline-variant flex flex-col h-full shadow-2xl z-40">
-            <div className="p-6 border-b border-surface-container relative">
-              <div className={`absolute top-0 left-0 w-full h-1 ${
-                selectedOrder.status === 'CREATED' ? 'bg-secondary' : 
-                selectedOrder.status === 'PAID' ? 'bg-green-500' : 'bg-primary'
-              }`} />
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="font-display text-title-sm text-primary">{selectedOrder.tableName} Details</h2>
-                <button
-                  onClick={() => setSelectedOrder(null)}
-                  className="text-on-surface-variant hover:bg-surface-container-low rounded-full p-1 transition-colors"
-                >
-                  <XCircle className="w-6 h-6" />
-                </button>
-              </div>
-              <p className="text-on-surface-variant font-label-caps text-label-caps">
-                {selectedOrder.items.length} items • {formatTimeAgo(selectedOrder.createdAt)}
-              </p>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 custom-scrollbar">
-              {selectedOrder.items.map((item, i) => (
-                <div key={i} className="flex justify-between items-start p-3 rounded-xl bg-surface-container-low/50 hover:bg-surface-container-low transition-colors">
-                  <div className="flex gap-4">
-                    <span className="font-bold text-primary bg-secondary-fixed/30 w-8 h-8 rounded-full flex items-center justify-center text-sm">{item.quantity}x</span>
-                    <div>
-                      <p className="text-primary font-semibold">{item.name}</p>
-                      {item.notes && (
-                        <p className="text-on-surface-variant text-sm mt-1 italic">&quot;{item.notes}&quot;</p>
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-primary font-semibold">${(item.unitPrice * item.quantity).toFixed(2)}</p>
-                </div>
-              ))}
-              
-              <div className="mt-6 pt-6 border-t border-surface-container">
-                <div className="flex justify-between items-center mb-2">
-                  <p className="text-on-surface-variant">Subtotal</p>
-                  <p className="text-on-surface-variant">${selectedOrder.totalAmount.toFixed(2)}</p>
-                </div>
-                <div className="flex justify-between items-center mt-4 p-4 bg-secondary-fixed/20 rounded-xl">
-                  <p className="font-display text-title-sm text-primary">Total</p>
-                  <p className="font-display text-2xl text-primary">${selectedOrder.totalAmount.toFixed(2)}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Area */}
-            <div className="p-6 bg-surface-container-lowest grid grid-cols-2 gap-4 border-t border-outline-variant">
-              {selectedOrder.status === 'CREATED' && (
-                <>
-                  <Button
-                    onClick={() => handleAcceptOrder(selectedOrder.id)}
-                    disabled={actionLoading === selectedOrder.id + '-accept'}
-                    className="col-span-2 bg-secondary-container text-on-secondary-container rounded-full py-4 hover:opacity-90 shadow-md hover:shadow-lg transition-all duration-300"
-                  >
-                    {actionLoading === selectedOrder.id + '-accept' ? (
-                      <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Accepting...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCheck className="w-5 h-5 mr-2" />
-                        Accept Order
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    onClick={() => handleCancelOrderClick(selectedOrder)}
-                    disabled={actionLoading === selectedOrder.id + '-cancel'}
-                    variant="outline"
-                    className="col-span-2 border border-error text-error rounded-full py-4 hover:bg-error-container/20"
-                  >
-                    {actionLoading === selectedOrder.id + '-cancel' ? (
-                      <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Cancelling...
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="w-5 h-5 mr-2" />
-                        Cancel Order
-                      </>
-                    )}
-                  </Button>
-                </>
-              )}
-              
-              {selectedOrder.status === 'ACCEPTED' && (
-                <>
-                  <Button
-                    onClick={() => handleCompleteOrder(selectedOrder.id)}
-                    disabled={actionLoading === selectedOrder.id + '-complete'}
-                    className="col-span-2 bg-primary text-on-primary rounded-full py-4 hover:opacity-90 shadow-md hover:shadow-lg transition-all duration-300"
-                  >
-                    {actionLoading === selectedOrder.id + '-complete' ? (
-                      <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="w-5 h-5 mr-2" />
-                        Mark as Paid & Complete
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    onClick={() => handleCancelOrderClick(selectedOrder)}
-                    disabled={actionLoading === selectedOrder.id + '-cancel'}
-                    variant="outline"
-                    className="col-span-2 py-4 border border-error text-error rounded-full hover:bg-error-container/20"
-                  >
-                    {actionLoading === selectedOrder.id + '-cancel' ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <>
-                        <XCircle className="w-5 h-5 mr-2" />
-                        Cancel
-                      </>
-                    )}
-                  </Button>
-                </>
-              )}
-
-              {selectedOrder.status === 'PAID' && (
-                <>
-                  <Button
-                    onClick={() => handleCloseOrder(selectedOrder.id)}
-                    disabled={actionLoading === selectedOrder.id + '-close'}
-                    className="col-span-2 bg-green-600 text-white rounded-full py-4 hover:opacity-90 shadow-md hover:shadow-lg transition-all duration-300"
-                  >
-                    {actionLoading === selectedOrder.id + '-close' ? (
-                      <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Closing...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="w-5 h-5 mr-2" />
-                        Close Order
-                      </>
-                    )}
-                  </Button>
-                </>
-              )}
-            </div>
-          </aside>
-        )}
-      </div>
-
-      {/* Cancel Order Confirmation Dialog */}
-      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <AlertDialogContent className="bg-surface rounded-2xl max-w-md">
-          <AlertDialogHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 bg-error-container rounded-full flex items-center justify-center">
-                <AlertTriangle className="w-6 h-6 text-error" />
-              </div>
-              <AlertDialogTitle className="font-display text-title-md text-primary">
-                Cancel Order?
-              </AlertDialogTitle>
-            </div>
-            <AlertDialogDescription className="text-on-surface-variant">
-              Are you sure you want to cancel the order from <strong className="text-primary">{orderToCancel?.tableName}</strong>? 
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 sm:gap-0">
-            <AlertDialogCancel className="rounded-full border border-outline-variant px-6">
-              Keep Order
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleConfirmCancelOrder}
-              className="bg-error text-on-error rounded-full px-6 hover:bg-error/90"
-            >
-              Yes, Cancel Order
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </DashboardLayout>
+    </div>
   );
 }

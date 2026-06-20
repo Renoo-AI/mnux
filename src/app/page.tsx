@@ -22,7 +22,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* TopNavBar */}
-      <nav className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-8 md:px-16 py-4 bg-background/80 backdrop-blur-md">
+      <nav className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-8 md:px-16 py-4 bg-[#FDF8F3] border-b border-[#E8E2DA] shadow-[0px_10px_30px_rgba(58,50,45,0.05)]">
         <div className="flex items-center gap-2">
           <span className="font-display text-headline-md font-bold text-primary">Menux</span>
         </div>

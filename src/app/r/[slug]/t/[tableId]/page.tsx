@@ -5,12 +5,8 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { Plus, Minus, ChevronRight, AlertTriangle, Loader2, Coffee } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { restaurantService } from '@/services/restaurantService';
-import { menuService } from '@/services/menuService';
-import { tableService } from '@/services/tableService';
 import { useCartStore } from '@/stores/cartStore';
 import { Watermark, WatermarkSpacer } from '@/components/Watermark';
-import type { Restaurant, MenuItem, MenuCategory, Table } from '@/types';
 
 interface MenuDisplayItem {
   id: string;
@@ -78,13 +74,13 @@ const uiStrings = {
 // Shimmer Loading
 function ShimmerCard() {
   return (
-    <div className="bg-white rounded-3xl p-6 mb-6 shadow-sm border border-black/[0.03]">
-      <div className="h-5 w-1/3 bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100 rounded-md mb-6 animate-pulse" />
+    <div className="bg-white rounded-xl p-6 mb-6 shadow-[0px_10px_30px_rgba(58,50,45,0.05)]">
+      <div className="h-5 w-1/3 bg-[#f2edeb] rounded-md mb-5 animate-pulse" />
       <div className="space-y-4">
         {[1, 2, 3].map(i => (
           <div key={i} className="flex justify-between items-center py-2">
-            <div className="h-4 w-32 bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100 rounded-md animate-pulse" />
-            <div className="h-4 w-12 bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100 rounded-md animate-pulse" />
+            <div className="h-4 w-32 bg-[#f2edeb] rounded-md animate-pulse" />
+            <div className="h-4 w-12 bg-[#f2edeb] rounded-md animate-pulse" />
           </div>
         ))}
       </div>
@@ -95,8 +91,8 @@ function ShimmerCard() {
 export default function TableOrderingPage({ params }: { params: Promise<{ slug: string; tableId: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
-  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
-  const [table, setTable] = useState<Table | null>(null);
+  const [restaurant, setRestaurant] = useState<{ id: string; slug: string; name: string; currency: string; plan?: string; watermarkEnabled?: boolean } | null>(null);
+  const [table, setTable] = useState<{ id: string; name: string; restaurantId: string } | null>(null);
   const [menuItems, setMenuItems] = useState<MenuDisplayItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -125,100 +121,45 @@ export default function TableOrderingPage({ params }: { params: Promise<{ slug: 
     async function loadData() {
       try {
         setLoading(true);
+
+        const res = await fetch(`/api/public/restaurant/${resolvedParams.slug}`);
         
-        // Get restaurant by slug
-        const restaurantData = await restaurantService.getBySlug(resolvedParams.slug);
-        if (!restaurantData) {
-          // Use demo mode if restaurant not found
-          setRestaurant({
-            id: 'demo',
-            slug: resolvedParams.slug,
-            name: 'ZCOFFEE',
-            status: 'ACTIVE',
-            currency: 'TND',
-            plan: 'FREE',
-            slugType: 'FREE_RANDOM',
-            watermarkEnabled: false,
-            maxMenuItems: 50,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          });
-          setTable({ id: 'demo-table', restaurantId: 'demo', name: resolvedParams.tableId, seats: 2, status: 'ACTIVE', qrCodeUrl: '', createdAt: new Date(), updatedAt: new Date() });
+        if (!res.ok) {
           setMenuItems(DEMO_MENU_ITEMS);
+          setRestaurant({ id: 'demo', slug: resolvedParams.slug, name: 'ZCOFFEE', currency: 'TND' });
+          setTable({ id: 'demo-table', name: resolvedParams.tableId, restaurantId: 'demo' });
           setContext('demo', resolvedParams.slug, 'demo-table');
           setLoading(false);
           return;
         }
-        setRestaurant(restaurantData);
-        
-        // Get table
-        const tableData = await tableService.getTableByName(restaurantData.id, resolvedParams.tableId);
-        if (!tableData) {
-          setError('Table not found');
-          return;
+
+        const data = await res.json();
+        const { restaurant: rest, items: apiItems } = data;
+
+        setRestaurant({ id: rest.id, slug: rest.slug, name: rest.name, currency: rest.currency || 'TND' });
+        setTable({ id: 'demo-table', name: resolvedParams.tableId, restaurantId: rest.id });
+        setContext(rest.id, rest.slug, 'demo-table');
+
+        if (apiItems?.length) {
+          const displayItems: MenuDisplayItem[] = apiItems.map((item: Record<string, unknown>) => ({
+            id: item.id as string,
+            category: item.category as string || (item as Record<string, string>).nameFr || '',
+            categoryAr: (item.categoryAr as string) || '',
+            nameFr: (item.nameFr as string) || '',
+            nameAr: (item.nameAr as string) || '',
+            price: String(item.price || '0'),
+            description: item.descriptionFr as string,
+            categoryId: item.categoryId as string,
+            available: true,
+          }));
+          setMenuItems(displayItems);
+        } else {
+          setMenuItems(DEMO_MENU_ITEMS);
         }
-        setTable(tableData);
-        
-        // Check if table is available for ordering
-        if (tableData.status === 'OFFLINE') {
-          setError('This table is currently unavailable. Please speak with staff.');
-          return;
-        }
-        
-        if (tableData.status === 'AWAITING_PAYMENT') {
-          setError('This table is awaiting payment. Please speak with staff to settle the bill.');
-          return;
-        }
-        
-        // Set cart context
-        setContext(restaurantData.id, restaurantData.slug, tableData.id);
-        
-        // Load categories and menu items
-        const [categoriesData, itemsData] = await Promise.all([
-          menuService.getCategories(restaurantData.id),
-          menuService.getMenuItems(restaurantData.id),
-        ]);
-        
-        // Convert to display format
-        const displayItems: MenuDisplayItem[] = itemsData
-          .filter(item => item.available)
-          .map((item) => {
-            const category = categoriesData.find(c => c.id === item.categoryId);
-            return {
-              id: item.id,
-              category: category?.name || 'Autre',
-              categoryAr: (category as any)?.nameAr || category?.name || 'آخر',
-              nameFr: item.name,
-              nameAr: (item as any).nameAr || item.name,
-              price: item.price.toFixed(1),
-              description: item.description,
-              categoryId: item.categoryId,
-              available: item.available,
-            };
-          });
-        
-        setMenuItems(displayItems.length > 0 ? displayItems : DEMO_MENU_ITEMS);
-        if (categoriesData.length > 0) {
-          setSelectedCategory(categoriesData[0].id);
-        }
-      } catch (err) {
-        console.error('Error loading menu:', err);
-        // Fallback to demo
-        setRestaurant({
-          id: 'demo',
-          slug: resolvedParams.slug,
-          name: 'ZCOFFEE',
-          status: 'ACTIVE',
-          currency: 'TND',
-          plan: 'FREE',
-          slugType: 'FREE_RANDOM',
-          watermarkEnabled: false,
-          maxMenuItems: 50,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
-        setTable({ id: 'demo-table', restaurantId: 'demo', name: resolvedParams.tableId, seats: 2, status: 'ACTIVE', qrCodeUrl: '', createdAt: new Date(), updatedAt: new Date() });
+      } catch {
         setMenuItems(DEMO_MENU_ITEMS);
+        setRestaurant({ id: 'demo', slug: resolvedParams.slug, name: 'ZCOFFEE', currency: 'TND' });
+        setTable({ id: 'demo-table', name: resolvedParams.tableId, restaurantId: 'demo' });
         setContext('demo', resolvedParams.slug, 'demo-table');
       } finally {
         setLoading(false);
@@ -265,14 +206,13 @@ export default function TableOrderingPage({ params }: { params: Promise<{ slug: 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#faf9f6] pb-20" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
-        <nav className="sticky top-0 z-50 px-6 py-4 flex justify-center items-center bg-[#faf9f6]/90 backdrop-blur-xl border-b border-[#b48c68]/10">
-          <div className="flex flex-col items-center">
-            <div className="w-10 h-10 bg-[#2d2a26] rounded-xl flex items-center justify-center mb-1">
-              <Loader2 className="w-5 h-5 text-[#b48c68] animate-spin" />
-            </div>
+      <div className="min-h-screen bg-[#FDF8F3] pb-20" dir={currentLang === 'ar' ? 'rtl' : 'ltr'}>
+        <header className="sticky top-0 z-50 px-6 py-4 bg-[#FDF8F3] border-b border-[#E8E2DA]">
+          <div className="flex items-center gap-2 max-w-xl mx-auto">
+            <Loader2 className="w-5 h-5 text-[#D4A373] animate-spin" />
+            <span className="text-[#7f756f] text-sm">Loading menu...</span>
           </div>
-        </nav>
+        </header>
         <main className="max-w-xl mx-auto px-5 py-6">
           <ShimmerCard />
           <ShimmerCard />
@@ -283,14 +223,16 @@ export default function TableOrderingPage({ params }: { params: Promise<{ slug: 
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#faf9f6] flex flex-col items-center justify-center gap-4 p-8">
-        <AlertTriangle className="w-16 h-16 text-amber-500" />
-        <h1 className="font-serif text-2xl font-bold text-[#2d2a26] text-center">
+      <div className="min-h-screen bg-[#FDF8F3] flex flex-col items-center justify-center gap-4 p-8">
+        <div className="w-16 h-16 rounded-full bg-[#ffdad6] flex items-center justify-center mb-2">
+          <AlertTriangle className="w-8 h-8 text-[#ba1a1a]" />
+        </div>
+        <h1 className="text-2xl font-bold text-[#3D2C1E] text-center" style={{ fontFamily: "'Playfair Display', serif" }}>
           {error.includes('unavailable') ? 'Table non disponible' : 
            error.includes('payment') ? 'Paiement requis' : 'Erreur'}
         </h1>
-        <p className="text-[#71717a] text-center max-w-md">{error}</p>
-        <Link href="/" className="text-[#b48c68] font-semibold hover:underline">
+        <p className="text-[#7f756f] text-center max-w-md">{error}</p>
+        <Link href="/" className="text-[#D4A373] font-semibold hover:underline mt-2">
           Retour à l&apos;accueil
         </Link>
       </div>
@@ -302,41 +244,38 @@ export default function TableOrderingPage({ params }: { params: Promise<{ slug: 
   return (
     <WatermarkSpacer showWatermark={showWatermark}>
       <div 
-        className="min-h-screen bg-[#faf9f6] pb-32"
+        className="min-h-screen bg-[#FDF8F3] pb-32"
         dir={currentLang === 'ar' ? 'rtl' : 'ltr'}
         lang={currentLang}
       >
-        {/* Glass Navigation */}
-        <nav className="sticky top-0 z-50 px-6 py-4 flex justify-center items-center relative bg-[#faf9f6]/90 backdrop-blur-xl border-b border-[#b48c68]/10">
-          <div className="flex flex-col items-center">
-            <div className="w-10 h-10 bg-[#2d2a26] rounded-xl flex items-center justify-center mb-1 shadow-lg">
-              <Coffee className="w-5 h-5 text-[#b48c68]" />
-            </div>
-            <div className="text-center">
-              <h1 className="font-serif text-xl font-bold tracking-tight text-[#2d2a26]">
+        {/* Header */}
+        <header className="sticky top-0 z-50 px-6 py-4 bg-[#FDF8F3] border-b border-[#E8E2DA] shadow-[0px_10px_30px_rgba(58,50,45,0.05)]">
+          <div className="flex justify-between items-center max-w-xl mx-auto">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#7f756f] mb-1">
                 {restaurant?.name || 'ZCOFFEE'}
-              </h1>
-              <p className="text-[7px] uppercase tracking-[0.3em] text-[#b48c68] font-bold">
-                {uiStrings[currentLang].table} {table?.name}
               </p>
+              <h1 className="text-[32px] font-bold text-[#3D2C1E] leading-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
+                {table?.name || 'T-01'}
+              </h1>
             </div>
+            <button 
+              onClick={toggleLang}
+              className="bg-white text-[#D4A373] px-4 py-1.5 rounded-full font-bold text-xs uppercase tracking-wider border border-[#E8E2DA] shadow-sm hover:shadow-md transition-all"
+            >
+              {uiStrings[currentLang].toggle}
+            </button>
           </div>
-          <button 
-            onClick={toggleLang}
-            className="absolute right-6 bg-white text-[#b48c68] px-4 py-1.5 rounded-full font-bold text-[0.7rem] uppercase tracking-wider border border-[#b48c68]/20 shadow-sm hover:shadow-md transition-all"
-          >
-            {uiStrings[currentLang].toggle}
-          </button>
-        </nav>
+        </header>
 
         {/* Category Tabs */}
-        <nav className="sticky top-[88px] z-40 bg-[#faf9f6]/90 backdrop-blur-xl overflow-x-auto flex items-center gap-3 px-5 py-4 border-b border-[#b48c68]/5">
+        <nav className="sticky top-[81px] z-40 bg-[#FDF8F3] overflow-x-auto flex items-center gap-2 px-5 py-3 border-b border-[#E8E2DA] shadow-[0px_10px_30px_rgba(58,50,45,0.02)]">
           <button
             onClick={() => setSelectedCategory(null)}
-            className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-semibold transition-all ${
+            className={`px-4 py-2 rounded-full whitespace-nowrap text-xs font-bold tracking-wider uppercase transition-all ${
               selectedCategory === null
-                ? 'bg-[#2d2a26] text-white'
-                : 'bg-white text-[#2d2a26]/70 border border-[#b48c68]/10 hover:border-[#b48c68]/30'
+                ? 'bg-[#3D2C1E] text-white'
+                : 'bg-[#f8f2f1] text-[#4d4540] hover:bg-[#ece7e6]'
             }`}
           >
             {currentLang === 'fr' ? 'Tout' : 'الكل'}
@@ -345,10 +284,10 @@ export default function TableOrderingPage({ params }: { params: Promise<{ slug: 
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-semibold transition-all ${
+              className={`px-4 py-2 rounded-full whitespace-nowrap text-xs font-bold tracking-wider uppercase transition-all ${
                 selectedCategory === cat
-                  ? 'bg-[#2d2a26] text-white'
-                  : 'bg-white text-[#2d2a26]/70 border border-[#b48c68]/10 hover:border-[#b48c68]/30'
+                  ? 'bg-[#3D2C1E] text-white'
+                  : 'bg-[#f8f2f1] text-[#4d4540] hover:bg-[#ece7e6]'
               }`}
             >
               {currentLang === 'fr' ? cat : menuItems.find(i => i.category === cat)?.categoryAr || cat}
@@ -366,13 +305,12 @@ export default function TableOrderingPage({ params }: { params: Promise<{ slug: 
               const catName = currentLang === 'fr' ? cat : categoryItems[0]?.categoryAr || cat;
               
               return (
-                <div key={cat} className="bg-white rounded-3xl p-6 mb-6 shadow-sm border border-black/[0.03]">
-                  <div className="flex items-center gap-4 mb-5">
-                    <h2 className="font-serif italic text-[#b48c68] text-lg font-bold">{catName}</h2>
-                    <div className="flex-1 h-px bg-gradient-to-r from-[#b48c68]/30 to-transparent" />
+                <div key={cat} className="bg-white rounded-xl p-6 mb-6 shadow-[0px_10px_30px_rgba(58,50,45,0.05)]">
+                  <div className="flex items-center gap-3 mb-4 pb-3 border-b border-[#f2edeb]">
+                    <h2 className="text-lg font-bold text-[#3D2C1E]" style={{ fontFamily: "'Playfair Display', serif" }}>{catName}</h2>
                   </div>
-                  
-                  <div className="divide-y divide-black/[0.03]">
+                   
+                  <div className="divide-y divide-[#f2edeb]">
                     {categoryItems.map((item, index) => {
                       const name = currentLang === 'fr' ? item.nameFr : item.nameAr;
                       const priceLabel = `${item.price} ${getCurrencySymbol()}`;
@@ -380,38 +318,38 @@ export default function TableOrderingPage({ params }: { params: Promise<{ slug: 
                       const quantity = cartItem?.quantity || 0;
 
                       return (
-                        <div key={item.id} className="flex justify-between items-center py-3 group">
+                        <div key={item.id} className="flex justify-between items-center py-3">
                           <div className="flex-1">
-                            <span className="font-semibold text-[0.95rem] text-[#2d2a26]/90 group-hover:text-[#b48c68] transition-colors">
+                            <span className="font-semibold text-[15px] text-[#3D2C1E]">
                               {name}
                             </span>
                           </div>
                           
                           <div className="flex items-center gap-3">
-                            <span className="text-[#b48c68] font-extrabold text-[1.05rem]">
+                            <span className="text-[#D4A373] font-bold text-base">
                               {priceLabel}
                             </span>
                             
                             {quantity > 0 ? (
-                              <div className="flex items-center gap-1 bg-[#faf9f6] rounded-full px-1 py-1">
+                              <div className="flex items-center gap-1 bg-[#f2edeb] rounded-full px-1 py-1">
                                 <button
                                   onClick={() => handleQuantityChange(item, -1)}
-                                  className="w-7 h-7 rounded-full bg-white text-[#2d2a26] flex items-center justify-center shadow-sm hover:shadow transition-all"
+                                  className="w-6 h-6 rounded-full bg-white text-[#3D2C1E] flex items-center justify-center text-sm"
                                 >
-                                  <Minus className="w-4 h-4" />
+                                  <Minus className="w-3.5 h-3.5" />
                                 </button>
-                                <span className="font-bold text-sm w-6 text-center text-[#2d2a26]">{quantity}</span>
+                                <span className="font-bold text-sm w-5 text-center text-[#3D2C1E]">{quantity}</span>
                                 <button
                                   onClick={() => handleQuantityChange(item, 1)}
-                                  className="w-7 h-7 rounded-full bg-[#b48c68] text-white flex items-center justify-center shadow-sm hover:shadow transition-all"
+                                  className="w-6 h-6 rounded-full bg-[#D4A373] text-white flex items-center justify-center text-sm"
                                 >
-                                  <Plus className="w-4 h-4" />
+                                  <Plus className="w-3.5 h-3.5" />
                                 </button>
                               </div>
                             ) : (
                               <button
                                 onClick={() => handleQuantityChange(item, 1)}
-                                className="w-8 h-8 rounded-full bg-[#2d2a26] text-white flex items-center justify-center shadow-sm hover:shadow transition-all active:scale-95"
+                                className="w-8 h-8 rounded-full bg-[#3D2C1E] text-white flex items-center justify-center shadow-sm active:scale-95 transition-transform"
                               >
                                 <Plus className="w-4 h-4" />
                               </button>
@@ -426,15 +364,14 @@ export default function TableOrderingPage({ params }: { params: Promise<{ slug: 
             })
           ) : (
             // Show items for selected category
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-black/[0.03]">
-              <div className="flex items-center gap-4 mb-5">
-                <h2 className="font-serif italic text-[#b48c68] text-lg font-bold">
+            <div className="bg-white rounded-xl p-6 shadow-[0px_10px_30px_rgba(58,50,45,0.05)]">
+              <div className="flex items-center gap-3 mb-4 pb-3 border-b border-[#f2edeb]">
+                <h2 className="text-lg font-bold text-[#3D2C1E]" style={{ fontFamily: "'Playfair Display', serif" }}>
                   {currentLang === 'fr' ? selectedCategory : menuItems.find(i => i.category === selectedCategory)?.categoryAr || selectedCategory}
                 </h2>
-                <div className="flex-1 h-px bg-gradient-to-r from-[#b48c68]/30 to-transparent" />
               </div>
               
-              <div className="divide-y divide-black/[0.03]">
+              <div className="divide-y divide-[#f2edeb]">
                 {filteredItems.map((item) => {
                   const name = currentLang === 'fr' ? item.nameFr : item.nameAr;
                   const priceLabel = `${item.price} ${getCurrencySymbol()}`;
@@ -442,38 +379,38 @@ export default function TableOrderingPage({ params }: { params: Promise<{ slug: 
                   const quantity = cartItem?.quantity || 0;
 
                   return (
-                    <div key={item.id} className="flex justify-between items-center py-3 group">
+                    <div key={item.id} className="flex justify-between items-center py-3">
                       <div className="flex-1">
-                        <span className="font-semibold text-[0.95rem] text-[#2d2a26]/90 group-hover:text-[#b48c68] transition-colors">
+                        <span className="font-semibold text-[15px] text-[#3D2C1E]">
                           {name}
                         </span>
                       </div>
                       
                       <div className="flex items-center gap-3">
-                        <span className="text-[#b48c68] font-extrabold text-[1.05rem]">
+                        <span className="text-[#D4A373] font-bold text-base">
                           {priceLabel}
                         </span>
                         
                         {quantity > 0 ? (
-                          <div className="flex items-center gap-1 bg-[#faf9f6] rounded-full px-1 py-1">
+                          <div className="flex items-center gap-1 bg-[#f2edeb] rounded-full px-1 py-1">
                             <button
                               onClick={() => handleQuantityChange(item, -1)}
-                              className="w-7 h-7 rounded-full bg-white text-[#2d2a26] flex items-center justify-center shadow-sm"
+                              className="w-6 h-6 rounded-full bg-white text-[#3D2C1E] flex items-center justify-center text-sm"
                             >
-                              <Minus className="w-4 h-4" />
+                              <Minus className="w-3.5 h-3.5" />
                             </button>
-                            <span className="font-bold text-sm w-6 text-center text-[#2d2a26]">{quantity}</span>
+                            <span className="font-bold text-sm w-5 text-center text-[#3D2C1E]">{quantity}</span>
                             <button
                               onClick={() => handleQuantityChange(item, 1)}
-                              className="w-7 h-7 rounded-full bg-[#b48c68] text-white flex items-center justify-center shadow-sm"
+                              className="w-6 h-6 rounded-full bg-[#D4A373] text-white flex items-center justify-center text-sm"
                             >
-                              <Plus className="w-4 h-4" />
+                              <Plus className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         ) : (
                           <button
                             onClick={() => handleQuantityChange(item, 1)}
-                            className="w-8 h-8 rounded-full bg-[#2d2a26] text-white flex items-center justify-center shadow-sm active:scale-95 transition-transform"
+                            className="w-8 h-8 rounded-full bg-[#3D2C1E] text-white flex items-center justify-center shadow-sm active:scale-95 transition-transform"
                           >
                             <Plus className="w-4 h-4" />
                           </button>
@@ -491,31 +428,28 @@ export default function TableOrderingPage({ params }: { params: Promise<{ slug: 
         {cartItemCount > 0 && (
           <Link
             href={`/r/${restaurant?.slug || 'demo'}/t/${table?.name || '1'}/review`}
-            className="fixed bottom-0 left-0 right-0 z-50 p-4 flex justify-center"
+            className="fixed bottom-0 left-0 right-0 z-50 p-4 flex justify-center pointer-events-none"
           >
-            <div className="bg-[#2d2a26] text-white w-full max-w-md h-16 rounded-2xl shadow-2xl flex items-center justify-between px-6 active:scale-[0.98] transition-transform">
-              <div className="flex items-center gap-4">
-                <div className="w-8 h-8 rounded-full bg-[#b48c68] flex items-center justify-center font-bold text-sm">
+            <div className="bg-[#3D2C1E] text-white w-full max-w-md h-16 rounded-full shadow-2xl flex items-center justify-between px-6 active:scale-[0.98] transition-transform pointer-events-auto">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-sm">
                   {cartItemCount}
                 </div>
-                <div className="flex flex-col">
-                  <span className="font-bold uppercase tracking-widest text-sm">
-                    {uiStrings[currentLang].reviewOrder}
-                  </span>
-                  <span className="text-xs text-white/60">{cartItemCount} {uiStrings[currentLang].items}</span>
-                </div>
+                <span className="font-bold uppercase tracking-widest text-xs">
+                  {uiStrings[currentLang].reviewOrder}
+                </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-lg">{cartTotal.toFixed(2)} {getCurrencySymbol()}</span>
-                <ChevronRight className="w-5 h-5" />
+                <span className="font-bold text-base">{cartTotal.toFixed(2)} {getCurrencySymbol()}</span>
+                <ChevronRight className="w-4 h-4" />
               </div>
             </div>
           </Link>
         )}
 
         {/* Footer */}
-        <footer className="mt-8 text-center px-6 opacity-40 pb-24">
-          <p className="font-serif italic text-sm mb-1 text-[#2d2a26]">
+        <footer className="mt-8 text-center px-6 pb-24">
+          <p className="text-xs text-[#7f756f] opacity-60">
             {uiStrings[currentLang].footer}
           </p>
         </footer>
