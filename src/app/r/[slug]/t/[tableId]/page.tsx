@@ -6,7 +6,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { Plus, Minus, ChevronRight, AlertTriangle, Loader2, Coffee } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCartStore } from '@/stores/cartStore';
-import { Watermark, WatermarkSpacer } from '@/components/Watermark';
 
 interface MenuDisplayItem {
   id: string;
@@ -239,11 +238,8 @@ export default function TableOrderingPage({ params }: { params: Promise<{ slug: 
     );
   }
 
-  const showWatermark = restaurant?.plan === 'FREE' || restaurant?.watermarkEnabled === true;
-
   return (
-    <WatermarkSpacer showWatermark={showWatermark}>
-      <div 
+    <div 
         className="min-h-screen bg-[#FDF8F3] pb-32"
         dir={currentLang === 'ar' ? 'rtl' : 'ltr'}
         lang={currentLang}
@@ -473,7 +469,5 @@ export default function TableOrderingPage({ params }: { params: Promise<{ slug: 
           }
         `}</style>
       </div>
-      <Watermark show={showWatermark} />
-    </WatermarkSpacer>
+    </div>
   );
-}

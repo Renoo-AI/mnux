@@ -125,10 +125,7 @@ export default function OrderReviewPage({ params }: { params: Promise<{ slug: st
     );
   }
 
-  const showWatermark = restaurant?.plan === 'FREE' || restaurant?.watermarkEnabled === true;
-
   return (
-    <WatermarkSpacer showWatermark={showWatermark}>
     <div className="min-h-screen bg-[#FDF8F3]">
       {/* Header */}
       <header className="flex justify-between items-center px-6 py-4 sticky top-0 bg-[#FDF8F3] border-b border-[#E8E2DA] shadow-[0px_10px_30px_rgba(58,50,45,0.05)] z-40">
@@ -250,7 +247,5 @@ export default function OrderReviewPage({ params }: { params: Promise<{ slug: st
         </div>
       )}
     </div>
-    <Watermark show={showWatermark} />
-    </WatermarkSpacer>
   );
 }

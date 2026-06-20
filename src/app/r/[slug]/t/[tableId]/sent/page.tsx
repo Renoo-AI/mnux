@@ -212,12 +212,10 @@ export default function OrderSentPage({ params }: { params: Promise<{ slug: stri
     );
   }
 
-  const showWatermark = restaurant?.plan === 'FREE' || restaurant?.watermarkEnabled === true;
   const estimatedTime = getEstimatedTime();
 
   return (
-    <WatermarkSpacer showWatermark={showWatermark}>
-      <div 
+    <div 
         className="min-h-screen bg-[#FDF8F3] pb-32"
         dir={isRTL ? 'rtl' : 'ltr'}
         lang={language}
@@ -397,8 +395,6 @@ export default function OrderSentPage({ params }: { params: Promise<{ slug: stri
         language={language}
         currency={restaurant?.currency}
       />
-
-      <Watermark show={showWatermark} />
-    </WatermarkSpacer>
+    </div>
   );
 }
