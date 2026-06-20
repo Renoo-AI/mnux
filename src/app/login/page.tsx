@@ -50,7 +50,7 @@ export default function LoginPage() {
               <path fill="#b48c68" d="M2 2h6v1H4v1h4v1H2v1h6v1H2V2z" />
             </svg>
           </div>
-          <h1 className="text-xl font-black tracking-tight text-[#2d2a26]" style={{ fontFamily: 'Georgia, serif' }}>
+          <h1 className="text-xl font-black tracking-tight text-[#2d2a26]" style={{ fontFamily: 'var(--font-display), Georgia, serif' }}>
             {isSignup ? 'Créer un compte' : 'MenuxPro'}
           </h1>
           <p className="text-[10px] text-[#b48c68] font-bold uppercase tracking-[0.3em] mt-1">

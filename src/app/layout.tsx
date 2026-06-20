@@ -1,6 +1,21 @@
 import type { Metadata, Viewport } from "next";
+import { Playfair_Display, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import "./luxury.css";
+
+const playfairDisplay = Playfair_Display({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  display: "swap",
+});
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-sans",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://menux.tn";
 
@@ -212,7 +227,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="antialiased bg-[#faf9f6] text-[#2d2a26] font-sans">
+      <body className={`${playfairDisplay.variable} ${plusJakartaSans.variable} antialiased bg-[#faf9f6] text-[#2d2a26] font-sans`}>
         {children}
       </body>
     </html>
