@@ -1,32 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Playfair_Display, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import "./luxury.css";
-import { Toaster } from "@/components/ui/toaster";
-import ErrorBoundary from "@/components/ErrorBoundary";
-import { ThemeProvider } from "@/components/theme-provider";
-import { StaffSessionProvider } from "@/contexts/StaffSessionContext";
-import SuperadminShortcut from "@/components/SuperadminShortcut";
-import { SecurityProvider } from "@/components/security/security-provider";
-import { AdvancedHoneypotProvider } from "@/components/security/advanced-honeypot";
-import { SecurityToastContainer } from "@/components/security/security-toast";
 
-// MenuxPRO Brand Fonts
-const playfairDisplay = Playfair_Display({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
-  display: "swap",
-});
-
-const plusJakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
-
-// Site URL configuration
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://menux.tn";
 
 export const viewport: Viewport = {
@@ -246,28 +221,8 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body
-        className={`${playfairDisplay.variable} ${plusJakartaSans.variable} antialiased bg-background text-foreground font-sans`}
-      >
-        <SecurityProvider>
-          <AdvancedHoneypotProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="light"
-              enableSystem
-              disableTransitionOnChange
-            >
-              <StaffSessionProvider>
-                <ErrorBoundary>
-                  {children}
-                </ErrorBoundary>
-                <Toaster />
-                <SuperadminShortcut />
-                <SecurityToastContainer />
-              </StaffSessionProvider>
-            </ThemeProvider>
-          </AdvancedHoneypotProvider>
-        </SecurityProvider>
+      <body className="antialiased bg-[#faf9f6] text-[#2d2a26] font-sans">
+        {children}
       </body>
     </html>
   );
